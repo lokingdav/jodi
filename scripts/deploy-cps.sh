@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Configuration
-image="sti-cps"     # Specify the Docker image to use
-start_port=5000        # Starting port number
-instances=$1        # Number of instances to run
+instances=${1:-5}        # Number of instances to run
+image=${3}     # Specify the Docker image to use
+start_port="$2:-5000"        # Starting port number
 
 # Build the Docker image from Dockerfile
 docker build --no-cache -t $image -f Dockerfile .

@@ -9,3 +9,7 @@ class Health(BaseModel):
 
 class Republish(Publish):
     token: str
+    
+class Retrieve(BaseModel):
+    token: str
+    passports: List[str]

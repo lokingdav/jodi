@@ -7,6 +7,8 @@ from oobshaken.cps import Publish as PublishRequest
 
 app = FastAPI()
 
+print("Config: ", config.is_atis())
+
 if config.is_atis(): 
     @app.post("/passports/{dest}/{orig}")
     async def publish(orig: str, dest: str, req: PubForm, authorization: Annotated[str | None, Header()] = None):
@@ -22,6 +24,10 @@ if config.is_atis():
         )
 
     @app.post("/republish")
+    async def republish(req: Republish):
+        return req.model_dump()
+    
+    @app.post("/retrieve")
     async def republish(req: Republish):
         return req.model_dump()
 
