@@ -1,2 +1,2 @@
-# stir-shaken-oob
-Stir/Shaken Out-of-Band Paper implementation
+# oobshaken
+Implementation of the Out-of-Band paper
