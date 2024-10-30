@@ -161,4 +161,3 @@ cython_debug/
 
 /certs/
 /docker/data/
-compose.yml
