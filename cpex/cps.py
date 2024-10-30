@@ -2,7 +2,7 @@ import jwt, uuid
 import validators, requests, time
 from urllib.parse import quote, urlparse
 from cpex.stirshaken.passports import Passport
-import cpex.stirshaken.cert_repo as cr
+import cpex.stirshaken.certs as cr
 import cpex.config as config
 import cpex.helpers.helpers as helpers
 from cpex.models.schema import Publish as PubForm

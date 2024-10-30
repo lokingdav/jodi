@@ -1,7 +1,7 @@
 #!/bin/bash
 CMD=$1
 
-VALID_CMDS=('build' 'up' 'down')
+VALID_CMDS=('build' 'up' 'down' 'restart')
 CONTAINER_PREFIX="cpex_dyn_"
 
 validate_docker_path() {
@@ -71,4 +71,7 @@ elif [[ $CMD == 'up' ]]; then
     compose_up
 elif [[ $CMD == 'down' ]]; then
     compose_down
+elif [[ $CMD == 'restart' ]]; then
+    compose_down
+    compose_up
 fi

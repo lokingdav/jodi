@@ -14,8 +14,7 @@ def get_certificate(url: str) -> x509.Certificate:
     except Exception as e:
         traceback.print_exc()
         raise ValueError(f'Error getting certificate: {e}')
-    
-    
+       
 def get_public_key_from_cert(url: str) -> str:
         try:
             cert: x509.Certificate = get_certificate(url)

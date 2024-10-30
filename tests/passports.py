@@ -1,5 +1,5 @@
-from oobshaken.passports import Passport, PassportHeader, PassportPayload
-from oobshaken.cps import Publish
+from cpex.stirshaken.passports import Passport, PassportHeader, PassportPayload
+from cpex.cps import Publish
 
 issuer: str = 'sp1'
 keypath = f'certs/{issuer}/key.pem'

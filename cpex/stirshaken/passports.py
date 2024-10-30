@@ -1,13 +1,13 @@
 from uuid import uuid4
 import time, validators, jwt
-import oobshaken.cert_repo as cr
-import oobshaken.config as config
+import cpex.stirshaken.certs as certs
+import cpex.config as config
 from typing import List
 
 class PassportHeader:
-    def __init__(self, x5u: str, alg: str = config.ALG):
-        self.alg: str = alg
+    def __init__(self, x5u: str):
         self.x5u: str = x5u
+        self.alg: str = 'ES256'
         self.ppt: str = 'shaken'
         self.typ: str = 'passport'
         
@@ -36,7 +36,7 @@ class PassportPayload:
         self.origid: str = origid or str(uuid4())
         
     def validate(self):
-        if self.attest not in ['A', 'B', 'C']:
+        if self.attest not in 'ABC':
             raise ValueError(f'Invalid attest value: {self.attest}')
         if 'tn' not in self.dest:
             raise ValueError(f'Destination missing tn field: {self.dest}')
@@ -44,7 +44,7 @@ class PassportPayload:
             raise ValueError(f'Originator missing tn field: {self.orig}')
         
     def to_dict(self):
-        return { 
+        return {
             'attest': self.attest, 
             'dest': self.dest, 
             'iat': self.iat, 
@@ -66,7 +66,7 @@ class Passport:
     def __init__(self, header: PassportHeader = None, payload: PassportPayload = None, jwt_token: str = None):
         self.header: PassportHeader = header
         self.payload: PassportPayload = payload
-        self.jwt_token: str = None
+        self.jwt_token: str = jwt_token
         
     def validate(self):
         self.header.validate()
@@ -86,7 +86,7 @@ class Passport:
         return [self.jwt_token]
 
     def sign(self, keypath: str = None, key: str = None) -> 'Passport':
-        key = cr.get_private_key(keypath=keypath, key=key)
+        key = certs.get_private_key(keypath=keypath, key=key)
         self.header.validate()
         self.payload.validate()
         self.jwt_token = jwt.encode(
@@ -98,9 +98,9 @@ class Passport:
         return self
 
     @staticmethod
-    def verify(token: str):
+    def verify_jwt_token(token: str):
         header: dict = jwt.get_unverified_header(token)
-        public_key: str = cr.get_public_key_from_cert(header.get('x5u'))
+        public_key: str = certs.get_public_key_from_cert(header.get('x5u'))
         decoded = jwt.decode(token, public_key, algorithms=[header.get('alg')])
         return decoded
     
