@@ -1,10 +1,10 @@
 networks:
-  cpexnet:
+  net:
     driver: bridge
 
 services:
-  cpexdb:
-    container_name: cpexdb
+  db:
+    container_name: cpex_db
     image: mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
@@ -14,17 +14,17 @@ services:
     volumes:
       - ./docker/data/mongo:/data/db
     networks:
-      - cpexnet
+      - net
 
-  admin:
-    container_name: admin
-    image: cpex
-    command: uvicorn server-ca:app --host 0.0.0.0 --port 80 --reload
-    ports:
-      - 8888:80
-    volumes:
-      - .:/app
-    depends_on:
-      - oob_db
-    networks:
-      - oobnet
+  # admin:
+  #   container_name: admin
+  #   image: cpex
+  #   command: uvicorn cpex/servers/admin:app --host 0.0.0.0 --port 80 --reload
+  #   ports:
+  #     - 8888:80
+  #   volumes:
+  #     - .:/app
+  #   depends_on:
+  #     - cpexdb
+  #   networks:
+  #     - cpexnet

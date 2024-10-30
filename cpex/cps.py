@@ -1,11 +1,11 @@
 import jwt, uuid
 import validators, requests, time
 from urllib.parse import quote, urlparse
-from oobshaken.passports import Passport
-import oobshaken.cert_repo as cr
-import oobshaken.config as config
-import oobshaken.helpers as helpers
-from oobshaken.schema import Publish as PubForm
+from cpex.stirshaken.passports import Passport
+import cpex.stirshaken.cert_repo as cr
+import cpex.config as config
+import cpex.helpers.helpers as helpers
+from cpex.models.schema import Publish as PubForm
 
 class CPSRequest:
     def __init__(self, issuer: str, cps_base_url: str, x5u: str):

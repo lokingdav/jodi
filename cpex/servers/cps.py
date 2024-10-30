@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, Header, status
 from fastapi.responses import JSONResponse
-import oobshaken.config as config
+import cpex.config as config
 from typing import Annotated
-from oobshaken.schema import Publish as PubForm, Republish
-from oobshaken.cps import Publish as PublishRequest
+from cpex.models.schema import Publish as PubForm, Republish
+from cpex.cps import Publish as PublishRequest
 
 app = FastAPI()
 
