@@ -15,6 +15,9 @@ from cpex.stirshaken.certs import (
 
 app = FastAPI()
 
+def init_server():
+    
+
 # In-memory stores for certificates and keys
 cert_store: Dict[str, str] = {}
 key_store: Dict[str, str] = {}
