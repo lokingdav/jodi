@@ -1,6 +1,8 @@
 from os import getenv
 from dotenv import load_dotenv
 
+from cpex.constants import CPS_MODE_CPEX
+
 load_dotenv(override=True)
 
 def env(envname, default=""):
@@ -22,7 +24,7 @@ DB_PASS = env("DB_PASS", "secret")
 # CPS Information. Should be different for each CPS node
 CPS_ID = env('CPS_ID')
 CPS_PORT = env('CPS_PORT')
-CPS_MODE = env("CPS_MODE", "atis")
+CPS_MODE = env("CPS_MODE", CPS_MODE_CPEX)
 
 
 CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cpex-sti-pki:8888')
