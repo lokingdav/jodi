@@ -1,4 +1,0 @@
-ROOT_CA_KEY='rca'
-INTERMEDIATE_CA_KEY='ica'
-CERT_KEY='cert'
-PRIV_KEY='sk'

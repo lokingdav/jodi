@@ -1,8 +1,10 @@
 #!/bin/bash
 CMD=$1
 
-VALID_CMDS=('build' 'up' 'down' 'restart')
-CONTAINER_PREFIX="cpex_dyn_"
+VALID_CMDS=('build' 'up' 'down' 'restart' 'ps')
+CONTAINER_PREFIX="cpex-cps-"
+
+mkdir -p conf
 
 validate_docker_path() {
     # Define default socket path based on the operating system
@@ -62,9 +64,14 @@ compose_down() {
     docker compose down
 }
 
+dockerps() {
+    docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
+}
+
 validate_docker_path
 validate_cmds
 echo "Executing 'cpex $CMD' command"
+
 if [[ $CMD == 'build' ]]; then
     build_image
 elif [[ $CMD == 'up' ]]; then
@@ -74,4 +81,6 @@ elif [[ $CMD == 'down' ]]; then
 elif [[ $CMD == 'restart' ]]; then
     compose_down
     compose_up
+elif [[ $CMD == 'ps' ]]; then
+    dockerps
 fi

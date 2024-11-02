@@ -5,6 +5,9 @@ from cryptography.hazmat.primitives import serialization, hashes
 from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives.asymmetric import ec
 
+from cpex.helpers import http
+import cpex.config as config
+import cpex.constants as constants
 
 def generate_key_pair() -> tuple[str, str]:
     """
@@ -62,6 +65,7 @@ def create_csr(private_key_str: str, common_name: str, country_name: str = None,
         name_attributes.append(x509.NameAttribute(x509.NameOID.LOCALITY_NAME, locality_name))
     if organization_name:
         name_attributes.append(x509.NameAttribute(x509.NameOID.ORGANIZATION_NAME, organization_name))
+        
     name_attributes.append(x509.NameAttribute(x509.NameOID.COMMON_NAME, common_name))
 
     csr_builder = x509.CertificateSigningRequestBuilder()
@@ -172,3 +176,19 @@ def get_private_key(key_str: str):
         password=None,
     )
     return private_key
+
+def client_keygen(name: str, country: str = 'US'):
+    sk, pk = generate_key_pair()
+    csr: str = create_csr(
+        private_key_str=sk,
+        common_name=name,
+        country_name=country
+    )
+    return sk, csr
+
+def request_cert(csr: str):
+    response = http.post(
+        url=config.CERT_REPO_BASE_URL + '/sign_csr',
+        data={'csr': csr}
+    )
+    return response.get(constants.CERT_KEY)

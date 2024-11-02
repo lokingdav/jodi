@@ -17,11 +17,27 @@ services:
       - net
 
   sti-pki:
-    container_name: sti-pki
+    container_name: cpex-sti-pki
     image: cpex
-    command: uvicorn cpex/servers/sti_pki:app --host 0.0.0.0 --port 80 --reload
+    command: uvicorn cpex.servers.sti_pki_server:app --host 0.0.0.0 --port 8888 --reload
     ports:
-      - 8888:80
+      - 8888:8888
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    networks:
+      - net
+
+  cps-0:
+    container_name: cpex-cps-0
+    image: cpex
+    command: uvicorn cpex.servers.cps_server:app --host 0.0.0.0 --port 8888 --reload
+    ports:
+      - 10000:8888
+    environment:
+      - CPS_ID=0
+      - CPS_PORT=10000
     volumes:
       - .:/app
     depends_on:

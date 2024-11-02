@@ -9,12 +9,20 @@ def env(envname, default=""):
 
 COMPOSE_NETWORK_ID = "cpex_net"
 CPEX_DOCKER_IMAGE = "cpex"
+BASE_CPS_PORT = env('BASE_CPS_PORT', 10000)
 
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)
-PKI_CONFIG_FILE = env("PKI_CONFIG_FILE", "certs.json")
+CONF_DIR = env("CONF_DIR", "conf")
 
-DB_HOST = env("DB_HOST", "127.0.0.1")
+DB_HOST = env("DB_HOST", "db")
 DB_PORT = env("DB_PORT", 27017)
-DB_NAME = env("DB_NAME", "cpex")
 DB_USER = env("DB_USER", "root")
 DB_PASS = env("DB_PASS", "secret")
+
+# CPS Information. Should be different for each CPS node
+CPS_ID = env('CPS_ID')
+CPS_PORT = env('CPS_PORT')
+CPS_MODE = env("CPS_MODE", "atis")
+
+
+CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cpex-sti-pki:8888')

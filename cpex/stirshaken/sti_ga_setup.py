@@ -5,9 +5,12 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.x509.oid import NameOID
 
+from cpex import constants
 from cpex.helpers import files
-from cpex.stirshaken import certs, constants
-from cpex.config import NO_OF_INTERMEDIATE_CAS, PKI_CONFIG_FILE
+from cpex.stirshaken import certs
+import cpex.config as config
+
+ca_certs_file = config.CONF_DIR + '/cas.certs.json'
 
 def create_self_signed_cert(private_key_str: str, subject: x509.Name, days_valid: int = 365) -> str:
     private_key = certs.get_private_key(private_key_str)
@@ -63,7 +66,7 @@ def create_intermediate_ca(caconfig: dict):
     }
     
 def main():
-    if not files.is_empty(PKI_CONFIG_FILE):
+    if not files.is_empty(ca_certs_file):
         print("Root and intermediate CAs have already been generated. Delete certs.json file and rerun to regenerate")
         return True
     
@@ -71,12 +74,12 @@ def main():
     pki[constants.ROOT_CA_KEY] = create_root_ca()
     
     pki[constants.INTERMEDIATE_CA_KEY] = []
-    for ica in range(int(NO_OF_INTERMEDIATE_CAS)):
+    for ica in range(int(config.NO_OF_INTERMEDIATE_CAS)):
         pki[constants.INTERMEDIATE_CA_KEY].append(create_intermediate_ca(pki))
     
-    files.override_json(PKI_CONFIG_FILE, pki)
+    files.override_json(ca_certs_file, pki)
 
-    print(f"Root CA and Intermediate CA keys and certificates have been generated and stored in {PKI_CONFIG_FILE}")
+    print(f"Root CA and Intermediate CA keys and certificates have been generated and stored in {ca_certs_file}")
 
 if __name__ == '__main__':
     main()

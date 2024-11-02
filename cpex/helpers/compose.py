@@ -1,4 +1,4 @@
-import docker
+import docker, os
 from cpex import config
 from cpex.helpers import errors
 
@@ -26,8 +26,8 @@ def find_image(name: str, client: docker.client = None):
     except:
         return None
 
-def add_cps_node(id: str):
-    name: str = f"cpex_dyn_cps_{id}"
+def add_cps_node(cps_id: int):
+    name: str = f"cpex-cps-{cps_id}"
     client = get_client()
     
     if not find_image(name=config.CPEX_DOCKER_IMAGE):
@@ -39,12 +39,16 @@ def add_cps_node(id: str):
     if not find_network(name=config.COMPOSE_NETWORK_ID):
         raise Exception(errors.CPS_NETWORK_NOT_FOUND)
     
-    container = client.containers.run(
+    port = int(config.BASE_CPS_PORT) + int(cps_id)
+    client.containers.run(
         name=name,
         detach=True,
         image=config.CPEX_DOCKER_IMAGE,
         network=config.COMPOSE_NETWORK_ID,
-        command='uvicorn cpex/servers/cps:app --host 0.0.0.0 --port 80 --reload',
+        ports={'8888/tcp': ('0.0.0.0', port)},
+        environment={'CPS_ID': cps_id, 'CPS_PORT': port},
+        volumes={os.path.abspath('./'): {'bind': '/app', 'mode': 'rw'}},
+        command='uvicorn cpex.servers.cps:app --host 0.0.0.0 --port 8888 --reload'
     )
     
     
