@@ -1,26 +1,28 @@
 #!/bin/bash
-CMD=$1
 
-VALID_CMDS=('build' 'up' 'down' 'restart' 'ps')
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Load environment variables from .env file if it exists
+if [[ -f .env ]]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Define variables with defaults if not set
+BASE_CPS_PORT=${BASE_CPS_PORT:-10000}
+CPEX_DOCKER_IMAGE=${CPEX_DOCKER_IMAGE:-cpex}
+COMPOSE_NETWORK_ID=${COMPOSE_NETWORK_ID:-cpex_net}
+
+CMD=$1
+CPS_NODES=$2
+
+VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'add-cps')
 CONTAINER_PREFIX="cpex-cps-"
 
+# Create configuration directory if it doesn't exist
 mkdir -p conf
 
-validate_docker_path() {
-    # Define default socket path based on the operating system
-    if [[ -z "$DOCKER_SOCKET_PATH" ]]; then
-        if [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* ]]; then
-            DOCKER_SOCKET_PATH="/var/run/docker.sock"
-        elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-            # Adapt for Windows if needed
-            DOCKER_SOCKET_PATH="//var/run/docker.sock"
-        else
-            echo "Unsupported OS: $OSTYPE. Please set DOCKER_SOCKET_PATH manually."
-            exit 1
-        fi
-    fi
-}
-
+# Function to validate the provided command
 validate_cmds() {
     if [[ -z "$CMD" ]]; then
         echo "Please provide a command to run: ${VALID_CMDS[*]}"
@@ -37,50 +39,129 @@ validate_cmds() {
     exit 1
 }
 
+# Function to build the Docker image
 build_image() {
-    docker build -f Dockerfile -t cpex .
+    echo "Building Docker image '$CPEX_DOCKER_IMAGE'..."
+    docker build -f Dockerfile -t "$CPEX_DOCKER_IMAGE" .
 }
 
-compose_up() {
-    # Check if DOCKER_SOCKET_PATH is set and not empty
-    if [[ -z "$DOCKER_SOCKET_PATH" ]]; then
-        echo "Error: DOCKER_SOCKET_PATH environment variable is not set. Please set it to the path of the Docker socket (e.g., /var/run/docker.sock)."
+# Function to add a single CPS node
+add_cps_node() {
+    local cps_id=$1
+
+    if [[ -z "$cps_id" ]]; then
+        echo "Error: CPS ID is required to add a CPS node."
         exit 1
     fi
 
-    docker compose up -d
+    local port=$((BASE_CPS_PORT + cps_id))
+    local name="${CONTAINER_PREFIX}${cps_id}"
 
-    INITIAL_CPS_NODES=$(grep '^INITIAL_CPS_NODES=' .env | cut -d '=' -f2-)
+    echo "Adding CPS node with ID: $cps_id"
+    echo "Container Name: $name"
+    echo "Port: $port"
 
-    docker run \
-        -v "$(pwd)":/app \
-        -v "$DOCKER_SOCKET_PATH":/var/run/docker.sock \
-        -e DOCKER_SOCKET_PATH="$DOCKER_SOCKET_PATH" \
-        --rm cpex python /app/initcps.py --initial-cps-nodes "$INITIAL_CPS_NODES"
+    docker run -d \
+        --name "$name" \
+        --network "$COMPOSE_NETWORK_ID" \
+        -p "0.0.0.0:$port:8888/tcp" \
+        -e "CPS_ID=$cps_id" \
+        -e "CPS_PORT=$port" \
+        -v "$(pwd)/:/app:rw" \
+        "$CPEX_DOCKER_IMAGE" \
+        uvicorn cpex.servers.cps_server:app --host 0.0.0.0 --port 8888 --reload
+    echo ""
 }
 
+# Function to start Docker Compose services and add initial CPS nodes
+compose_up() {
+    echo "Starting Docker Compose services..."
+    docker compose up -d
+
+    if [[ -z "$CPS_NODES" ]]; then
+        echo "CPS_NODES is not provided. Attempting to read from .env..."
+        CPS_NODES=$(grep '^INITIAL_CPS_NODES=' .env | cut -d '=' -f2-)
+        if [[ -z "$CPS_NODES" ]]; then
+            echo "Error: INITIAL_CPS_NODES is not set in .env and CPS_NODES argument is empty."
+            exit 1
+        fi
+    fi
+
+    echo "Adding CPS nodes: $CPS_NODES"
+    IFS=',' read -ra NODE_IDS <<< "$CPS_NODES"
+    for cps_id in "${NODE_IDS[@]}"; do
+        add_cps_node "$cps_id"
+    done
+}
+
+# Function to stop Docker Compose services and remove CPS nodes
 compose_down() {
-    docker ps -aq --filter "name=^$CONTAINER_PREFIX" | xargs -r docker rm -f
+    echo "Removing Dynamically Added CPS nodes..."
+    docker ps -aq --filter "name=^${CONTAINER_PREFIX}" | xargs -r docker rm -f
+    echo "Stopping Docker Compose services..."
     docker compose down
 }
 
+# Function to list running Docker containers
 dockerps() {
     docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
 }
 
-validate_docker_path
+# Function to add multiple CPS nodes with automatic ID assignment
+add_cps_command() {
+    local N=$CPS_NODES
+
+    if [[ -z "$N" ]]; then
+        echo "Error: Number of CPS nodes to add is required for 'add-cps' command."
+        exit 1
+    fi
+
+    # Validate that N is a positive integer
+    if ! [[ "$N" =~ ^[0-9]+$ ]]; then
+        echo "Error: Number of CPS nodes to add must be a positive integer."
+        exit 1
+    fi
+
+    # Get S: count of existing containers with names starting with 'cpex-cps-'
+    local S=$(docker ps -aq --filter "name=^${CONTAINER_PREFIX}" | wc -l)
+
+    echo "Existing CPS nodes count: $S"
+    echo "Adding $N CPS node(s), assigning IDs from $((S)) to $((S + N))"
+
+    for ((i=0; i<N; i++)); do
+        local cps_id=$((S + i))
+        add_cps_node "$cps_id"
+    done
+}
+
+# Validate the provided command
 validate_cmds
+
 echo "Executing 'cpex $CMD' command"
 
-if [[ $CMD == 'build' ]]; then
-    build_image
-elif [[ $CMD == 'up' ]]; then
-    compose_up
-elif [[ $CMD == 'down' ]]; then
-    compose_down
-elif [[ $CMD == 'restart' ]]; then
-    compose_down
-    compose_up
-elif [[ $CMD == 'ps' ]]; then
-    dockerps
-fi
+# Execute the corresponding function based on the command
+case "$CMD" in
+    build)
+        build_image
+        ;;
+    up)
+        compose_up
+        ;;
+    down)
+        compose_down
+        ;;
+    restart)
+        compose_down
+        compose_up
+        ;;
+    ps)
+        dockerps
+        ;;
+    add-cps)
+        add_cps_command
+        ;;
+    *)
+        echo "Unknown command: $CMD"
+        exit 1
+        ;;
+esac

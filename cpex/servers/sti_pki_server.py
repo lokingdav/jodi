@@ -8,27 +8,29 @@ import cpex.config as config
 from cpex.helpers import errors
 from cpex import constants
 from cpex.models import persistence, sti_pki
+import cpex.stirshaken.sti_ga_setup as ga_setup
+import cpex.helpers.files as files
 
 import traceback
 
+pki = None
 ca_certs_file = config.CONF_DIR + '/cas.certs.json'
 
 def init_server():
-    import cpex.helpers.files as files
+    global pki
     pki = files.read_json(ca_certs_file)
     if not pki:
-        import cpex.stirshaken.sti_ga_setup as ga_setup
         pki = ga_setup.main()
     if not pki:
         raise Exception(errors.ERROR_SETTING_UP_STI_PKI)
-    return pki
+    
+    return FastAPI()
 
-app = FastAPI()
-pki = init_server()
+app = init_server()
 
 @app.get("/certs/{key}")
 async def get_certificate(key: str):
-    cert = persistence.get_provider_cert(key=key)
+    cert = persistence.get_cert(key=key)
     if not cert:
         raise HTTPException(status_code=404, detail="Certificate not found")
     return {constants.CERT_KEY: cert}
@@ -60,7 +62,7 @@ async def sign_csr_endpoint(csr_request: sti_pki.CSRRequest):
             days_valid=90
         )
 
-        persistence.store_provider_cert(key=spc, cert=signed_cert_str)
+        persistence.store_cert(key=spc, cert=signed_cert_str)
 
         return {constants.CERT_KEY: signed_cert_str}
     except Exception as e:

@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-
+import random
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.x509.oid import NameOID
@@ -11,6 +11,17 @@ from cpex.stirshaken import certs
 import cpex.config as config
 
 ca_certs_file = config.CONF_DIR + '/cas.certs.json'
+
+states = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 
+    'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 
+    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 
+    'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 
+    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 
+    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 
+    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 
+    'Wisconsin', 'Wyoming'
+]
 
 def create_self_signed_cert(private_key_str: str, subject: x509.Name, days_valid: int = 365) -> str:
     private_key = certs.get_private_key(private_key_str)
@@ -39,18 +50,17 @@ def create_root_ca():
         constants.CERT_KEY: create_self_signed_cert(root_private_key_str, root_subject)
     } 
 
-def create_intermediate_ca(caconfig: dict):
+def create_intermediate_ca(ica: str, caconfig: dict):
     # Generate Intermediate CA key pair
     intermediate_private_key_str, intermediate_public_key_str = certs.generate_key_pair()
     
     # Create CSR for Intermediate CA
     intermediate_csr_str = certs.create_csr(
         private_key_str=intermediate_private_key_str,
-        common_name="Intermediate CA",
+        common_name=f"ica_{ica}",
         country_name="US",
-        state_or_province_name="California",
-        locality_name="San Francisco",
-        organization_name="My Company"
+        state_or_province_name=states[random.randint(0, len(states) - 1)],
+        organization_name=f"ICA {ica}"
     )
     
     # Sign Intermediate CA CSR with Root CA to create Intermediate CA certificate
@@ -75,11 +85,12 @@ def main():
     
     pki[constants.INTERMEDIATE_CA_KEY] = []
     for ica in range(int(config.NO_OF_INTERMEDIATE_CAS)):
-        pki[constants.INTERMEDIATE_CA_KEY].append(create_intermediate_ca(pki))
+        pki[constants.INTERMEDIATE_CA_KEY].append(create_intermediate_ca(ica, pki))
     
     files.override_json(ca_certs_file, pki)
 
     print(f"Root CA and Intermediate CA keys and certificates have been generated and stored in {ca_certs_file}")
+    return pki
 
 if __name__ == '__main__':
     main()

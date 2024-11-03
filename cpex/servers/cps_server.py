@@ -26,7 +26,7 @@ def init_server():
                 print("********* Requesting certificate *********")
                 cert = sti_certs.request_cert(csr)
             except Exception as e:
-                print("Could not obtain certificate from the Certificate Repository")
+                print("Could not obtain certificate from the Certificate Repository.")
                 print(e)
             
         conf = { constants.CERT_KEY: cert, constants.PRIV_KEY: sk }

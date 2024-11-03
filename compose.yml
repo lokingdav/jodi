@@ -42,5 +42,6 @@ services:
       - .:/app
     depends_on:
       - db
+      - sti-pki
     networks:
       - net

@@ -19,17 +19,17 @@ def insert(dbname, collection, records):
         
     return results.inserted_ids
 
-def get_provider_cert(key: str):
+def get_cert(key: str):
     with open_db() as connection:
         db = connection[STI_GA_DB]
-        collection = db['providers']
+        collection = db['certificates']
         cert = collection.find_one({'_id': key})
     return cert
 
-def store_provider_cert(key: str, cert: str):
+def store_cert(key: str, cert: str):
     with open_db() as connection:
         db = connection[STI_GA_DB]
-        collection = db['providers']
+        collection = db['certificates']
         collection.find_one_and_update(
             {'_id': key},
             {'$set': {'cert': cert}},

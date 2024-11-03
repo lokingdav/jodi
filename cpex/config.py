@@ -9,8 +9,6 @@ def env(envname, default=""):
     value = getenv(envname)
     return value or default
 
-COMPOSE_NETWORK_ID = "cpex_net"
-CPEX_DOCKER_IMAGE = "cpex"
 BASE_CPS_PORT = env('BASE_CPS_PORT', 10000)
 
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)
