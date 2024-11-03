@@ -6,7 +6,6 @@ charset-normalizer==3.3.2
 click==8.1.7
 cryptography==42.0.6
 dnspython==2.6.1
-docker==7.1.0
 email_validator==2.1.1
 fastapi==0.111.0
 fastapi-cli==0.0.2
@@ -29,6 +28,7 @@ pymongo==4.10.1
 python-dotenv==1.0.1
 python-multipart==0.0.9
 PyYAML==6.0.1
+redis==5.2.0
 requests==2.31.0
 rich==13.7.1
 setuptools==75.3.0
