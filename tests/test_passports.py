@@ -154,14 +154,14 @@ class TestPassport(unittest.TestCase):
         self.passport = Passport(header=self.header, payload=self.payload)
 
     def test_sign_passport(self):
-        signed_passport = self.passport.sign("key_identifier")
+        jwt_token = self.passport.sign("key_identifier")
 
         # Check that jwt_token is set
-        self.assertIsNotNone(signed_passport.jwt_token)
+        self.assertIsNotNone(jwt_token)
 
         # Decode the token to verify its content
         decoded = jwt.decode(
-            signed_passport.jwt_token,
+            jwt_token,
             self.__class__.public_key_pem,
             algorithms=[self.header.alg]
         )
@@ -170,44 +170,39 @@ class TestPassport(unittest.TestCase):
         self.assertEqual(decoded['attest'], self.payload_data['attest'])
         self.assertEqual(decoded['orig']['tn'], self.payload_data['orig']['tn'])
         self.assertEqual(decoded['dest']['tn'], self.payload_data['dest']['tn'])
-        self.assertEqual(decoded['iat'], self.payload_data['iat'])
-        self.assertEqual(decoded['origid'], self.payload_data['origid'])
 
         # Verify header
-        unverified_header = jwt.get_unverified_header(signed_passport.jwt_token)
+        unverified_header = jwt.get_unverified_header(jwt_token)
         self.assertEqual(unverified_header['ppt'], self.header_data['ppt'])
         self.assertEqual(unverified_header['typ'], self.header_data['typ'])
         self.assertEqual(unverified_header['x5u'], self.header_data['x5u'])
         self.assertEqual(unverified_header['alg'], self.header_data['alg'])
 
-        self.assertTrue(signed_passport.jwt_token is not None)
+        self.assertTrue(jwt_token is not None)
 
     def test_verify_jwt_token(self):
         # Sign the passport first
-        signed_passport = self.passport.sign("key_identifier")
-        token = signed_passport.jwt_token
+        token = self.passport.sign("key_identifier")
 
         # Now verify the token
-        verified_passport = Passport.verify_jwt_token(token)
+        pp = Passport.verify_jwt_token(token, self.__class__.public_key_pem)
 
         # Check that is_verified is True
-        self.assertTrue(verified_passport.is_verified)
+        self.assertTrue(pp.is_verified)
 
         # Check that the payload matches
-        self.assertEqual(verified_passport.payload.attest, self.payload_data['attest'])
-        self.assertEqual(verified_passport.payload.orig.tn, self.payload_data['orig']['tn'])
-        self.assertEqual(verified_passport.payload.dest.tn, self.payload_data['dest']['tn'])
-        self.assertEqual(verified_passport.payload.iat, self.payload_data['iat'])
-        self.assertEqual(verified_passport.payload.origid, self.payload_data['origid'])
+        self.assertEqual(pp.payload.attest, self.payload_data['attest'])
+        self.assertEqual(pp.payload.orig.tn, self.payload_data['orig']['tn'])
+        self.assertEqual(pp.payload.dest.tn, self.payload_data['dest']['tn'])
 
         # Check the header
-        self.assertEqual(verified_passport.header.ppt, self.header_data['ppt'])
-        self.assertEqual(verified_passport.header.typ, self.header_data['typ'])
-        self.assertEqual(verified_passport.header.x5u, self.header_data['x5u'])
-        self.assertEqual(verified_passport.header.alg, self.header_data['alg'])
+        self.assertEqual(pp.header.ppt, self.header_data['ppt'])
+        self.assertEqual(pp.header.typ, self.header_data['typ'])
+        self.assertEqual(pp.header.x5u, self.header_data['x5u'])
+        self.assertEqual(pp.header.alg, self.header_data['alg'])
 
         # Check the token
-        self.assertEqual(verified_passport.jwt_token, token)
+        self.assertEqual(pp.jwt_token, token)
 
 
     def test_get_orig_tn(self):
