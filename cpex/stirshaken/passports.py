@@ -2,7 +2,14 @@ from uuid import uuid4
 import time, jwt
 import cpex.stirshaken.certs as certs
 from typing import List, Annotated, Literal
-from cpex.requests.validators.rules import PhoneNumberValidator, PassportTokenValidator
+
+from cpex.requests.validators.rules import (
+    PhoneNumberValidator, 
+    PassportTokenValidator, 
+    AttestationValidator,
+    AlgValidator,
+    x5uValidator
+)
 
 from pydantic import BaseModel,  HttpUrl, Field
 
@@ -12,8 +19,8 @@ class TNModel(BaseModel):
 class PassportHeader(BaseModel):
     ppt: str = 'shaken'
     typ: str = 'passport'
-    x5u: Annotated[str, HttpUrl]
-    alg: Literal['RS256', 'ES256'] = 'ES256'
+    x5u: x5uValidator
+    alg: AlgValidator  = 'ES256'
 
     def to_dict(self) -> dict:
         return self.model_dump()
@@ -23,7 +30,7 @@ class PassportHeader(BaseModel):
         return PassportHeader(**data)
     
 class PassportPayload(BaseModel):
-    attest: Literal['A', 'B', 'C']
+    attest: AttestationValidator
     orig: TNModel
     dest: TNModel
     iat: int = int(time.time())
@@ -51,20 +58,23 @@ class Passport(BaseModel):
     def get_tokens(self) -> List[str]:
         return [self.jwt_token]
 
-    def sign(self, key: str) -> 'Passport':
-        key = certs.get_private_key(key)
+    def sign(self, private_key: str) -> str:
+        private_key = certs.get_private_key(private_key)
+        
+        self.payload.iat = int(time.time())
+        self.payload.origid = str(uuid4())
+        
         self.jwt_token = jwt.encode(
             payload=self.payload.to_dict(),
-            key=key,
+            key=private_key,
             algorithm=self.header.alg,
             headers=self.header.to_dict()
         )
-        return self
+        
+        return self.jwt_token
 
     @staticmethod
-    def verify_jwt_token(token: str) -> 'Passport':
-        header: PassportHeader = PassportHeader(**jwt.get_unverified_header(token))
-        public_key: str = certs.get_public_key_from_cert(header.x5u)
+    def verify_jwt_token(token: str, public_key: str, header: PassportHeader = None) -> 'Passport':
+        header = PassportHeader(**jwt.get_unverified_header(token)) if not header else header
         decoded: PassportPayload = PassportPayload(**jwt.decode(token, public_key, algorithms=[header.alg]))
         return Passport(header=header, payload=decoded, jwt_token=token, is_verified=True)
-

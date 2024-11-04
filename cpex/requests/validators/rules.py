@@ -1,5 +1,5 @@
-from typing import Annotated
-from pydantic import Field
+from typing import Annotated, Literal
+from pydantic import Field, HttpUrl
 from pydantic.functional_validators import AfterValidator
 
 PhoneNumberValidator = Annotated[str, Field(
@@ -13,3 +13,9 @@ PassportTokenValidator = Annotated[str, Field(
     pattern=r"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$",
     description="JWT passport"
 )]
+
+AttestationValidator = Literal['A', 'B', 'C']
+
+AlgValidator = Literal['RS256', 'ES256']
+
+x5uValidator = Annotated[str, HttpUrl]

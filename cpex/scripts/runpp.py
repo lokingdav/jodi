@@ -6,7 +6,6 @@ from cpex.constants import PRIV_KEY
 cps_0: str = 'http://localhost:10000/publish'
 x5u: str = f'http://localhost:8888/certs/cps_0'
 
-
 if __name__ == '__main__':
     keys = files.read_json(fileloc=f"{CONF_DIR}/cps.0.certs.json")
     

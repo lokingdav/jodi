@@ -19,6 +19,11 @@ DB_PORT = env("DB_PORT", 27017)
 DB_USER = env("DB_USER", "root")
 DB_PASS = env("DB_PASS", "secret")
 
+CACHE_HOST = env("CACHE_HOST")
+CACHE_PORT = env("CACHE_PORT")
+CACHE_PASS = env("CACHE_PASS")
+CACHE_DB = env("CACHE_DB")
+
 # CPS Information. Should be different for each CPS node
 CPS_ID = env('CPS_ID')
 CPS_PORT = env('CPS_PORT')

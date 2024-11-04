@@ -1,4 +1,3 @@
-from uuid import uuid4
 from cryptography import x509
 import validators, requests, traceback
 from cryptography.hazmat.primitives import serialization, hashes
@@ -115,39 +114,20 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
     return cert_pem
 
 
-def get_certificate(url: str) -> x509.Certificate:
-    """
-    Retrieves a certificate from the given URL.
-
-    Args:
-        url: The URL where the certificate is hosted.
-
-    Returns:
-        The certificate as an x509.Certificate object.
-    """
+def download(url: str) -> str:
     if not validators.url(url) and not url.startswith('http'):
         raise ValueError(f'Cert url must be a valid URL: {url}')
+    
     try:
-        cert_str: str = requests.get(url=url).text
-        cert = x509.load_pem_x509_certificate(cert_str.encode())
-        return cert
+        return requests.get(url=url).text
     except Exception as e:
         traceback.print_exc()
         raise ValueError(f'Error getting certificate: {e}')
 
 
-def get_public_key_from_cert(url: str) -> str:
-    """
-    Extracts the public key from a certificate at the given URL.
-
-    Args:
-        url: The URL where the certificate is hosted.
-
-    Returns:
-        The public key as a PEM-formatted string.
-    """
+def get_public_key_from_cert(cert: str) -> str:
     try:
-        cert: x509.Certificate = get_certificate(url)
+        cert: x509.Certificate = x509.load_pem_x509_certificate(cert.encode())
         public_key = cert.public_key()
         pem_public_key = public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
@@ -160,15 +140,6 @@ def get_public_key_from_cert(url: str) -> str:
 
 
 def get_private_key(key_str: str):
-    """
-    Loads a private key from a PEM-formatted string.
-
-    Args:
-        key_str: The PEM-formatted private key as a string.
-
-    Returns:
-        The private key object.
-    """
     if not key_str:
         raise ValueError('Must provide a key')
     private_key = serialization.load_pem_private_key(
