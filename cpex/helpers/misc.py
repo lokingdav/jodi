@@ -1,4 +1,4 @@
-import json, time, hashlib, secrets, base64
+import json, time, hashlib, secrets, base64, random
 
 class Benchmark:
     def __init__(self, name: str, filename: str = None):
@@ -56,7 +56,6 @@ def hash256(data: str):
     if type(data) == dict or type(data) == list:
         data = stringify(data)
     data = data.encode() if type(data) == str else data
-    # print('data:', data)
     return hashlib.sha256(data).hexdigest()
 
 def base64encode(data: str):
@@ -132,3 +131,10 @@ def wait(seconds):
         
 def print_human_readable_json(data: dict):
     print(json.dumps(data, indent=2, sort_keys=True))
+    
+def fake_number(cc: str = None):
+    cc = random.randint(1, 999) if not cc else cc
+    npa = random.randint(200, 999)
+    nxx = random.randint(100, 999)
+    num = str(random.randint(0, 9999)).zfill(4)
+    return f"+{cc}{npa}{nxx}{num}"
