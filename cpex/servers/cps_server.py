@@ -1,9 +1,8 @@
-from fastapi import FastAPI, HTTPException, Header, status
+from fastapi import FastAPI, HTTPException, Depends, Request, status
 from fastapi.responses import JSONResponse
-from typing import Annotated
 
 import cpex.config as config
-import cpex.requests.validators.cps_reqs as cps_reqs
+from cpex.requests.validators.cps_reqs import PublishRequest, RepublishRequest, RetrieveRequest
 import cpex.requests.handlers.cps_handler as cps_handler
 
 import cpex.stirshaken.certs as sti_certs
@@ -39,26 +38,25 @@ def init_server():
 app = init_server()
 
 @app.post("/publish")
-async def publish(req: cps_reqs.PublishFormReq):
-    if not PublishRequest.validate_request(orig=orig, dest=dest, req=req, auth_token=authorization):
-        raise HTTPException(
-            status_code=400, 
-            detail={"error": "Invalid request"}
-        )
-    
+async def publish(req: PublishRequest):
     return JSONResponse(
         content={"message": "OK"}, 
         status_code=status.HTTP_201_CREATED
     )
 
 @app.post("/republish")
-async def republish(req: cps_reqs.RepublishFormReq):
+async def republish(req: RepublishRequest):
     return req.model_dump()
 
 @app.post("/retrieve")
-async def republish(req: cps_reqs.RetrieveFormReq):
+async def republish(req: RetrieveRequest):
     return req.model_dump()
 
 @app.get("/health")
 async def health():
-    return {"cps_id": config.CPS_ID, "message": "OK", "status": 200}
+    return {
+        "cps_id": config.CPS_ID, 
+        "mode": config.CPS_MODE,
+        "message": "OK", 
+        "status": 200
+    }

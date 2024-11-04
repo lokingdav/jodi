@@ -1,33 +1,21 @@
 from pydantic import BaseModel
 from typing import List, Optional, Annotated
 
-from pydantic import BaseModel, Field
+import cpex.config as config 
+from cpex.requests.validators.rules import PhoneNumberValidator, PassportTokenValidator
 
-phone_regex = r"^\+[1-9]\d{1,14}$"
+class HasPhoneTraits(BaseModel):
+    orig: PhoneNumberValidator
+    dest: PhoneNumberValidator
 
-class AtisRetrieve(BaseModel):
-    orig: Annotated[
-        str, 
-        Field(pattern=phone_regex, description="Origin phone number in E.164 format (e.g., +123456789)")
-    ]
-    dest: Annotated[
-        str, 
-        Field(pattern=phone_regex, description="Destination phone number in E.164 format (e.g., +123456789)")
-    ]
-    token: Annotated[
-        str, 
-        Field(description="JWT for authenticating the retrieve request")
-    ]
+class AtisRetrieve(HasPhoneTraits):
+    token: PassportTokenValidator
 
-
-
-class AtisPublish(BaseModel):
-    orig: str
-    dest: str
-    passports: List[str]
+class AtisPublish(HasPhoneTraits):
+    passports: List[PassportTokenValidator]
     
-class AtisRepublish(AtisPublish):
-    tokens: List[str]
+class AtisRepublish(HasPhoneTraits):
+    tokens: List[PassportTokenValidator]
     
 class CpexPublish(BaseModel):
     sig: str
@@ -42,15 +30,20 @@ class CpexReplicate(BaseModel):
 class CpexRetrieve(BaseModel):
     idx: str
     sig: str
-    
-class PublishFormReq(BaseModel):
-    atis: Optional[AtisPublish]
-    cpex: Optional[CpexPublish]
 
-class RepublishFormReq(BaseModel):
-    atis: Optional[AtisRepublish]
-    cpex: Optional[CpexReplicate]
-    
-class RetrieveFormReq(BaseModel):
-    atis: AtisRetrieve
-    cpex: CpexRetrieve
+#############################################################
+# Define Dynamic classes to be used
+#############################################################
+Publish, Republish, Retrieve = CpexPublish, CpexReplicate, CpexRetrieve
+
+if config.is_atis_mode():
+    Publish, Republish, Retrieve = AtisPublish, AtisRepublish, AtisRetrieve
+
+class PublishRequest(Publish):
+    pass
+
+class RepublishRequest(Republish):
+    pass
+
+class RetrieveRequest(Retrieve):
+    pass
