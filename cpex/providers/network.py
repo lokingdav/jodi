@@ -1,4 +1,6 @@
 import random, math, networkx as nx, numpy as np
+from collections import defaultdict
+from cpex.constants import STATUS_PENDING
 
 weight_key = 'weight'
 min_weight, max_weight = 0.1, 1
@@ -34,11 +36,11 @@ def get_stirshaken_adopters(graph: nx.Graph, deploy_rate: float) -> dict:
         p = degrees / total_degree,
         size = math.ceil((deploy_rate / 100) * len(degrees))
     )
-    return { int(node): True for node in adopter_nodes}
+    return defaultdict(lambda: 0, { int(node): 1 for node in adopter_nodes})
 
 def create(num_providers:int, deploy_rate: float = 10.0) -> tuple[list, dict]:
     graph = nx.barabasi_albert_graph(n=num_providers, m=2)
     routes, stats = get_all_routes(compute_shortest_paths(graph=graph))
     adopters = get_stirshaken_adopters(graph=graph, deploy_rate=deploy_rate)
-    return routes, stats, adopters
+    return [{'status': STATUS_PENDING,'route': [(r, adopters[int(r)]) for r in route]} for route in routes], stats
     

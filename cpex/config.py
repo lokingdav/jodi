@@ -18,6 +18,7 @@ DB_HOST = env("DB_HOST", "db")
 DB_PORT = env("DB_PORT", 27017)
 DB_USER = env("DB_USER", "root")
 DB_PASS = env("DB_PASS", "secret")
+DB_NAME = env("DB_NAME", "cpex")
 
 CACHE_HOST = env("CACHE_HOST")
 CACHE_PORT = env("CACHE_PORT")
