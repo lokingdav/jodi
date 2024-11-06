@@ -2,6 +2,8 @@ import argparse
 from cpex.providers import simulation
 from cpex.models import persistence
 
+
+
 def handle_gen(args):
     print(f"Starting Data Generation...", 
           f"Providers = {args.num_providers}", 
@@ -17,16 +19,25 @@ def handle_gen(args):
         print("> Error: ", ex)
 
 def handle_run(args):
-    print(f"Running with args:", args.call_path)
+    if args.call_path:
+        simulation.simulate_call(
+            callpath=simulation.get_route_from_bitstring(args.call_path),
+            vsp_instances={}
+        )
+    else:
+        print("Simulating pending routes...")
+        simulation.run()
 
 def handle_clean(args):
-    if persistence.has_pending_routes():
-        print("Pending call routes exists. Rerun this command with -f to force cleaning")
-        return
+    if args.force_clean is False:
+        if persistence.has_pending_routes():
+            print("Pending call routes exists. Force cleansing with the -f option")
+            return
     
     print("Cleaning up resources...", end='')
     simulation.clean()
     print("DONE")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Running CPeX Experiments")
@@ -43,6 +54,7 @@ if __name__ == '__main__':
     parser_run.set_defaults(func=handle_run)
 
     parser_clean = subparsers.add_parser('clean', help="Clean up resources")
+    parser_clean.add_argument('-f', "--force-clean", action="store_true", default=False, help="Force clean existing records")
     parser_clean.set_defaults(func=handle_clean)
 
     args = parser.parse_args()

@@ -7,3 +7,4 @@ CPS_MODE_ATIS = 'atis'
 CPS_MODE_CPEX = 'cpex'
 
 STATUS_PENDING = 'pending'
+STATUS_DONE = 'done'

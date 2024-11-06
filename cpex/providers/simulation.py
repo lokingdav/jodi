@@ -5,13 +5,21 @@ from cpex.helpers import errors
 
 processes = 4
 
-def simulate_call(callpath: list):
-    return len(callpath)
+def get_route_from_bitstring(path: str):
+    if not path.isdigit() or set(path) > {'0', '1'}:
+        raise Exception('Invalid format string for call path: Accepted values are binary digits')
+    return [(i, int(d)) for i, d in enumerate(path)]
+
+def simulate_call(entry: dict, vsp_instances: dict = None):
+    return entry.get('_id')
 
 def clean():
     persistence.clean_routes()
 
 def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = False):
+    if deploy_rate < 0 or deploy_rate > 100:
+        raise Exception("Deployment rate can only be a valid number from 0 to 100")
+    
     if force_clean is False:
         print("> Checking if routes already exists...", end='')
         if persistence.has_pending_routes():
@@ -34,6 +42,11 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     
 def run():
     with Pool(processes=processes) as pool:
-        routes = persistence.retrieve_pending_routes(limit=1000)
+        start_idx, batch_size = 1, 10
+        routes = persistence.retrieve_pending_routes(limit=batch_size)
         while len(routes) > 0:
-            results = pool.map(simulate_call, routes)
+            print(f"> Simulating {len(routes)} routes in Batch {start_idx}")
+            simulated_ids = pool.map(simulate_call, routes)
+            persistence.mark_simulated(simulated_ids)
+            routes = persistence.retrieve_pending_routes(limit=batch_size)
+            start_idx += 1

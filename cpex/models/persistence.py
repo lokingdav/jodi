@@ -1,5 +1,5 @@
 from cpex.config  import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME
-from cpex.constants import STATUS_PENDING
+from cpex.constants import STATUS_PENDING, STATUS_DONE
 from pymongo import MongoClient
 
 def open_db():
@@ -34,8 +34,8 @@ def has_pending_routes():
 
 def retrieve_pending_routes(limit:int = 1000):
     with open_db() as conn:
-        routes = conn[DB_NAME].routes.find({'status': STATUS_PENDING}, limit=limit)
-    return list(routes)
+        routes = list(conn[DB_NAME].routes.find({'status': STATUS_PENDING}, limit=limit))
+    return routes
 
 def save_routes(routes: list):
     insert(collection='routes', records=routes)
@@ -43,3 +43,9 @@ def save_routes(routes: list):
 def clean_routes():
     with open_db() as conn:
         conn[DB_NAME].routes.delete_many({})
+        
+def mark_simulated(ids):
+    with open_db() as conn:
+        filter = {'_id': {'$in': ids}}
+        update = {'$set': {'status': STATUS_DONE}}
+        conn[DB_NAME].routes.update_many(filter=filter, update=update)
