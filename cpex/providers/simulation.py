@@ -10,7 +10,7 @@ def get_route_from_bitstring(path: str):
         raise Exception('Invalid format string for call path: Accepted values are binary digits')
     return [(i, int(d)) for i, d in enumerate(path)]
 
-def simulate_call(entry: dict, vsp_instances: dict = None):
+def simulate_call(entry: dict, entities: dict = None):
     return entry.get('_id')
 
 def clean():

@@ -20,10 +20,9 @@ def handle_gen(args):
 
 def handle_run(args):
     if args.call_path:
-        simulation.simulate_call(
-            callpath=simulation.get_route_from_bitstring(args.call_path),
-            vsp_instances={}
-        )
+        entry = {'route': simulation.get_route_from_bitstring(args.call_path)}
+        entities = {}
+        simulation.simulate_call(entry=entry, entities=entities)
     else:
         print("Simulating pending routes...")
         simulation.run()
@@ -50,7 +49,7 @@ if __name__ == '__main__':
     parser_gen.set_defaults(func=handle_gen)
 
     parser_run = subparsers.add_parser('run', help="Run the experiment")
-    parser_run.add_argument("-c", "--call-path", type=int, required=False, help="Parameter a for the experiment")
+    parser_run.add_argument("-c", "--call-path", required=False, help="Parameter a for the experiment")
     parser_run.set_defaults(func=handle_run)
 
     parser_clean = subparsers.add_parser('clean', help="Clean up resources")
