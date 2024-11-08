@@ -14,6 +14,13 @@ def insert(collection, records):
         results = conn[DB_NAME][collection].insert_many(records)
     return results.inserted_ids
 
+def find_one(collection: str, filter: dict = {}):
+    if not collection:
+        raise Exception("Collection name is required")
+    with open_db() as conn:
+        item = conn[DB_NAME][collection].find_one(filter)
+    return item
+
 def get_cert(key: str):
     with open_db() as conn:
         cert = conn[DB_NAME].certs.find_one({'_id': key})
@@ -26,7 +33,12 @@ def store_cert(key: str, cert: str):
             {'$set': {'cert': cert}},
             upsert=True
         )
-        
+
+def insert_certs(items: list):
+    if len(items) == 0:
+        return
+    insert(collection="certs", records=items)
+
 def has_pending_routes():
     with open_db() as conn:
         route = conn[DB_NAME].routes.find_one({'status': STATUS_PENDING})

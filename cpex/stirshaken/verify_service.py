@@ -3,7 +3,7 @@ import jwt
 from cpex.stirshaken.passports import PassportHeader, Passport
 from cpex.requests.validators.rules import x5uValidator
 from cpex.stirshaken import certs
-from cpex.helpers import cache
+from cpex.models import cache
 
 class VerifyService:
     def load_public_key(self, x5u: str):

@@ -1,14 +1,64 @@
 from multiprocessing import Pool, Manager
 from cpex.providers import network
-from cpex.models import persistence
-from cpex.helpers import errors
+from cpex.models import persistence, cache
+from cpex.helpers import errors, files
+from cpex.stirshaken import certs
+from cpex import config, constants
+import random
 
 processes = 4
+vsp_priv_keys = {}
+keyfile = config.CONF_DIR + '/vps.sks.json'
 
 def get_route_from_bitstring(path: str):
     if not path.isdigit() or set(path) > {'0', '1'}:
         raise Exception('Invalid format string for call path: Accepted values are binary digits')
     return [(i, int(d)) for i, d in enumerate(path)]
+
+def gen_provider_credentials(start: int, num_providers: int):
+    keydata = {}
+    pki = files.read_json(config.CONF_DIR + '/cas.certs.json')
+    
+    print(f"> Generating Keys for vsp-{start} to vsp-{num_providers-1}", end='')
+    
+    for i in range(start, num_providers):
+        pid = f'vsp_{i}'
+        rand_ca = pki[constants.INTERMEDIATE_CA_KEY][random.randint(0, len(pki[constants.INTERMEDIATE_CA_KEY]) - 1)]
+        sk, csr = certs.client_keygen(name=pid)
+        
+        signed_cert_str = certs.sign_csr(
+            csr_str=csr,
+            ca_private_key_str=rand_ca[constants.PRIV_KEY],
+            ca_cert_str=rand_ca[constants.CERT_KEY],
+            days_valid=90
+        )
+        
+        keydata[pid] = sk
+        persistence.store_cert(key=pid, cert=signed_cert_str)
+    
+    print("DONE")
+    return keydata
+
+def init_provider_private_keys(num_providers: int):
+    global vsp_priv_keys
+    
+    modified = False
+    vsp_priv_keys = files.read_json(keyfile)
+    
+    if vsp_priv_keys is False:
+        modified = True
+        vsp_priv_keys = gen_provider_credentials(start=0, num_providers=num_providers)
+    elif type(vsp_priv_keys) is dict and len(vsp_priv_keys.keys()) < num_providers:
+        modified = True
+        vsp_priv_keys.update(gen_provider_credentials(
+            start=len(vsp_priv_keys.keys()),
+            num_providers=num_providers
+        ))
+    
+    if modified:
+        files.override_json(fileloc=keyfile, data=vsp_priv_keys)
+        
+    
 
 def simulate_call(entry: dict, entities: dict = None):
     return entry.get('_id')
@@ -39,6 +89,8 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     print("> Saving routes to database...", end='')
     persistence.save_routes(routes)
     print("DONE")
+    
+    init_provider_private_keys(num_providers=num_providers)
     
 def run():
     with Pool(processes=processes) as pool:

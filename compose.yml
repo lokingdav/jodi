@@ -6,6 +6,7 @@ services:
   db:
     container_name: cpex-db
     image: mongo
+    platform: linux/x86_64
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: secret
@@ -19,6 +20,7 @@ services:
   sti-pki:
     container_name: cpex-sti-pki
     image: cpex
+    platform: linux/x86_64
     command: uvicorn cpex.servers.sti_pki_server:app --host 0.0.0.0 --port 8888 --reload
     ports:
       - 8888:8888
@@ -32,6 +34,7 @@ services:
   cps-0:
     container_name: cpex-cps-0
     image: cpex
+    platform: linux/x86_64
     command: uvicorn cpex.servers.cps_server:app --host 0.0.0.0 --port 8888 --reload
     ports:
       - 10000:8888
@@ -45,3 +48,18 @@ services:
       - sti-pki
     networks:
       - net
+
+  experiment:
+    image: cpex
+    platform: linux/x86_64
+    container_name: cpex-exp
+    volumes:
+      - '.:/app'
+    command: tail -f /dev/null
+    depends_on:
+      - db
+      - sti-pki
+      - cps-0
+    networks:
+      - net
+    
