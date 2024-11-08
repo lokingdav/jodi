@@ -19,3 +19,5 @@ AttestationValidator = Literal['A', 'B', 'C']
 AlgValidator = Literal['RS256', 'ES256']
 
 x5uValidator = Annotated[str, HttpUrl]
+
+SipAddress = Annotated[str, Field(pattern=r'^sip:\+\d+@[\w\.-]+$')]

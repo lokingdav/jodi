@@ -22,7 +22,7 @@ def gen_provider_credentials(start: int, num_providers: int):
     keydata = {}
     pki = files.read_json(config.CONF_DIR + '/cas.certs.json')
     
-    print(f"> Generating Keys for vsp-{start} to vsp-{num_providers-1}", end='')
+    print(f"> Generating Keys for vsp-{start} to vsp-{num_providers-1}...", end='')
     
     for i in range(start, num_providers):
         pid = f'vsp_{i}'
