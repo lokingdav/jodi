@@ -16,7 +16,7 @@ COMPOSE_NETWORK_ID=${COMPOSE_NETWORK_ID:-cpex_net}
 CMD=$1
 CPS_NODES=$2
 
-VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'add-cps')
+VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'add-cps' 'bash')
 CONTAINER_PREFIX="cpex-cps-"
 
 # Create configuration directory if it doesn't exist
@@ -134,10 +134,13 @@ add_cps_command() {
     done
 }
 
+open_bash() {
+    echo "Welcome! Control Plane Extension System"
+    docker exec -it cpex-exp /bin/bash
+}
+
 # Validate the provided command
 validate_cmds
-
-echo "Executing 'cpex $CMD' command"
 
 # Execute the corresponding function based on the command
 case "$CMD" in
@@ -159,6 +162,9 @@ case "$CMD" in
         ;;
     add-cps)
         add_cps_command
+        ;;
+    bash)
+        open_bash
         ;;
     *)
         echo "Unknown command: $CMD"
