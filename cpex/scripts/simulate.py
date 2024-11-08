@@ -2,8 +2,6 @@ import argparse
 from cpex.providers import simulation
 from cpex.models import persistence
 
-
-
 def handle_gen(args):
     print(f"Starting Data Generation...", 
           f"Providers = {args.num_providers}", 
@@ -19,13 +17,17 @@ def handle_gen(args):
         print("> Error: ", ex)
 
 def handle_run(args):
-    if args.call_path:
-        entry = {'route': simulation.get_route_from_bitstring(args.call_path)}
-        entities = {}
-        simulation.simulate_call(entry=entry, entities=entities)
-    else:
-        print("Simulating pending routes...")
-        simulation.run()
+    try:
+        if args.call_path:
+            entry = {'route': simulation.get_route_from_bitstring(args.call_path)}
+            simulation.load_private_keys()
+            simulation.simulate_call(entry=entry)
+            print("> Simulation Completed!!!")
+        else:
+            print("Simulating pending routes...")
+            simulation.run()
+    except Exception as ex:
+        print("An error occured:", ex)
 
 def handle_clean(args):
     if args.force_clean is False:

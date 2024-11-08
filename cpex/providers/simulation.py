@@ -1,6 +1,6 @@
 from multiprocessing import Pool, Manager
 from cpex.providers import network
-from cpex.models import persistence, cache
+from cpex.models import persistence
 from cpex.helpers import errors, files
 from cpex.stirshaken import certs
 from cpex import config, constants
@@ -9,6 +9,9 @@ import random
 processes = 4
 vsp_priv_keys = {}
 keyfile = config.CONF_DIR + '/vps.sks.json'
+
+def load_private_keys():
+    return files.read_json(keyfile)
 
 def get_route_from_bitstring(path: str):
     if not path.isdigit() or set(path) > {'0', '1'}:
@@ -58,9 +61,7 @@ def init_provider_private_keys(num_providers: int):
     if modified:
         files.override_json(fileloc=keyfile, data=vsp_priv_keys)
         
-    
-
-def simulate_call(entry: dict, entities: dict = None):
+def simulate_call(entry: dict):
     return entry.get('_id')
 
 def clean():
@@ -96,9 +97,15 @@ def run():
     with Pool(processes=processes) as pool:
         start_idx, batch_size = 1, 10
         routes = persistence.retrieve_pending_routes(limit=batch_size)
+        
+        if len(routes) == 0:
+            raise Exception("No route to simulate. Please generate routes")
+        
         while len(routes) > 0:
             print(f"> Simulating {len(routes)} routes in Batch {start_idx}")
             simulated_ids = pool.map(simulate_call, routes)
             persistence.mark_simulated(simulated_ids)
+            
             routes = persistence.retrieve_pending_routes(limit=batch_size)
             start_idx += 1
+            
