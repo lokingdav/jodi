@@ -9,6 +9,6 @@ class AuthService(BaseModel):
     def authenticate(self, orig: str, dest: str, attest: str) -> str: 
         header = PassportHeader(x5u=self.x5u)
         payload = PassportPayload(attest=attest, orig=TNModel(tn=orig), dest=TNModel(tn=dest))
-        passport = Passport(header, payload)
-        return passport.sign(key=self.private_key_pem)
+        passport = Passport(header=header, payload=payload)
+        return passport.sign(private_key=self.private_key_pem)
         

@@ -1,17 +1,59 @@
+import random
 from multiprocessing import Pool, Manager
 from cpex.providers import network
 from cpex.models import persistence
 from cpex.helpers import errors, files
 from cpex.stirshaken import certs
 from cpex import config, constants
-import random
+from cpex.providers.provider import Provider
 
 processes = 4
 vsp_priv_keys = {}
 keyfile = config.CONF_DIR + '/vps.sks.json'
 
 def load_private_keys():
-    return files.read_json(keyfile)
+    global vsp_priv_keys
+    vsp_priv_keys = files.read_json(keyfile)
+
+def simulate_call(entry: dict):
+    route = entry.get('route', [])
+    print('CALL ROUTE:', route)
+    
+    if len(route) == 0:
+        raise Exception('Invalid simulation parameter')
+    
+    if not isinstance(route, list):
+        raise Exception("Route parameter must be an instance of a list")
+    
+    if len(set([p for (p, _) in route])) == 1:
+        return entry.get('_id')
+        
+    providers, signal, start_token, final_token = {}, None, None, None
+    
+    for i, (idx, impl) in enumerate(route):
+        pid = 'vsp_' + str(idx)
+        provider: Provider = providers.get(pid)
+        
+        if not provider:
+            provider = Provider(
+                pid=pid, 
+                impl=bool(int(impl)), 
+                priv_key_pem=vsp_priv_keys[pid]
+            )
+            providers[pid] = provider
+            
+        if i == 0:
+            signal, start_token = provider.originate()
+        elif i == len(route) - 1:
+            final_token = provider.terminate(signal)
+        else:
+            signal = provider.receive(signal)
+    
+    # assert start_token is not None
+    # assert final_token is not None
+    # assert start_token == final_token
+    
+    return entry.get('_id')
 
 def get_route_from_bitstring(path: str):
     if not path.isdigit() or set(path) > {'0', '1'}:
@@ -60,9 +102,6 @@ def init_provider_private_keys(num_providers: int):
     
     if modified:
         files.override_json(fileloc=keyfile, data=vsp_priv_keys)
-        
-def simulate_call(entry: dict):
-    return entry.get('_id')
 
 def clean():
     persistence.clean_routes()
@@ -94,6 +133,8 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     init_provider_private_keys(num_providers=num_providers)
     
 def run():
+    load_private_keys()
+    
     with Pool(processes=processes) as pool:
         start_idx, batch_size = 1, 10
         routes = persistence.retrieve_pending_routes(limit=batch_size)

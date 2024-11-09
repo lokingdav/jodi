@@ -4,14 +4,20 @@ from pydantic import BaseModel
 from datetime import datetime
 from cpex.config import CERT_REPO_BASE_URL
 from cpex.helpers import misc
-from cpex.requests.validators.rules import SipAddress, PassportTokenValidator
+from cpex.requests.validators.rules import SipAddress, PassportTokenValidator, PhoneNumberValidator
 from cpex.stirshaken.auth_service import AuthService
 
-class InviteMsg(BaseModel):
-    To: SipAddress
-    From: SipAddress
+class SIPSignal(BaseModel):
+    Pid: str
+    To: PhoneNumberValidator
+    From: PhoneNumberValidator
     CallId: str = str(uuid4())
-    identity: PassportTokenValidator
+    Identity: PassportTokenValidator
+
+class TDMSignal(BaseModel):
+    Pid: str
+    To: PhoneNumberValidator
+    From: PhoneNumberValidator
 
 class Provider:
     impl: bool = False
@@ -26,12 +32,75 @@ class Provider:
             x5u=CERT_REPO_BASE_URL + f'/certs/{pid}'
         )
     
-    def originate(self, next_vsp: str, src: str = None, dst: str = None):
+    def originate(self, src: str = None, dst: str = None) -> SIPSignal | TDMSignal:
         src = misc.fake_number() if src is None else src
         dst = misc.fake_number() if dst is None else dst
         attest = random.choice(['A', 'B', 'C'])
+        
+        print(f'-> Provider({self.pid}, imp={self.impl}) ORIGINATES Call From src={src} to dst={dst} with attest={attest}')
         token = self.auth_service.authenticate(orig=src, dest=dst, attest=attest)
-        return InviteMsg({'To': dst, 'From': src, 'Identity': token})
+        signal = {'To': dst, 'From': src, 'Pid': self.pid}
+        signal = SIPSignal(**signal, Identity=token)
+        
+        if not self.impl:
+            signal = self.publish(signal=signal)
+            
+        print('--> Forwards', type(signal))
+            
+        return signal, token
     
-    def receive(invite: InviteMsg):
-        pass
+    def receive(self, signal: SIPSignal | TDMSignal) -> SIPSignal | TDMSignal:
+        print(f'-> Provider({self.pid}, imp={self.impl}) RECEIVES call signal', type(signal))
+        if isinstance(signal, SIPSignal) and not self.impl:
+            signal = self.publish(signal)
+        
+        if isinstance(signal, TDMSignal) and self.impl:
+            signal = self.retrieve(signal)
+        
+        signal.Pid = self.pid
+        
+        print('--> Forwards', type(signal))
+        
+        return signal
+    
+    def terminate(self, signal: SIPSignal | TDMSignal):
+        print(f'-> Provider({self.pid}, imp={self.impl}) TERMINATES call signal', type(signal))
+        if isinstance(signal, SIPSignal):
+            return signal.Identity
+        
+        signal = self.retrieve(signal=signal)
+        print('--> Call Terminated')
+        return signal.Identity
+        
+    def publish(self, signal: SIPSignal) -> TDMSignal:
+        print(f'--> Executes PUBLISH')
+        signal = self.convert_sip_to_tdm(signal=signal)
+        return signal
+        
+    
+    def retrieve(self, signal: TDMSignal) -> SIPSignal:
+        print(f'--> Executes RETRIEVE')
+        token = 'abc_123.XYZ-789.qwe_QWE'
+        signal = self.convert_tdm_to_sip(signal=signal, token=token)
+        return signal
+            
+    def convert_sip_to_tdm(self, signal: SIPSignal):
+        if not isinstance(signal, SIPSignal):
+            raise Exception('Signal must be an instance of SIPSignal class')
+        
+        return TDMSignal(**{
+            'To': signal.To,
+            'From': signal.From,
+            'Pid': self.pid
+        })
+    
+    def convert_tdm_to_sip(self, signal: TDMSignal, token: str = ''):
+        if not isinstance(signal, TDMSignal):
+            raise Exception('Signal must be an instance of TDMSignal class')
+        
+        return SIPSignal(**{
+            'To': signal.To,
+            'From': signal.From,
+            'Pid': self.pid,
+            'Identity': token
+        })
