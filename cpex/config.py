@@ -5,9 +5,12 @@ from cpex.constants import CPS_MODE_CPEX, CPS_MODE_ATIS
 
 load_dotenv(override=True)
 
-def env(envname, default=""):
+def env(envname, default="", dtype=None):
     value = getenv(envname)
-    return value or default
+    value = value if value else default
+    if dtype == int:
+        return int(value)
+    return value
 
 BASE_CPS_PORT = env('BASE_CPS_PORT', 10000)
 
@@ -29,9 +32,9 @@ CACHE_DB = env("CACHE_DB")
 CPS_ID = env('CPS_ID')
 CPS_PORT = env('CPS_PORT')
 CPS_MODE = env("CPS_MODE", CPS_MODE_CPEX)
+INITIAL_CPS_NODES = env("INITIAL_CPS_NODES", 1, dtype=int)
+CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
 
-def is_atis_mode():
-    return CPS_MODE == CPS_MODE_ATIS
-
+IS_ATIS_MODE = CPS_MODE == CPS_MODE_ATIS
 
 CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cpex-sti-pki:8888')

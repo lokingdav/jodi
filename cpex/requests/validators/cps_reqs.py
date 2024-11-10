@@ -36,7 +36,7 @@ class CpexRetrieve(BaseModel):
 #############################################################
 Publish, Republish, Retrieve = CpexPublish, CpexReplicate, CpexRetrieve
 
-if config.is_atis_mode():
+if config.IS_ATIS_MODE:
     Publish, Republish, Retrieve = AtisPublish, AtisRepublish, AtisRetrieve
 
 class PublishRequest(Publish):

@@ -8,4 +8,6 @@ def post(url: str, data: dict):
     res.raise_for_status()
     return res.json()
 
+def multipost(reqs: list):
+    pass
     

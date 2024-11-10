@@ -87,9 +87,9 @@ compose_up() {
         fi
     fi
 
-    echo "Adding CPS nodes: $CPS_NODES"
-    IFS=',' read -ra NODE_IDS <<< "$CPS_NODES"
-    for cps_id in "${NODE_IDS[@]}"; do
+    echo "Adding $CPS_NODES CPS nodes"
+    for (( cps_id=1; cps_id<=CPS_NODES; cps_id++ )); do
+        echo "Adding node with ID: $cps_id"
         add_cps_node "$cps_id"
     done
 }
