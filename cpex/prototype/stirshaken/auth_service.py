@@ -1,31 +1,52 @@
 import jwt
+from uuid import uuid4
 from datetime import datetime
 from pydantic import BaseModel
 from cpex.helpers import misc
-from cpex.prototype.stirshaken.passports import PassportHeader, PassportPayload, Passport, TNModel
-from cpex.requests.validators.rules import x5uValidator
 
 class AuthService(BaseModel):
-    pid: str
+    ownerId: str
     private_key_pem: str
-    x5u: x5uValidator
+    x5u: str
     
     def create_passport(self, orig: str, dest: str, attest: str) -> str: 
-        header = PassportHeader(x5u=self.x5u)
-        payload = PassportPayload(attest=attest, orig=TNModel(tn=orig), dest=TNModel(tn=dest))
-        passport = Passport(header=header, payload=payload)
-        return passport.sign(private_key=self.private_key_pem)
+        header = { 'alg': 'ES256', 'x5u': self.x5u, 'ppt': 'shaken', 'typ': 'passport' }
+        payload = { 
+            'iat': int(datetime.timestamp()), 
+            'attest': attest, 
+            'orig': { 'tn': [orig] }, 
+            'dest': { 'tn': [dest] } 
+        }
+        return self.create_jwt(
+            header=header, 
+            payload=payload, 
+            private_key=self.private_key_pem
+        )
     
-    def authenticate_request(self, tokens: list, action: str, cps_id: str):
+    def authenticate_request(self, action: str, orig: str, dest: str, passports: list, iss: str, aud: str):
         header: dict = { 'alg': 'ES256',  'x5u': self.x5u }
         payload: dict = {
-            'iat': int(datetime.timestamp()), 'aud': str(cps_id), 'iss': self.pid, 
-            'sub': self.pid, 'action': action, 'passports': 'sha256-' + misc.base64encode(misc.hash256(tokens))
+            'iat': int(datetime.timestamp()), 
+            'action': action, 
+            'passports': 'sha256-' + misc.base64encode(misc.hash256(passports)),
+            'sub': iss, 
+            'iss': iss, 
+            'aud': aud, 
+            'jti': str(uuid4()),
+            'dest': { 'tn': [dest]},
+            'orig': { 'tn': [orig]},
         }
+        return self.create_jwt(
+            header=header, 
+            payload=payload, 
+            private_key=self.private_key_pem
+        )
+        
+    def create_jwt(self, header, payload, private_key) -> str:
         return jwt.encode(
             payload=payload,
-            key=self.private_key_pem,
-            algorithm=header['alg'],
+            key=private_key,
+            algorithm=header.alg,
             headers=header
         )
         

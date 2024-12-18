@@ -4,21 +4,19 @@ from pydantic import BaseModel
 from datetime import datetime
 from cpex.config import CERT_REPO_BASE_URL, IS_ATIS_MODE, CPS_BASE_URL
 from cpex.helpers import misc, http
-from cpex.requests.validators.rules import PassportTokenValidator, PhoneNumberValidator
 from cpex.prototype.stirshaken.auth_service import AuthService
-from cpex.protocols import atis_oob, cpexlib
 
 class SIPSignal(BaseModel):
     Pid: str
-    To: PhoneNumberValidator
-    From: PhoneNumberValidator
+    To: str
+    From: str
     CallId: str = str(uuid4())
-    Identity: PassportTokenValidator
+    Identity: str
 
 class TDMSignal(BaseModel):
     Pid: str
-    To: PhoneNumberValidator
-    From: PhoneNumberValidator
+    To: str
+    From: str
 
 class Provider:
     impl: bool = False
