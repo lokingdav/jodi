@@ -1,5 +1,5 @@
 import argparse, traceback
-from cpex.providers import simulation
+from cpex.prototype.providers import simulation
 from cpex.models import persistence
 
 def handle_gen(args):

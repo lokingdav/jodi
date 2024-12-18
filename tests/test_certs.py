@@ -5,7 +5,7 @@ from cryptography.x509.oid import NameOID
 from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from cpex.stirshaken.certs import (
+from cpex.prototype.stirshaken.certs import (
     generate_key_pair,
     create_csr,
     sign_csr,

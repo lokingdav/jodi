@@ -15,7 +15,7 @@ requirements = parse_requirements('requirements.txt')
 
 setup(
     name='cpex',
-    version='0.1.0',
+    version='1.0.0',
     packages=find_packages(),
     description='Control Plane Extension For Telephony',
     author='David L. Adei',
@@ -26,5 +26,5 @@ setup(
         'Operating System :: OS Independent',
     ],
     install_requires=requirements,
-    python_requires='>=3.9',
+    python_requires='>=3.8',
 )

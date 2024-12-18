@@ -1,38 +1,42 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
-from jsonrpc import method, async_dispatch
-from jsonrpc.exceptions import InvalidParams
+from pydantic import BaseModel
+from contextlib import asynccontextmanager
 
 import cpex.config as config
+from cpex.crypto import groupsig, oprf
 
-app = FastAPI(title="OPRF JSON-RPC Server", version=config.CPEX_VERSION)
+kr_instance = None
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    kr_instance = oprf.begin_key_rotation()
+    yield
+    kr_instance.stop_rotation()
 
-@method
-async def evaluate(a: int, b: int) -> int:
-    return a + b
+app = FastAPI(lifespan=lifespan)
 
-@method
-async def subtract(a: int, b: int) -> int:
-    return a - b
+class EvaluateRequest(BaseModel):
+    x: str
+    idx: int
+    sig: str
+    
+@app.post("/evaluate")
+async def evaluate(req: EvaluateRequest):
+    msg = str(req.idx) + str(req.x)
+    if not groupsig.verify(req.sig, msg, config.GS_GPK):
+        return JSONResponse(
+            content={"message": "Invalid Signature"}, 
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    privk, publk = kr_instance.get_key(req.idx)
+    
+    return JSONResponse(
+        content=oprf.evaluate(privk=privk, publk=publk, x=req.x), 
+        status_code=status.HTTP_201_CREATED
+    )
 
-@method
-async def multiply(a: int, b: int) -> int:
-    return a * b
-
-@method
-async def divide(a: int, b: int) -> float:
-    if b == 0:
-        raise InvalidParams("Division by zero is not allowed")
-    return a / b
-
-# JSON-RPC endpoint
-@app.post("/")
-async def handle_rpc(request: Request):
-    # Parse the incoming request
-    request_json = await request.json()
-    # Dispatch the request to the appropriate JSON-RPC method
-    response = await async_dispatch(request_json)
-    # Return the JSON-RPC response (already in dict form)
-    return JSONResponse(content=response, status_code=200 if "error" not in response else 400)
-
+@app.get("/health")
+async def health():
+    return { "message": "OK", "status": 200 }

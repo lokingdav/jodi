@@ -21,3 +21,8 @@ def save(key: str, value: str):
         raise TypeError("Value must be a string")
     
     return connect().set(key, value)
+
+def cache_for_seconds(key: str, value: str, seconds: int):
+    if type(value) != str:
+        raise TypeError("Value must be a string")
+    return connect().setex(key, seconds, value)

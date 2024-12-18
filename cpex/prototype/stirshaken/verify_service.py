@@ -1,8 +1,8 @@
 import jwt
 
-from cpex.stirshaken.passports import PassportHeader, Passport
+from cpex.prototype.stirshaken.passports import PassportHeader, Passport
 from cpex.requests.validators.rules import x5uValidator
-from cpex.stirshaken import certs
+from cpex.prototype.stirshaken import certs
 from cpex.models import cache
 
 class VerifyService:

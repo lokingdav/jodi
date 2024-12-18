@@ -8,7 +8,9 @@ from cpex.helpers import http
 import cpex.config as config
 import cpex.constants as constants
 
-def generate_key_pair() -> tuple[str, str]:
+from typing import Tuple
+
+def generate_key_pair() -> Tuple[str, str]:
     """
     Generates an EC private and public key pair.
 

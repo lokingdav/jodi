@@ -3,7 +3,7 @@ from uuid import uuid4
 import time
 import jwt
 
-from cpex.stirshaken.passports import (
+from cpex.prototype.stirshaken.passports import (
     certs,
     Passport,
     PassportHeader,

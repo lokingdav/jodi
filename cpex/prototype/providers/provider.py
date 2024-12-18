@@ -5,7 +5,7 @@ from datetime import datetime
 from cpex.config import CERT_REPO_BASE_URL, IS_ATIS_MODE, CPS_BASE_URL
 from cpex.helpers import misc, http
 from cpex.requests.validators.rules import PassportTokenValidator, PhoneNumberValidator
-from cpex.stirshaken.auth_service import AuthService
+from cpex.prototype.stirshaken.auth_service import AuthService
 from cpex.protocols import atis_oob, cpexlib
 
 class SIPSignal(BaseModel):

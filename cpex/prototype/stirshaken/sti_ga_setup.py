@@ -7,7 +7,7 @@ from cryptography.x509.oid import NameOID
 
 from cpex import constants
 from cpex.helpers import files
-from cpex.stirshaken import certs
+from cpex.prototype.stirshaken import certs
 import cpex.config as config
 
 ca_certs_file = config.CONF_DIR + '/cas.certs.json'

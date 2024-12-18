@@ -1,6 +1,6 @@
 from uuid import uuid4
 import time, jwt
-import cpex.stirshaken.certs as certs
+import cpex.prototype.stirshaken.certs as certs
 from typing import List, Annotated, Literal
 
 from cpex.requests.validators.rules import (

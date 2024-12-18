@@ -3,12 +3,12 @@ import random
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 
-import cpex.stirshaken.certs as sti_certs
+import cpex.prototype.stirshaken.certs as sti_certs
 import cpex.config as config
 from cpex.helpers import errors
 from cpex import constants
 from cpex.models import persistence, sti_pki
-import cpex.stirshaken.sti_ga_setup as ga_setup
+import cpex.prototype.stirshaken.sti_ga_setup as ga_setup
 import cpex.helpers.files as files
 
 import traceback

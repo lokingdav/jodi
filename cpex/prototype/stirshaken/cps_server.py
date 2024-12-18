@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 import cpex.config as config
 from cpex.requests.validators.cps_reqs import PublishRequest, RepublishRequest, RetrieveRequest
 
-import cpex.stirshaken.certs as sti_certs
+import cpex.prototype.stirshaken.certs as sti_certs
 import cpex.helpers.files as files
 import cpex.constants as constants
 

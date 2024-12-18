@@ -1,4 +1,5 @@
 import json, os
+from dotenv import dotenv_values, set_key
 
 def is_empty(fileloc: str):
     if not os.path.exists(fileloc):
@@ -17,3 +18,13 @@ def read_json(fileloc: str):
     with open(fileloc) as file:
         data = json.loads(file.read())
     return data
+
+def update_env_file(env_file_path: str, updates: dict):
+    if not os.path.exists(env_file_path):
+        raise FileNotFoundError(f"The .env file at '{env_file_path}' does not exist.")
+
+    updated_env = {**dotenv_values(env_file_path), **updates}
+    
+    with open(env_file_path, "w") as env_file:
+        for key, value in updated_env.items():
+            env_file.write(f"{key}={value}\n")

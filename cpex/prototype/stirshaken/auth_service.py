@@ -2,7 +2,7 @@ import jwt
 from datetime import datetime
 from pydantic import BaseModel
 from cpex.helpers import misc
-from cpex.stirshaken.passports import PassportHeader, PassportPayload, Passport, TNModel
+from cpex.prototype.stirshaken.passports import PassportHeader, PassportPayload, Passport, TNModel
 from cpex.requests.validators.rules import x5uValidator
 
 class AuthService(BaseModel):

@@ -39,3 +39,17 @@ CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
 IS_ATIS_MODE = CPS_MODE == CPS_MODE_ATIS
 
 CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cpex-sti-pki:8888')
+
+# General Parameters
+T_MAX_SECONDS = env('T_MAX_SECONDS', 5, dtype=int)
+REC_TTL_SECONDS = env('REC_TTL_SECONDS', 2 * T_MAX_SECONDS, dtype=int)
+
+# Group Signatures
+GS_MSK = env('GS_MSK')
+GS_GPK = env('GS_GPK')
+GS_GML = env('GS_GML')
+GS_SAMPLE_GSK = env('GS_SAMPLE_GSK')
+
+# OPRF Parameters
+OPRF_KEYLIST_SIZE = env('OPRF_KEYLIST_SIZE', 10, dtype=int)
+OPRF_INTERVAL_SECONDS = env('OPRF_INTERVAL_SECONDS', 2 * T_MAX_SECONDS, dtype=int)

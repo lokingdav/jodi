@@ -3,7 +3,7 @@ from multiprocessing import Pool, Manager
 from cpex.providers import network
 from cpex.models import persistence
 from cpex.helpers import errors, files
-from cpex.stirshaken import certs
+from cpex.prototype.stirshaken import certs
 from cpex import config, constants
 from cpex.providers.provider import Provider
 

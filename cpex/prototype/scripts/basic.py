@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from cpex.stirshaken import certs as sti_certs, auth_service as AS, verify_service as VS
+from cpex.prototype.stirshaken import certs as sti_certs, auth_service as AS, verify_service as VS
 from cpex.helpers import files, misc
 from cpex.config import CONF_DIR
 from cpex.constants import CERT_KEY, PRIV_KEY
