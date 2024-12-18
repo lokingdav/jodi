@@ -1,10 +1,53 @@
-networks:
-  net:
-    driver: bridge
+x-cpex-service: &cpex-service
+  image: cpex
+  platform: linux/x86_64
+  volumes:
+    - '.:/app'
+  depends_on:
+    - cache
+  networks:
+    - net
 
 services:
-  db:
-    container_name: cpex-db
+# OPRF Servers
+  oprf-s1:
+    <<: *cpex-service
+    container_name: oprf-s1
+    command: uvicorn cpex.servers.oprf_server:app --host 0.0.0.0 --port 80 --reload
+    ports:
+      - 9001:80
+
+  oprf-s2:
+    <<: *cpex-service
+    container_name: oprf-s2
+    command: uvicorn cpex.servers.oprf_server:app --host 0.0.0.0 --port 80 --reload
+    ports:
+      - 9002:80
+
+# Atis OOB Services
+  sti-pki:
+    <<: *cpex-service
+    container_name: sti-pki
+    command: uvicorn cpex.prototype.stirshaken.sti_pki_server:app --host 0.0.0.0 --port 80 --reload
+    ports:
+      - 8888:8888
+
+# Experiment Runner
+  experiment:
+    <<: *cpex-service
+    container_name: cpex-exp
+    command: tail -f /dev/null
+
+# Cache and Database
+  cache:
+    container_name: cpex-cache
+    image: redis
+    platform: linux/x86_64
+    networks:
+      - net
+
+  mongo:
+    container_name: cpex-mongo
     image: mongo
     platform: linux/x86_64
     environment:
@@ -17,49 +60,6 @@ services:
     networks:
       - net
 
-  sti-pki:
-    container_name: cpex-sti-pki
-    image: cpex
-    platform: linux/x86_64
-    command: uvicorn cpex.servers.sti_pki_server:app --host 0.0.0.0 --port 8888 --reload
-    ports:
-      - 8888:8888
-    volumes:
-      - .:/app
-    depends_on:
-      - db
-    networks:
-      - net
-
-  cps-0:
-    container_name: cpex-cps-0
-    image: cpex
-    platform: linux/x86_64
-    command: uvicorn cpex.servers.cps_server:app --host 0.0.0.0 --port 8888 --reload
-    ports:
-      - 10000:8888
-    environment:
-      - CPS_ID=0
-      - CPS_PORT=10000
-    volumes:
-      - .:/app
-    depends_on:
-      - db
-      - sti-pki
-    networks:
-      - net
-
-  experiment:
-    image: cpex
-    platform: linux/x86_64
-    container_name: cpex-exp
-    volumes:
-      - '.:/app'
-    command: tail -f /dev/null
-    depends_on:
-      - db
-      - sti-pki
-      - cps-0
-    networks:
-      - net
-    
+networks:
+  net:
+    driver: bridge

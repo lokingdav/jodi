@@ -12,6 +12,7 @@ def env(envname, default="", dtype=None):
         return int(value)
     return value
 
+CPEX_VERSION = env('CPEX_VERSION', '1.0.0')
 BASE_CPS_PORT = env('BASE_CPS_PORT', 10000)
 
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)
