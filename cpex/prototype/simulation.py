@@ -1,4 +1,4 @@
-import random
+import random, asyncio
 from multiprocessing import Pool, Manager
 from cpex.prototype import network
 from cpex.models import persistence
@@ -18,7 +18,10 @@ def load_private_keys(num = 0):
     if not vsp_priv_keys or num > len(vsp_priv_keys.keys()):
         init_provider_private_keys(num)
 
-def simulate_call(entry: dict):
+def simulate_call_sync(entry: dict):
+    return asyncio.run(simulate_call(entry=entry))
+
+async def simulate_call(entry: dict):
     route = entry.get('route', [])
     print('CALL ROUTE:', route)
     
@@ -46,11 +49,11 @@ def simulate_call(entry: dict):
             providers[pid] = provider
             
         if i == 0:
-            signal, start_token = provider.originate()
+            signal, start_token = await provider.originate()
         elif i == len(route) - 1:
-            final_token = provider.terminate(signal)
+            final_token = await provider.terminate(signal)
         else:
-            signal = provider.receive(signal)
+            signal = await provider.receive(signal)
     
     # assert start_token is not None
     # assert final_token is not None
@@ -148,7 +151,7 @@ def run():
         
         while len(routes) > 0:
             print(f"> Simulating {len(routes)} routes in Batch {start_idx}")
-            simulated_ids = pool.map(simulate_call, routes)
+            simulated_ids = pool.map(simulate_call_sync, routes)
             persistence.mark_simulated(simulated_ids)
             
             routes = persistence.retrieve_pending_routes(limit=batch_size)
