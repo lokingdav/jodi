@@ -9,20 +9,28 @@ if [[ -f .env ]]; then
 fi
 
 # Define variables with defaults if not set
-BASE_CPS_PORT=${BASE_CPS_PORT:-10000}
+PROTOCOL_SUITE=${PROTOCOL_SUITE:-cpex}
 CPEX_DOCKER_IMAGE=${CPEX_DOCKER_IMAGE:-cpex}
 COMPOSE_NETWORK_ID=${COMPOSE_NETWORK_ID:-cpex_net}
 
-CMD=$1
-CPS_NODES=$2
+REPOSITORIES_COUNT=${REPOSITORIES_COUNT:-10}
+STARTING_REPOSITORY_PORT=${STARTING_REPOSITORY_PORT:-10000}
 
-VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'add-cps' 'bash')
-CONTAINER_PREFIX="cpex-cps-"
+echo "Control Plane Extension Prototype Configuration"
+echo "-> Protocol Suite: $PROTOCOL_SUITE"
+echo "-> Docker Image: $CPEX_DOCKER_IMAGE"
+echo "-> Docker Compose Network ID: $COMPOSE_NETWORK_ID"
+echo "-> Base Repository Port: $STARTING_REPOSITORY_PORT"
+echo "-> Repositories Count: $REPOSITORIES_COUNT"
+
+CMD=$1
+VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash')
+MESSAGE_STORE_PREFIX="cpex-ms"
+CPS_PREFIX="atis-cps"
 
 # Create configuration directory if it doesn't exist
 mkdir -p conf
 
-# Function to validate the provided command
 validate_cmds() {
     if [[ -z "$CMD" ]]; then
         echo "Please provide a command to run: ${VALID_CMDS[*]}"
@@ -31,7 +39,7 @@ validate_cmds() {
 
     for valid_cmd in "${VALID_CMDS[@]}"; do
         if [[ "$CMD" == "$valid_cmd" ]]; then
-            return 0  # Command is valid
+            return 0
         fi
     done
 
@@ -39,110 +47,80 @@ validate_cmds() {
     exit 1
 }
 
-# Function to build the Docker image
 build_image() {
     echo "Building Docker image '$CPEX_DOCKER_IMAGE'..."
     docker build -f Dockerfile -t "$CPEX_DOCKER_IMAGE" .
 }
 
-# Function to add a single CPS node
-add_cps_node() {
-    local cps_id=$1
+add_repository_node() {
+    local repo_id=$1
 
-    if [[ -z "$cps_id" ]]; then
-        echo "Error: CPS ID is required to add a CPS node."
+    if [[ -z "$repo_id" ]]; then
+        echo "Error: Repository ID is required to add a node."
         exit 1
     fi
 
-    local port=$((BASE_CPS_PORT + cps_id))
-    local name="${CONTAINER_PREFIX}${cps_id}"
+    local port=$((STARTING_REPOSITORY_PORT + repo_id))
+    local name="${MESSAGE_STORE_PREFIX}-${repo_id}"
+    local command="uvicorn cpex.servers.message_store:app --host 0.0.0.0 --port 80 --reload"
 
-    echo "Adding CPS node with ID: $cps_id"
-    echo "Container Name: $name"
-    echo "Port: $port"
+    # if protocol suite is atis, use atis-cps as the container name
+    if [[ "$PROTOCOL_SUITE" == "atis" ]]; then
+        name="${CPS_PREFIX}-${repo_id}"
+        command="uvicorn cpex.prototype.stirshaken.cps_server:app --host 0.0.0.0 --port 80 --reload"
+    fi
+
+    echo "Adding repository node with ID: $repo_id"
+    echo "-> Protocol Suite: $PROTOCOL_SUITE"
+    echo "-> Container Name: $name"
+    echo "-> Port: $port"
 
     docker run -d \
         --name "$name" \
         --network "$COMPOSE_NETWORK_ID" \
-        -p "0.0.0.0:$port:8888/tcp" \
-        -e "CPS_ID=$cps_id" \
-        -e "CPS_PORT=$port" \
-        -v "$(pwd)/:/app:rw" \
+        -p "0.0.0.0:$port:80/tcp" \
+        -e "REPO_ID=$repo_id" \
+        -e "REPO_PORT=$port" \
+        -v "$(pwd):/app:rw" \
         "$CPEX_DOCKER_IMAGE" \
-        uvicorn cpex.servers.cps_server:app --host 0.0.0.0 --port 8888 --reload
+        $command
+    
+    # Append $name, $port to conf/repositories.json
+    echo "{\"name\": \"$name\", \"port\": $port}," >> conf/repositories.json
     echo ""
 }
 
-# Function to start Docker Compose services and add initial CPS nodes
 compose_up() {
     echo "Starting Docker Compose services..."
     docker compose up -d
 
-    if [[ -z "$CPS_NODES" ]]; then
-        echo "CPS_NODES is not provided. Attempting to read from .env..."
-        CPS_NODES=$(grep '^INITIAL_CPS_NODES=' .env | cut -d '=' -f2-)
-        if [[ -z "$CPS_NODES" ]]; then
-            echo "Error: INITIAL_CPS_NODES is not set in .env and CPS_NODES argument is empty."
-            exit 1
-        fi
-    fi
-
-    echo "Adding $CPS_NODES CPS nodes"
-    for (( cps_id=1; cps_id<=CPS_NODES; cps_id++ )); do
-        echo "Adding node with ID: $cps_id"
-        add_cps_node "$cps_id"
+    echo "Adding $REPOSITORIES_COUNT Repository nodes"
+    echo "[" > conf/repositories.json
+    for (( cps_id=1; cps_id<=REPOSITORIES_COUNT; cps_id++ )); do
+        add_repository_node "$cps_id"
     done
+    # Remove trailing comma
+    sed -i '$ s/.$//' conf/repositories.json
+    echo "]" >> conf/repositories.json
 }
 
-# Function to stop Docker Compose services and remove CPS nodes
 compose_down() {
     echo "Removing Dynamically Added CPS nodes..."
-    docker ps -aq --filter "name=^${CONTAINER_PREFIX}" | xargs -r docker rm -f
+    docker ps -aq --filter "name=^${MESSAGE_STORE_PREFIX}" --filter "name=^${CPS_PREFIX}" | xargs docker rm -f
     echo "Stopping Docker Compose services..."
     docker compose down
 }
 
-# Function to list running Docker containers
 dockerps() {
     docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
 }
 
-# Function to add multiple CPS nodes with automatic ID assignment
-add_cps_command() {
-    local N=$CPS_NODES
-
-    if [[ -z "$N" ]]; then
-        echo "Error: Number of CPS nodes to add is required for 'add-cps' command."
-        exit 1
-    fi
-
-    # Validate that N is a positive integer
-    if ! [[ "$N" =~ ^[0-9]+$ ]]; then
-        echo "Error: Number of CPS nodes to add must be a positive integer."
-        exit 1
-    fi
-
-    # Get S: count of existing containers with names starting with 'cpex-cps-'
-    local S=$(docker ps -aq --filter "name=^${CONTAINER_PREFIX}" | wc -l)
-
-    echo "Existing CPS nodes count: $S"
-    echo "Adding $N CPS node(s), assigning IDs from $((S)) to $((S + N))"
-
-    for ((i=0; i<N; i++)); do
-        local cps_id=$((S + i))
-        add_cps_node "$cps_id"
-    done
-}
-
 open_bash() {
-    echo "Welcome! Control Plane Extension System"
     docker exec -it cpex-exp /bin/bash
 }
 
-# Validate the provided command
 validate_cmds
 
-# Execute the corresponding function based on the command
 case "$CMD" in
     build)
         build_image
@@ -159,9 +137,6 @@ case "$CMD" in
         ;;
     ps)
         dockerps
-        ;;
-    add-cps)
-        add_cps_command
         ;;
     bash)
         open_bash
