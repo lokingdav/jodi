@@ -1,3 +1,4 @@
+import json
 from redis import Redis
 from cpex.config import CACHE_HOST, CACHE_PORT, CACHE_PASS, CACHE_DB
 
@@ -12,8 +13,13 @@ def connect():
 
 def find(key: str, dtype = str):
     data = connect().get(key) or None
-    if dtype == int:
+
+    if data and dtype == int:
         return int(data)
+    
+    if data and dtype == dict:
+        return json.loads(data)
+    
     return data
 
 def save(key: str, value: str):

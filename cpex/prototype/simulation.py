@@ -1,19 +1,22 @@
 import random
 from multiprocessing import Pool, Manager
-from cpex.providers import network
+from cpex.prototype import network
 from cpex.models import persistence
 from cpex.helpers import errors, files
 from cpex.prototype.stirshaken import certs
 from cpex import config, constants
-from cpex.providers.provider import Provider
+from cpex.prototype.provider import Provider
 
 processes = 4
 vsp_priv_keys = {}
 keyfile = config.CONF_DIR + '/vps.sks.json'
 
-def load_private_keys():
+def load_private_keys(num = 0):
+    print('num', num)
     global vsp_priv_keys
     vsp_priv_keys = files.read_json(keyfile)
+    if not vsp_priv_keys or num > len(vsp_priv_keys.keys()):
+        init_provider_private_keys(num)
 
 def simulate_call(entry: dict):
     route = entry.get('route', [])
@@ -86,6 +89,7 @@ def gen_provider_credentials(start: int, num_providers: int):
 
 def init_provider_private_keys(num_providers: int):
     global vsp_priv_keys
+    print(f"Generating STIR/SHAKEN credentials for {num_providers} Provider(s)")
     
     modified = False
     vsp_priv_keys = files.read_json(keyfile)

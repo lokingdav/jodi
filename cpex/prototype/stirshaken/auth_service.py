@@ -36,6 +36,7 @@ class AuthService(BaseModel):
             'dest': { 'tn': [dest]},
             'orig': { 'tn': [orig]},
         }
+        
         return self.create_jwt(
             header=header, 
             payload=payload, 

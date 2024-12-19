@@ -8,7 +8,7 @@ def groupsig_setup():
         'GS_MSK': msk,
         'GS_GPK': gpk,
         'GS_GML': gml,
-        'GS_SAMPLE_GSK': gsk
+        'GS_GSK': gsk
     })
 
 def main():

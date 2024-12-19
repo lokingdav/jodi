@@ -12,8 +12,8 @@ def load_public_key(x5u: str):
 
 def verify_token(token: str) -> dict:
     header = jwt.get_unverified_header(token)
-    public_key = load_public_key(header.x5u)
+    public_key = load_public_key(header['x5u'])
     try:
-        return jwt.decode(token, public_key, algorithms=[header.alg])
+        return jwt.decode(token, public_key, algorithms=[header['alg']])
     except:
         return None

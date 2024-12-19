@@ -1,6 +1,7 @@
 import random, math, networkx as nx, numpy as np
 from collections import defaultdict
 from cpex.constants import STATUS_PENDING
+from typing import Tuple
 
 weight_key = 'weight'
 min_weight, max_weight = 0.1, 1
@@ -12,7 +13,7 @@ def compute_shortest_paths(graph: nx.Graph, weighted:bool = True) -> dict:
     
     return nx.johnson(graph, weight=weight_key)
 
-def get_all_routes(shortest_paths: dict) -> tuple:
+def get_all_routes(shortest_paths: dict) -> Tuple:
     routes = []
     num_providers = len(shortest_paths)
     min_hops, max_hops, total = float('inf'), float('-inf'), 0
@@ -38,7 +39,7 @@ def get_stirshaken_adopters(graph: nx.Graph, deploy_rate: float) -> dict:
     )
     return defaultdict(lambda: 0, { int(node): 1 for node in adopter_nodes})
 
-def create(num_providers:int, deploy_rate: float = 10.0) -> tuple[list, dict]:
+def create(num_providers:int, deploy_rate: float = 10.0) -> Tuple[list, dict]:
     graph = nx.barabasi_albert_graph(n=num_providers, m=2)
     routes, stats = get_all_routes(compute_shortest_paths(graph=graph))
     adopters = get_stirshaken_adopters(graph=graph, deploy_rate=deploy_rate)
