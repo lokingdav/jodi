@@ -43,6 +43,17 @@ services:
     container_name: cpex-cache
     image: redis
     platform: linux/x86_64
+    ports:
+      - 6379:6379
+    networks:
+      - net
+
+  cache-ui:
+    container_name: cpex-cache-ui
+    image: redis/redisinsight:latest
+    platform: linux/x86_64
+    ports:
+      - 5540:5540
     networks:
       - net
 

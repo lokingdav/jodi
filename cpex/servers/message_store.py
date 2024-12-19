@@ -32,7 +32,7 @@ def success_response(content = {"message": "Created"}):
 @app.post("/publish")
 async def publish(req: PublishRequest):
     msg = str(req.idx) + str(req.ctx)
-    if not groupsig.verify(req.sig, msg, config.GS_GPK):
+    if not groupsig.verify(req.sig, msg, config.TGS_GPK):
         return unauthorized_response()
     
     value = str(req.idx) + '.' +str(req.ctx) + '.' + str(req.sig)
@@ -42,7 +42,7 @@ async def publish(req: PublishRequest):
     
 @app.post("/retrieve")
 async def retrieve(req: PublishRequest):
-    if not groupsig.verify(req.sig, req.idx, config.GS_GPK):
+    if not groupsig.verify(req.sig, req.idx, config.TGS_GPK):
         return unauthorized_response()
     
     value = cache.find(req.idx)

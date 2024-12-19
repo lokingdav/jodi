@@ -21,8 +21,8 @@ def generate_call_id(call_details: str) -> bytes:
     x1, r1 = Oprf.blind(bytes(call_details))
     x0_str, x1_str = Utils.to_base64(x0), Utils.to_base64(x1)
     
-    sig1_str = groupsig.sign(msg=x0_str, gsk=config.GS_GSK, gpk=config.GS_GPK)
-    sig2_str = groupsig.sign(msg=x1_str, gsk=config.GS_GSK, gpk=config.GS_GPK)
+    sig1_str = groupsig.sign(msg=x0_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
+    sig2_str = groupsig.sign(msg=x1_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
     reqs = [
         {'url': config.OPRF_SERVER_1_URL + '/evaluate', 'data': {'x': x0_str, 'sig': sig1_str}},
         {'url': config.OPRF_SERVER_2_URL + '/evaluate', 'data': {'x': x1_str, 'sig': sig2_str}},
@@ -65,7 +65,7 @@ def create_publish_requests(count: int, call_id: bytes, ctx: bytes) -> List[dict
             'data': { 
                 'idx': idx, 
                 'ctx': ctx, 
-                'sig': groupsig.sign(msg=idx + ctx, gsk=config.GS_GSK, gpk=config.GS_GPK) 
+                'sig': groupsig.sign(msg=idx + ctx, gsk=config.TGS_GSK, gpk=config.TGS_GPK) 
             }
         })
 
@@ -84,7 +84,7 @@ def create_retrieve_requests(count: int, call_id: bytes) -> List[dict]:
             'url': node['url'] + '/retrieve',
             'data': { 
                 'idx': idx, 
-                'sig': groupsig.sign(msg=idx, gsk=config.GS_GSK, gpk=config.GS_GPK) 
+                'sig': groupsig.sign(msg=idx, gsk=config.TGS_GSK, gpk=config.TGS_GPK) 
             }
         })
 
@@ -97,7 +97,7 @@ def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str):
     tokens, ciphertexts = [], []
 
     for res in responses:
-        if not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=config.GS_GPK):
+        if not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=config.TGS_GPK):
             continue
         ciphertexts.append(res['ctx'])
 

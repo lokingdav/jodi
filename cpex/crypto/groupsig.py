@@ -16,9 +16,9 @@ def setup():
 def mgr_import_keys():
     groupsig.init(SCHEME, 0)
     return {
-        'msk': mgrkey.mgrkey_import(SCHEME, config.GS_MSK),
-        'gpk': grpkey.grpkey_import(SCHEME, config.GS_GPK),
-        'gml': GML.gml_import(SCHEME, config.GS_GML)
+        'msk': mgrkey.mgrkey_import(SCHEME, config.TGS_MSK),
+        'gpk': grpkey.grpkey_import(SCHEME, config.TGS_GPK),
+        'gml': GML.gml_import(SCHEME, config.TGS_GML)
     }
 
 def mgr_generate_member_keys(msk, gpk, gml):
@@ -38,9 +38,9 @@ def mgr_generate_member_keys(msk, gpk, gml):
         
 def get_gpk():
     groupsig.init(SCHEME, 0)
-    if not config.GS_GPK:
+    if not config.TGS_GPK:
         raise Exception('GPK not set')
-    return grpkey.grpkey_import(SCHEME, config.GS_GPK)
+    return grpkey.grpkey_import(SCHEME, config.TGS_GPK)
     
 def sign(msg: str, gsk: str, gpk: str) -> str:
     groupsig.init(SCHEME, 0)
