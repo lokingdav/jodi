@@ -3,11 +3,14 @@ from uuid import uuid4
 from pydantic import BaseModel
 from datetime import datetime
 import cpex.config as config
+import cpex.constants as constants
 from cpex.helpers import misc, http
 from cpex.prototype.stirshaken.auth_service import AuthService
 from typing import List, Union
 from cpex.crypto import libcpex
 import aiohttp, asyncio
+from cpex.models import persistence
+from cpex.prototype.stirshaken import stirsetup
 
 class SIPSignal(BaseModel):
     Pid: str
@@ -22,24 +25,25 @@ class TDMSignal(BaseModel):
     From: str
 
 class Provider:
-    impl: bool = False
-    auth_service: AuthService
-    cps_url: str
-    cpc_urls: str
-    session: aiohttp.ClientSession = None
-    
-    def __init__(self, pid: str, impl: bool, priv_key_pem: str, cps_url: str):
+    def __init__(self, pid: str, impl: bool, cps_url: str):
         self.pid = pid
         self.impl = impl
         self.cps_url = cps_url
-        self.auth_service = AuthService(
-            private_key_pem=priv_key_pem,
-            x5u=config.CERT_REPO_BASE_URL + f'/certs/{pid}'
-        )
         self.session = aiohttp.ClientSession()
+        self.load_auth_service()
 
     def __del__(self):
         self.session.close()
+
+    def load_auth_service(self):
+        name = f'vps_{self.pid}'
+        credential = persistence.get_credential(name=name)
+        if not credential:
+            credential = stirsetup.issue_cert(name=name, ctype='vps')
+        self.auth_service = AuthService(
+            private_key_pem=credential[constants.PRIV_KEY],
+            x5u=config.CERT_REPO_BASE_URL + f'/certs/{self.pid}'
+        )
     
     async def originate(self, src: str = None, dst: str = None) -> Union[SIPSignal, TDMSignal]:
         src = misc.fake_number() if src is None else src

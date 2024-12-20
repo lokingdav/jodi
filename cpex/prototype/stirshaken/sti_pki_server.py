@@ -8,7 +8,7 @@ import cpex.config as config
 from cpex.helpers import errors
 from cpex import constants
 from cpex.models import persistence, sti_pki
-import cpex.prototype.stirshaken.sti_ga_setup as ga_setup
+from cpex.prototype.stirshaken import stirsetup
 import cpex.helpers.files as files
 
 import traceback
@@ -20,7 +20,7 @@ def init_server():
     global pki
     pki = files.read_json(ca_certs_file)
     if not pki:
-        pki = ga_setup.main()
+        pki = stirsetup.setup()
     if not pki:
         raise Exception(errors.ERROR_SETTING_UP_STI_PKI)
     

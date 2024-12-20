@@ -9,6 +9,7 @@ from cpex import constants
 from cpex.helpers import files
 from cpex.prototype.stirshaken import certs
 import cpex.config as config
+from cpex.models import persistence
 
 ca_certs_file = config.CONF_DIR + '/cas.certs.json'
 
@@ -50,47 +51,56 @@ def create_root_ca():
         constants.CERT_KEY: create_self_signed_cert(root_private_key_str, root_subject)
     } 
 
-def create_intermediate_ca(ica: str, caconfig: dict):
-    # Generate Intermediate CA key pair
-    intermediate_private_key_str, intermediate_public_key_str = certs.generate_key_pair()
+def create_credential(name: str, caprivk: str, cacert: str):
+    privk, publk = certs.generate_key_pair()
     
-    # Create CSR for Intermediate CA
-    intermediate_csr_str = certs.create_csr(
-        private_key_str=intermediate_private_key_str,
-        common_name=f"ica_{ica}",
+    # Create CSR for credential
+    csr_str = certs.create_csr(
+        private_key_str=privk,
+        common_name=name,
         country_name="US",
         state_or_province_name=states[random.randint(0, len(states) - 1)],
-        organization_name=f"ICA {ica}"
+        organization_name=f"ORG {name}"
     )
     
-    # Sign Intermediate CA CSR with Root CA to create Intermediate CA certificate
-    intermediate_cert_str = certs.sign_csr(
-        intermediate_csr_str, 
-        caconfig[constants.ROOT_CA_KEY][constants.PRIV_KEY], 
-        caconfig[constants.ROOT_CA_KEY][constants.CERT_KEY]
-    )
+    # Sign CSR with Intermediate CA to create credential certificate
+    certificate = certs.sign_csr(csr_str, caprivk, cacert)
     
-    return {
-        constants.PRIV_KEY: intermediate_private_key_str,
-        constants.CERT_KEY: intermediate_cert_str
-    }
+    return { constants.PRIV_KEY: privk, constants.CERT_KEY: certificate }
+
+def get_random_intermediate_ca():
+    credentials = files.read_json(ca_certs_file)
+    icakey = constants.INTERMEDIATE_CA_KEY
+    index = random.randint(0, len(credentials[icakey]) - 1)
+    return credentials[icakey][index]
     
-def main():
+def setup():
     if not files.is_empty(ca_certs_file):
         print("Root and intermediate CAs have already been generated. Delete certs.json file and rerun to regenerate")
         return True
     
-    pki = defaultdict(dict)
-    pki[constants.ROOT_CA_KEY] = create_root_ca()
+    root_ca = create_root_ca()
+    icas = []
     
-    pki[constants.INTERMEDIATE_CA_KEY] = []
     for ica in range(int(config.NO_OF_INTERMEDIATE_CAS)):
-        pki[constants.INTERMEDIATE_CA_KEY].append(create_intermediate_ca(ica, pki))
+        ica_name = f"Intermediate CA {ica}"
+        ica = create_credential(ica_name, root_ca[constants.PRIV_KEY], root_ca[constants.CERT_KEY])
+        icas.append(ica)
+        
+    data = {
+        constants.ROOT_CA_KEY: root_ca,
+        constants.INTERMEDIATE_CA_KEY: icas
+    }
     
-    files.override_json(ca_certs_file, pki)
+    files.override_json(ca_certs_file, data)
 
     print(f"Root CA and Intermediate CA keys and certificates have been generated and stored in {ca_certs_file}")
-    return pki
+    
+    return data
 
-if __name__ == '__main__':
-    main()
+def issue_cert(name: str, ctype: str = 'cps'):
+    ica = get_random_intermediate_ca()
+    cred = create_credential(name, ica[constants.PRIV_KEY], ica[constants.CERT_KEY])
+    cred['type'] = ctype
+    persistence.store_credential(name, cred)
+    return cred

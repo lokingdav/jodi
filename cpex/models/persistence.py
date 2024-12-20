@@ -1,5 +1,5 @@
 from cpex.config  import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME
-from cpex.constants import STATUS_PENDING, STATUS_DONE
+from cpex.constants import STATUS_PENDING, STATUS_DONE, CERT_KEY
 from pymongo import MongoClient
 
 def open_db():
@@ -23,8 +23,8 @@ def find_one(collection: str, filter: dict = {}):
 
 def get_cert(key: str):
     with open_db() as conn:
-        cert = conn[DB_NAME].certs.find_one({'_id': key})
-    return cert
+        cert = conn[DB_NAME].credentials.find_one({'_id': key})
+    return cert[CERT_KEY] if cert else None
 
 def store_cert(key: str, cert: str):
     with open_db() as conn:
@@ -61,3 +61,16 @@ def mark_simulated(ids):
         filter = {'_id': {'$in': ids}}
         update = {'$set': {'status': STATUS_DONE}}
         conn[DB_NAME].routes.update_many(filter=filter, update=update)
+        
+def store_credential(name: str, cred: dict):
+    with open_db() as conn:
+        conn[DB_NAME].credentials.find_one_and_update(
+            {'_id': name},
+            {'$set': cred},
+            upsert=True
+        )
+
+def get_credential(name: str):
+    with open_db() as conn:
+        cred = conn[DB_NAME].credentials.find_one({'_id': name})
+    return cred

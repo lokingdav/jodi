@@ -2,29 +2,18 @@ from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
+
 import cpex.config as config
+from cpex.models import persistence
+from cpex.prototype.stirshaken import stirsetup
 
-import cpex.prototype.stirshaken.certs as sti_certs
-import cpex.helpers.files as files
-import cpex.constants as constants
-
-conf = None
-certs_file = config.CONF_DIR + f'/cps.{config.CPS_ID}.certs.json'
+credential = None
 
 def init_server():
-    global conf
-    conf = files.read_json(certs_file)
-    if not conf:
-        cert, (sk, csr) = None, sti_certs.client_keygen(name=f'cps_{config.CPS_ID}')
-        while not cert:
-            try:
-                print("********* Requesting certificate *********")
-                cert = sti_certs.request_cert(csr)
-            except Exception as e:
-                print("Could not obtain certificate from the Certificate Repository.")
-                print(e)
-        conf = { constants.CERT_KEY: cert, constants.PRIV_KEY: sk }
-        files.override_json(fileloc=certs_file, data=conf)
+    global credential
+    credential = persistence.get_credential(name=f'cps_{config.REPO_ID}')
+    if not credential:
+        credential = stirsetup.issue_cert(name=f'cps_{config.REPO_ID}')
     return FastAPI()
         
 class PublishRequest(BaseModel):
@@ -74,7 +63,7 @@ async def republish(req: RetrieveRequest):
 @app.get("/health")
 async def health():
     return {
-        "cps_id": config.CPS_ID,
+        "REPO_ID": config.REPO_ID,
         "message": "OK", 
         "status": 200
     }
