@@ -39,7 +39,7 @@ CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
 
 IS_ATIS_MODE = PROTOCOL_SUITE == PROTOCOL_SUITE_ATIS
 
-CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cpex-sti-pki:8888')
+CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cpex-cert-repo:8888')
 
 # General Parameters
 T_MAX_SECONDS = env('T_MAX_SECONDS', 5, dtype=int)

@@ -25,10 +25,10 @@ services:
       - 9002:80
 
 # Atis OOB Services
-  sti-pki:
+  cert-repo:
     <<: *cpex-service
-    container_name: sti-pki
-    command: uvicorn cpex.prototype.stirshaken.sti_pki_server:app --host 0.0.0.0 --port 80 --reload
+    container_name: cert-repo
+    command: uvicorn cpex.prototype.stirshaken.cert_repo:app --host 0.0.0.0 --port 80 --reload
     ports:
       - 8888:80
 

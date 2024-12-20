@@ -1,15 +1,15 @@
-from collections import defaultdict
-from datetime import datetime, timedelta, timezone
 import random
+from datetime import datetime, timedelta, timezone
+
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.x509.oid import NameOID
 
 from cpex import constants
-from cpex.helpers import files
-from cpex.prototype.stirshaken import certs
 import cpex.config as config
+from cpex.helpers import files
 from cpex.models import persistence
+from cpex.prototype.stirshaken import certs
 
 ca_certs_file = config.CONF_DIR + '/cas.certs.json'
 
@@ -76,7 +76,7 @@ def get_random_intermediate_ca():
     
 def setup():
     if not files.is_empty(ca_certs_file):
-        print("Root and intermediate CAs have already been generated. Delete certs.json file and rerun to regenerate")
+        print("[SKIPPING] Root and intermediate CAs have already been generated.")
         return True
     
     root_ca = create_root_ca()
