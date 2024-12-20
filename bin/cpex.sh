@@ -8,6 +8,8 @@ if [[ -f .env ]]; then
     export $(grep -v '^#' .env | xargs)
 fi
 
+LOCK_FILE="services.lock"
+
 # Define variables with defaults if not set
 PROTOCOL_SUITE=${PROTOCOL_SUITE:-cpex}
 CPEX_DOCKER_IMAGE=${CPEX_DOCKER_IMAGE:-cpex}
@@ -22,6 +24,7 @@ echo "-> Docker Image: $CPEX_DOCKER_IMAGE"
 echo "-> Docker Compose Network ID: $COMPOSE_NETWORK_ID"
 echo "-> Base Repository Port: $STARTING_REPOSITORY_PORT"
 echo "-> Repositories Count: $REPOSITORIES_COUNT"
+echo ""
 
 CMD=$1
 VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash')
@@ -86,11 +89,17 @@ add_repository_node() {
         $command
     
     # Append $name, $port to conf/repositories.json
-    echo "{\"name\": \"$name\", \"port\": $port}," >> conf/repositories.json
+    echo "{\"name\": \"$name\", \"url\": \"http://localhost:$port\"}," >> conf/repositories.json
     echo ""
 }
 
 compose_up() {
+    # Check if lock file exists
+    if [[ -f "$LOCK_FILE" ]]; then
+        echo "Docker Compose services are already running. Please run 'bin/cpex.sh down' to stop them."
+        exit 1
+    fi
+
     echo "Starting Docker Compose services..."
     docker compose up -d
 
@@ -102,13 +111,19 @@ compose_up() {
     # Remove trailing comma
     sed -i '$ s/.$//' conf/repositories.json
     echo "]" >> conf/repositories.json
+    echo "Docker Compose services started successfully!" > $LOCK_FILE
 }
 
 compose_down() {
+    if [[ ! -f "$LOCK_FILE" ]]; then
+        echo "Docker Compose services are not running. Please run 'bin/cpex.sh up' to start them."
+        exit 1
+    fi
     echo "Removing Dynamically Added CPS nodes..."
     docker ps -aq --filter "name=^${MESSAGE_STORE_PREFIX}" --filter "name=^${CPS_PREFIX}" | xargs docker rm -f
     echo "Stopping Docker Compose services..."
     docker compose down
+    rm -f $LOCK_FILE
 }
 
 dockerps() {
