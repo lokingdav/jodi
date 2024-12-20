@@ -1,6 +1,5 @@
-import jwt
+import jwt, time
 from uuid import uuid4
-from datetime import datetime
 from pydantic import BaseModel
 from cpex.helpers import misc
 
@@ -12,7 +11,7 @@ class AuthService(BaseModel):
     def create_passport(self, orig: str, dest: str, attest: str) -> str: 
         header = { 'alg': 'ES256', 'x5u': self.x5u, 'ppt': 'shaken', 'typ': 'passport' }
         payload = { 
-            'iat': int(datetime.timestamp()), 
+            'iat': int(time.time()), 
             'attest': attest, 
             'orig': { 'tn': [orig] }, 
             'dest': { 'tn': [dest] } 
@@ -26,7 +25,7 @@ class AuthService(BaseModel):
     def authenticate_request(self, action: str, orig: str, dest: str, passports: list, iss: str, aud: str):
         header: dict = { 'alg': 'ES256',  'x5u': self.x5u }
         payload: dict = {
-            'iat': int(datetime.timestamp()), 
+            'iat': int(time.time()), 
             'action': action, 
             'passports': 'sha256-' + misc.base64encode(misc.hash256(passports)),
             'sub': iss, 
@@ -47,7 +46,7 @@ class AuthService(BaseModel):
         return jwt.encode(
             payload=payload,
             key=private_key,
-            algorithm=header.alg,
+            algorithm=header['alg'],
             headers=header
         )
         

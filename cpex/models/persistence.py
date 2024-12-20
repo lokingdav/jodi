@@ -20,11 +20,7 @@ def find_one(collection: str, filter: dict = {}):
     with open_db() as conn:
         item = conn[DB_NAME][collection].find_one(filter)
     return item
-
-def get_cert(key: str):
-    with open_db() as conn:
-        cert = conn[DB_NAME].credentials.find_one({'_id': key})
-    return cert[CERT_KEY] if cert else None
+    
 
 def store_cert(key: str, cert: str):
     with open_db() as conn:
@@ -74,3 +70,8 @@ def get_credential(name: str):
     with open_db() as conn:
         cred = conn[DB_NAME].credentials.find_one({'_id': name})
     return cred
+
+
+def get_cert(key: str):
+    cred: dict = get_credential(key)
+    return cred.get('cert') if cred else None

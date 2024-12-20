@@ -29,6 +29,8 @@ def save(key: str, value: str):
     return connect().set(key, value)
 
 def cache_for_seconds(key: str, value: str, seconds: int):
+    if type(value) == dict or type(value) == list:
+        value = json.dumps(value)
     if type(value) != str:
         raise TypeError("Value must be a string")
     return connect().setex(key, seconds, value)

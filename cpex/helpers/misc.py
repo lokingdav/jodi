@@ -137,4 +137,4 @@ def fake_number(cc: str = None):
     npa = random.randint(200, 999)
     nxx = random.randint(100, 999)
     num = str(random.randint(0, 9999)).zfill(4)
-    return f"+{cc}{npa}{nxx}{num}"
+    return f"{cc}{npa}{nxx}{num}"

@@ -85,17 +85,18 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
 def download(url: str) -> str:
     if not validators.url(url) and not url.startswith('http'):
         raise ValueError(f'Cert url must be a valid URL: {url}')
-    
     try:
-        return requests.get(url=url).text
+        res = requests.get(url=url)
+        res.raise_for_status()
+        return res.text
     except Exception as e:
-        traceback.print_exc()
-        raise ValueError(f'Error getting certificate: {e}')
+        print(f'Error getting certificate: {e}')
+        return None
 
 
 def get_public_key_from_cert(cert: str) -> str:
     try:
-        cert: x509.Certificate = x509.load_pem_x509_certificate(cert.encode())
+        cert: x509.Certificate = x509.load_pem_x509_certificate(cert.encode('utf-8'))
         public_key = cert.public_key()
         pem_public_key = public_key.public_bytes(
             encoding=serialization.Encoding.PEM,

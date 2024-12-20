@@ -16,9 +16,10 @@ async def post(session: aiohttp.ClientSession, url: str, data: dict, headers: di
     except Exception as e:
         return {"error": str(e)}
 
-async def posts(session: aiohttp.ClientSession, reqs: List[dict]) -> List[dict]:
-    tasks = [post(session, req['url'], req['data'], req.get('headers', {})) for req in reqs]
-    return await asyncio.gather(*tasks)
+async def posts(reqs: List[dict]) -> List[dict]:
+    async with aiohttp.ClientSession() as session:
+        tasks = [ post(session, req['url'], req['data'], req.get('headers', {})) for req in reqs ]
+        return await asyncio.gather(*tasks)
 
 async def get(url: str, params: dict = {}, headers: dict = {}) -> dict:
     async with aiohttp.ClientSession() as session:

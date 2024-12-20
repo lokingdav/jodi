@@ -1,19 +1,19 @@
 from typing import Tuple
 from pylibcpex import Oprf, Utils, Ciphering
-import cpex.config as config, constants
+import cpex.config as config
+import cpex.constants as constants
 from cpex.crypto import groupsig
 from cpex.helpers import http
 from cpex.models import cache
 from typing import List
-import jwt
-from datetime import datetime
+import jwt, time
 
 def normalizeTs(timestamp: int) -> int:
     seconds_in_minute = 60
     return timestamp - (timestamp % seconds_in_minute)
 
 def get_call_details(src: str, dst: str):
-    ts = normalizeTs(int(datetime.timestamp()))
+    ts = normalizeTs(int(time.time()))
     return src + dst + str(ts)
 
 def generate_call_id(call_details: str) -> bytes:

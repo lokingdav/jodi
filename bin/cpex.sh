@@ -66,17 +66,20 @@ add_repository_node() {
     local port=$((STARTING_REPOSITORY_PORT + repo_id))
     local name="${MESSAGE_STORE_PREFIX}-${repo_id}"
     local command="uvicorn cpex.servers.message_store:app --host 0.0.0.0 --port 80 --reload"
+    local fqdn="localhost:$port"
 
     # if protocol suite is atis, use atis-cps as the container name
     if [[ "$PROTOCOL_SUITE" == "atis" ]]; then
         name="${CPS_PREFIX}-${repo_id}"
         command="uvicorn cpex.prototype.stirshaken.cps_server:app --host 0.0.0.0 --port 80 --reload"
+        fqdn="$name"
     fi
 
     echo "Adding repository node with ID: $repo_id"
     echo "-> Protocol Suite: $PROTOCOL_SUITE"
     echo "-> Container Name: $name"
     echo "-> Port: $port"
+    echo "-> FQDN: $fqdn"
 
     docker run -d \
         --name "$name" \
@@ -84,12 +87,13 @@ add_repository_node() {
         -p "0.0.0.0:$port:80/tcp" \
         -e "REPO_ID=$repo_id" \
         -e "REPO_PORT=$port" \
+        -e "REPO_FQDN=$fqdn" \
         -v "$(pwd):/app:rw" \
         "$CPEX_DOCKER_IMAGE" \
         $command
     
     # Append $name, $port to conf/repositories.json
-    echo "{\"name\": \"$name\", \"url\": \"http://localhost:$port\"}," >> conf/repositories.json
+    echo "{\"id\": \"$repo_id\", \"name\": \"$name\", \"fqdn\": \"$name\", \"url\": \"http://$fqdn\"}," >> conf/repositories.json
     echo ""
 }
 

@@ -24,7 +24,7 @@ async def get_certificate(key: str):
     cert = persistence.get_cert(key=key)
     if not cert:
         raise HTTPException(status_code=404, detail="Certificate not found")
-    return {constants.CERT_KEY: cert}
+    return cert
 
 @app.get("/health")
 async def check_health():

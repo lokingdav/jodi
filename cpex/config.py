@@ -32,6 +32,7 @@ CACHE_DB = env("CACHE_DB", "0")
 # CPS Information. Should be different for each CPS node
 REPO_ID = env('REPO_ID')
 REPO_PORT = env('REPO_PORT')
+REPO_FQDN = env('REPO_FQDN')
 
 PROTOCOL_SUITE = env("PROTOCOL_SUITE", PROTOCOL_SUITE_CPEX)
 REPOSITORIES_COUNT = env("REPOSITORIES_COUNT", 1, dtype=int)
@@ -39,7 +40,7 @@ CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
 
 IS_ATIS_MODE = PROTOCOL_SUITE == PROTOCOL_SUITE_ATIS
 
-CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cpex-cert-repo:8888')
+CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cert-repo')
 
 # General Parameters
 T_MAX_SECONDS = env('T_MAX_SECONDS', 5, dtype=int)

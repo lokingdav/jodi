@@ -1,16 +1,17 @@
 import random
 from uuid import uuid4
 from pydantic import BaseModel
-from datetime import datetime
 import cpex.config as config
 import cpex.constants as constants
 from cpex.helpers import misc, http
 from cpex.prototype.stirshaken.auth_service import AuthService
 from typing import List, Union
 from cpex.crypto import libcpex
-import aiohttp, asyncio
 from cpex.models import persistence
 from cpex.prototype.stirshaken import stirsetup
+
+def get_type(instance):
+    return 'SIP Signal' if isinstance(instance, SIPSignal) else 'TDM Signal'
 
 class SIPSignal(BaseModel):
     Pid: str
@@ -29,25 +30,23 @@ class Provider:
         self.pid = pid
         self.impl = impl
         self.cps_url = cps_url
-        self.session = aiohttp.ClientSession()
         self.load_auth_service()
-
-    def __del__(self):
-        self.session.close()
+        self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
 
     def load_auth_service(self):
-        name = f'vps_{self.pid}'
+        name = f'sp_{self.pid}'
         credential = persistence.get_credential(name=name)
         if not credential:
-            credential = stirsetup.issue_cert(name=name, ctype='vps')
+            credential = stirsetup.issue_cert(name=name, ctype='sp')
         self.auth_service = AuthService(
+            ownerId=self.pid,
             private_key_pem=credential[constants.PRIV_KEY],
-            x5u=config.CERT_REPO_BASE_URL + f'/certs/{self.pid}'
+            x5u=config.CERT_REPO_BASE_URL + f'/certs/sp_{self.pid}'
         )
     
     async def originate(self, src: str = None, dst: str = None) -> Union[SIPSignal, TDMSignal]:
-        src = misc.fake_number() if src is None else src
-        dst = misc.fake_number() if dst is None else dst
+        src = misc.fake_number(1) if src is None else src
+        dst = misc.fake_number(1) if dst is None else dst
         attest = random.choice(['A', 'B', 'C'])
         
         print(f'-> Provider({self.pid}, imp={self.impl}) ORIGINATES Call From src={src} to dst={dst} with attest={attest}')
@@ -56,14 +55,14 @@ class Provider:
         signal = SIPSignal(**signal, Identity=token)
         
         if not self.impl:
-            signal: TDMSignal = await self.publish(signal=signal)
+            signal: TDMSignal = await self.publish(sip_signal=signal)
             
-        print('--> Forwards', type(signal))
+        print('--> Forwards', get_type(signal))
             
         return signal, token
     
     async def receive(self, incoming_signal: Union[SIPSignal, TDMSignal]) -> Union[SIPSignal, TDMSignal]:
-        print(f'-> Provider({self.pid}, imp={self.impl}) RECEIVES call signal', type(incoming_signal))
+        print(f'-> Provider({self.pid}, imp={self.impl}) RECEIVES call signal', get_type(incoming_signal))
 
         outgoing_signal = None
 
@@ -76,12 +75,12 @@ class Provider:
             outgoing_signal: SIPSignal = await self.retrieve(incoming_signal)
         
         outgoing_signal.Pid = self.pid
-        print('--> Forwards', type(outgoing_signal))
+        print('--> Forwards', get_type(outgoing_signal))
         
         return outgoing_signal
     
     async def terminate(self, incoming_signal: Union[SIPSignal, TDMSignal]):
-        print(f'-> Provider({self.pid}, imp={self.impl}) TERMINATES call signal', type(incoming_signal))
+        print(f'-> Provider({self.pid}, imp={self.impl}) TERMINATES call signal', get_type(incoming_signal))
 
         if isinstance(incoming_signal, SIPSignal):
             return incoming_signal.Identity
@@ -114,12 +113,12 @@ class Provider:
             dest=signal.To,
             passports=[signal.Identity],
             iss=self.pid,
-            aud=self.cps_url
+            aud=self.cps_fqdn
         )
         headers: dict = {'Authorization': 'Bearer ' + authorization }
         payload: dict = {'passports': [ signal.Identity ]}
-        url: str = self.cps_url + f'/publish/{signal.From}/{signal.To}'
-        await http.post(url=url, data=payload, headers=headers)
+        url: str = self.cps_url + f'/publish/{signal.To}/{signal.From}'
+        await http.posts(reqs=[{'url': url, 'data': payload, 'headers': headers}])
         
     async def cpex_publish(self, signal: SIPSignal):
         call_details: str = libcpex.get_call_details(src=signal.From, dst=signal.To)
@@ -134,11 +133,15 @@ class Provider:
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
         print(f'--> Executes RETRIEVE')
-        if config.IS_ATIS_MODE:
-            tokens = await self.atis_retrieve_token(signal=signal)
-        else:
-            tokens = await self.cpex_retrieve_token(signal=signal)
-        signal = self.convert_tdm_to_sip(signal=signal, token=tokens[0])
+        try: 
+            if config.IS_ATIS_MODE:
+                tokens = await self.atis_retrieve_token(signal=signal)
+            else:
+                tokens = await self.cpex_retrieve_token(signal=signal)
+
+            signal = self.convert_tdm_to_sip(signal=signal, token=tokens[0])
+        except Exception as e:
+            signal = self.convert_tdm_to_sip(signal=signal)
         return signal
     
     async def atis_retrieve_token(self, signal: TDMSignal) -> List[str]:
@@ -148,18 +151,19 @@ class Provider:
             dest=signal.To,
             passports=[],
             iss=self.pid,
-            aud=self.cps_url
+            aud=self.cps_fqdn
         )
         headers: dict = {'Authorization': 'Bearer ' + authorization }
-        url: str = self.cps_url + f'/retrieve/{signal.From}/{signal.To}'
+        url: str = self.cps_url + f'/retrieve/{signal.To}/{signal.From}'
         response = await http.get(url=url, params={}, headers=headers)
-        return [response['token']]
+        print(response)
+        return response
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
         call_details: str = libcpex.get_call_details(src=signal.From, dst=signal.To)
         call_id = libcpex.generate_call_id(call_details)
         requests = libcpex.create_retrieve_requests(count=config.REPLICATION, call_id=call_id)
-        responses = await http.post(requests)
+        responses = await http.posts(requests)
         tokens = libcpex.decrypt(call_id, responses)
         return tokens
             

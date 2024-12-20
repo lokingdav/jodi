@@ -9,7 +9,7 @@ from cpex.prototype.provider import Provider
 
 processes = 4
 vsp_priv_keys = {}
-keyfile = config.CONF_DIR + '/vps.sks.json'
+keyfile = config.CONF_DIR + '/sp.sks.json'
 
 def load_private_keys(num = 0):
     print('num', num)
