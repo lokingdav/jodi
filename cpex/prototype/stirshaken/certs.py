@@ -11,12 +11,6 @@ import cpex.constants as constants
 from typing import Tuple
 
 def generate_key_pair() -> Tuple[str, str]:
-    """
-    Generates an EC private and public key pair.
-
-    Returns:
-        A tuple containing the private key and public key as PEM-formatted strings.
-    """
     private_key = ec.generate_private_key(
         ec.SECP256R1()  # or SECP384R1, SECP521R1, etc.
     )
@@ -38,20 +32,6 @@ def generate_key_pair() -> Tuple[str, str]:
 def create_csr(private_key_str: str, common_name: str, country_name: str = None,
                state_or_province_name: str = None, locality_name: str = None,
                organization_name: str = None) -> str:
-    """
-    Creates a Certificate Signing Request (CSR) using the provided private key and subject details.
-
-    Args:
-        private_key_str: The PEM-formatted private key as a string.
-        common_name: The Common Name (CN) for the CSR.
-        country_name: Country Name (C).
-        state_or_province_name: State or Province Name (ST).
-        locality_name: Locality Name (L).
-        organization_name: Organization Name (O).
-
-    Returns:
-        The CSR as a PEM-formatted string.
-    """
     private_key = serialization.load_pem_private_key(
         private_key_str.encode(),
         password=None,
@@ -78,18 +58,6 @@ def create_csr(private_key_str: str, common_name: str, country_name: str = None,
 
 
 def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid: int = 365) -> str:
-    """
-    Signs a CSR using the CA's private key and certificate to create a new certificate.
-
-    Args:
-        csr_str: The CSR as a PEM-formatted string.
-        ca_private_key_str: The CA's private key as a PEM-formatted string.
-        ca_cert_str: The CA's certificate as a PEM-formatted string.
-        days_valid: Number of days the certificate is valid for.
-
-    Returns:
-        The signed certificate as a PEM-formatted string.
-    """
     csr = x509.load_pem_x509_csr(csr_str.encode())
     ca_private_key = serialization.load_pem_private_key(
         ca_private_key_str.encode(),
@@ -106,8 +74,6 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
     cert_builder = cert_builder.not_valid_after(
         datetime.now(timezone.utc) + timedelta(days=days_valid)
     )
-    # Add extensions if needed, e.g., KeyUsage, ExtendedKeyUsage, SubjectAlternativeName, etc.
-
     certificate = cert_builder.sign(
         private_key=ca_private_key,
         algorithm=hashes.SHA256()
@@ -149,19 +115,3 @@ def get_private_key(key_str: str):
         password=None,
     )
     return private_key
-
-def client_keygen(name: str, country: str = 'US'):
-    sk, pk = generate_key_pair()
-    csr: str = create_csr(
-        private_key_str=sk,
-        common_name=name,
-        country_name=country
-    )
-    return sk, csr
-
-def request_cert(csr: str):
-    response = http.post(
-        url=config.CERT_REPO_BASE_URL + '/sign_csr',
-        data={'csr': csr}
-    )
-    return response.get(constants.CERT_KEY)
