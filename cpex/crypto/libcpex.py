@@ -14,7 +14,6 @@ def normalizeTs(timestamp: int) -> int:
 
 def get_call_details(src: str, dst: str):
     ts = normalizeTs(int(time.time()))
-    print(f'Call details: {src} -> {dst} @ {ts}')
     return src + dst + str(ts)
 
 def get_index_from_call_details(call_details: str) -> int:
@@ -22,8 +21,6 @@ def get_index_from_call_details(call_details: str) -> int:
 
 async def generate_call_id(call_details: str) -> bytes:
     idx: int = get_index_from_call_details(call_details)
-
-    print("Generating call ID for index: ", idx)
 
     x0, r0 = Oprf.blind(call_details)
     x1, r1 = Oprf.blind(call_details)
@@ -39,9 +36,6 @@ async def generate_call_id(call_details: str) -> bytes:
     res = await http.posts(reqs=reqs)
     L0: bytes = Oprf.unblind(Utils.from_base64(res[0]['fx']), Utils.from_base64(res[0]['vk']), r0)
     L1: bytes = Oprf.unblind(Utils.from_base64(res[1]['fx']), Utils.from_base64(res[1]['vk']), r1)
-
-    print("\nL0: ", Utils.to_base64(L0))
-    print("L1: ", Utils.to_base64(L1), "\n")
 
     return Utils.hash256(Utils.xor(L0, L1))
 
@@ -92,8 +86,8 @@ def create_retrieve_requests(call_id: bytes, nodes: List[dict], count: int) -> L
     call_id, reqs = Utils.to_base64(call_id), []
 
     for i in range(1, count + 1):
-        idx: bytes = Utils.hash256(call_id + str(i))
-        node: dict = find_node(nodes=nodes, key=idx)
+        idx: bytes = Utils.hash256(bytes(call_id + str(i), 'utf-8'))
+        node, index = find_node(nodes=nodes, key=idx)
         idx = Utils.to_base64(idx)
         reqs.append({
             'url': node['url'] + '/retrieve',
@@ -102,6 +96,7 @@ def create_retrieve_requests(call_id: bytes, nodes: List[dict], count: int) -> L
                 'sig': groupsig.sign(msg=idx, gsk=config.TGS_GSK, gpk=config.TGS_GPK) 
             }
         })
+        nodes.pop(index)
 
     return reqs
 
@@ -109,20 +104,11 @@ def encrypt_and_mac(call_id: bytes, plaintext: str):
     return Ciphering.enc(call_id, plaintext.encode())
 
 def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str):
-    tokens, ciphertexts = [], []
-
+    src, dst, tokens = str(src), str(dst), []
+    
     for res in responses:
         if not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=config.TGS_GPK):
             continue
-        ciphertexts.append(res['ctx'])
-
-    ciphertexts = list(set(ciphertexts))
-
-    for ctx in ciphertexts:
-        token: str = Ciphering.dec(call_id, Utils.from_base64(ctx))
-        header = jwt.get_unverified_header(token)
-        payload = jwt.decode(token, algorithms=[header['alg']])
-        if payload['src'] == src and payload['dst'] == dst:
-            tokens.append(token)
+        tokens.append(Ciphering.dec(call_id, Utils.from_base64(res['ctx'])))
 
     return list(set(tokens))

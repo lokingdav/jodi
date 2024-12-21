@@ -6,7 +6,8 @@ async def main():
     provider = Provider(pid='1', impl=False, cps_url='http://atis-cps-1')
     signal, token = await provider.originate()
     res = await provider.retrieve(signal)
-    print(res)
+    assert token == res.Identity
+    print('\nResponse:\n', res)
 
 if __name__ == '__main__':
     asyncio.run(main())

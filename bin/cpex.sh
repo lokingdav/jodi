@@ -18,13 +18,15 @@ COMPOSE_NETWORK_ID=${COMPOSE_NETWORK_ID:-cpex_net}
 REPOSITORIES_COUNT=${REPOSITORIES_COUNT:-10}
 STARTING_REPOSITORY_PORT=${STARTING_REPOSITORY_PORT:-10000}
 
-echo "Control Plane Extension Prototype Configuration"
-echo "-> Protocol Suite: $PROTOCOL_SUITE"
-echo "-> Docker Image: $CPEX_DOCKER_IMAGE"
-echo "-> Docker Compose Network ID: $COMPOSE_NETWORK_ID"
-echo "-> Base Repository Port: $STARTING_REPOSITORY_PORT"
-echo "-> Repositories Count: $REPOSITORIES_COUNT"
-echo ""
+display_configuration() {
+    echo "Control Plane Extension Prototype Configuration"
+    echo "-> Protocol Suite: $PROTOCOL_SUITE"
+    echo "-> Docker Image: $CPEX_DOCKER_IMAGE"
+    echo "-> Docker Compose Network ID: $COMPOSE_NETWORK_ID"
+    echo "-> Base Repository Port: $STARTING_REPOSITORY_PORT"
+    echo "-> Repositories Count: $REPOSITORIES_COUNT"
+    echo ""
+}
 
 CMD=$1
 VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash')
@@ -99,6 +101,8 @@ add_repository_node() {
 }
 
 compose_up() {
+    display_configuration
+    
     # Check if lock file exists
     if [[ -f "$LOCK_FILE" ]]; then
         echo "Docker Compose services are already running. Please run 'bin/cpex.sh down' to stop them."

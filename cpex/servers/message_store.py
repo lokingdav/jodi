@@ -40,7 +40,7 @@ async def publish(req: PublishRequest):
     return success_response()
     
 @app.post("/retrieve")
-async def retrieve(req: PublishRequest):
+async def retrieve(req: RetrieveRequest):
     if not groupsig.verify(req.sig, req.idx, config.TGS_GPK):
         return unauthorized_response()
     

@@ -14,7 +14,7 @@ async def post(session: aiohttp.ClientSession, url: str, data: dict, headers: di
             response.raise_for_status()
             return await response.json()
     except Exception as e:
-        return {"error": str(e)}
+        return {"_error": str(e)}
 
 async def posts(reqs: List[dict]) -> List[dict]:
     async with aiohttp.ClientSession() as session:
@@ -28,4 +28,4 @@ async def get(url: str, params: dict = {}, headers: dict = {}) -> dict:
                 response.raise_for_status()
                 return await response.json()
         except Exception as e:
-            return {"error": str(e)}
+            return {"_error": str(e)}
