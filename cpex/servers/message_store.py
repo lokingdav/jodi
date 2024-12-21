@@ -29,13 +29,16 @@ def success_response(content = {"message": "Created"}):
         status_code=status.HTTP_200_OK
     )
     
+def get_record_key(idx: str):
+    return f"ms:{config.NODE_ID}:{idx}"
+    
 @app.post("/publish")
 async def publish(req: PublishRequest):
     if not groupsig.verify(sig=req.sig, msg=str(req.idx) + str(req.ctx), gpk=config.TGS_GPK):
         return unauthorized_response()
     
     value = str(req.idx) + '.' + str(req.ctx) + '.' + str(req.sig)
-    cache.cache_for_seconds(req.idx, value, config.REC_TTL_SECONDS)
+    cache.cache_for_seconds(get_record_key(req.idx), value, config.REC_TTL_SECONDS)
     
     return success_response()
     
@@ -44,7 +47,7 @@ async def retrieve(req: RetrieveRequest):
     if not groupsig.verify(req.sig, req.idx, config.TGS_GPK):
         return unauthorized_response()
     
-    value = cache.find(req.idx)
+    value = cache.find(get_record_key(req.idx))
     
     if value is None:
         return JSONResponse(

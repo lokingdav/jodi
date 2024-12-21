@@ -30,7 +30,7 @@ CACHE_PASS = env("CACHE_PASS")
 CACHE_DB = env("CACHE_DB", "0")
 
 # CPS Information. Should be different for each CPS node
-REPO_ID = env('REPO_ID')
+NODE_ID = env('NODE_ID')
 REPO_PORT = env('REPO_PORT')
 REPO_FQDN = env('REPO_FQDN')
 

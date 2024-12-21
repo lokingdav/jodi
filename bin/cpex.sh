@@ -88,7 +88,7 @@ add_repository_node() {
         --name "$name" \
         --network "$COMPOSE_NETWORK_ID" \
         -p "0.0.0.0:$port:80/tcp" \
-        -e "REPO_ID=$nodeId" \
+        -e "NODE_ID=$nodeId" \
         -e "REPO_PORT=$port" \
         -e "REPO_FQDN=$fqdn" \
         -v "$(pwd):/app:rw" \

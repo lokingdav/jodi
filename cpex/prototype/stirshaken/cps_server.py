@@ -16,9 +16,9 @@ repositories = []
 def init_server():
     global credential, repositories
 
-    credential = persistence.get_credential(name=f'cps_{config.REPO_ID}')
+    credential = persistence.get_credential(name=f'cps_{config.NODE_ID}')
     if not credential:
-        credential = stirsetup.issue_cert(name=f'cps_{config.REPO_ID}')
+        credential = stirsetup.issue_cert(name=f'cps_{config.NODE_ID}')
 
     repositories = files.read_json(config.CONF_DIR + '/repositories.json')
     if not repositories:
@@ -44,7 +44,7 @@ def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     return decoded
 
 def get_storage_key(dest: str, orig: str):
-    return f'cps{config.REPO_ID}.{dest}.{orig}'
+    return f'cps{config.NODE_ID}.{dest}.{orig}'
 
 def success_response(content={"message": "OK"}):
     return JSONResponse(content=content, status_code=status.HTTP_200_OK)
@@ -72,9 +72,9 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
 
     # 4. create new requests with payload: orig, dest, passports, token. Token is the authorization header bearer token
     auth = auth_service.AuthService(
-        ownerId=config.REPO_ID,
+        ownerId=config.NODE_ID,
         private_key_pem=credential[constants.PRIV_KEY],
-        x5u=config.CERT_REPO_BASE_URL + f'/certs/cps_{config.REPO_ID}'
+        x5u=config.CERT_REPO_BASE_URL + f'/certs/cps_{config.NODE_ID}'
     )
 
     reqs = []
@@ -134,7 +134,7 @@ async def republish(dest: str, orig: str, authorization: str = Header(None)):
 @app.get("/health")
 async def health():
     return {
-        "CPS ID": config.REPO_ID,
+        "CPS ID": config.NODE_ID,
         "message": "OK", 
         "status": 200
     }

@@ -170,8 +170,8 @@ class Provider:
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
         call_details: str = libcpex.get_call_details(src=signal.From, dst=signal.To)
         call_id = await libcpex.generate_call_id(call_details)
-        requests = libcpex.create_retrieve_requests(call_id=call_id, nodes=self.nodes[:], count=config.REPLICATION)
-        responses = await http.posts(requests)
+        reqs = libcpex.create_retrieve_requests(call_id=call_id, nodes=self.nodes[:], count=config.REPLICATION)
+        responses = await http.posts(reqs)
         responses = [r for r in responses if '_error' not in r]
         tokens = libcpex.decrypt(call_id=call_id, responses=responses, src=signal.From, dst=signal.To)
         return tokens
