@@ -120,6 +120,7 @@ compose_up() {
     # Remove trailing comma
     sed -i '$ s/.$//' conf/repositories.json
     echo "]" >> conf/repositories.json
+    docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --repos --groupsig
     echo "Docker Compose services started successfully!" > $LOCK_FILE
 }
 

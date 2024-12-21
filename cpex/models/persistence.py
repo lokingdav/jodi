@@ -1,4 +1,4 @@
-from cpex.config  import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME
+from cpex.config  import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME, NODE_ID
 from cpex.constants import STATUS_PENDING, STATUS_DONE, CERT_KEY
 from pymongo import MongoClient
 
@@ -75,3 +75,13 @@ def get_credential(name: str):
 def get_cert(key: str):
     cred: dict = get_credential(key)
     return cred.get('cert') if cred else None
+
+def seed_repositories(items):
+    with open_db() as conn:
+        conn[DB_NAME].repositories.delete_many({})
+    insert(collection='repositories', records=items)
+    
+def get_repositories():
+    with open_db() as conn:
+        repos = list(conn[DB_NAME].repositories.find())
+    return [repo for repo in repos if repo.get('id') != NODE_ID]

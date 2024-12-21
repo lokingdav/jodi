@@ -20,11 +20,7 @@ def init_server():
     if not credential:
         credential = stirsetup.issue_cert(name=f'cps_{config.NODE_ID}')
 
-    repositories = files.read_json(config.CONF_DIR + '/repositories.json')
-    if not repositories:
-        repositories = [] 
-    repositories = [r for r in repositories if r.get('fqdn') != config.REPO_FQDN]
-
+    repositories = persistence.get_repositories()
     return FastAPI()
         
 class PublishRequest(BaseModel):
@@ -78,7 +74,7 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     )
 
     reqs = []
-    
+        
     for repo in repositories:
         token = auth.authenticate_request(
             action='republish', 
