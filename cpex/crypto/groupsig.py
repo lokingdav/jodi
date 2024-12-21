@@ -43,12 +43,16 @@ def get_gpk():
     return grpkey.grpkey_import(SCHEME, config.TGS_GPK)
     
 def sign(msg: str, gsk: str, gpk: str) -> str:
-    groupsig.init(SCHEME, 0)
+    groupsig.init(SCHEME)
+    gsk = memkey.memkey_import(SCHEME, gsk) if type(gsk) == str else gsk
+    gpk = grpkey.grpkey_import(SCHEME, gpk) if type(gpk) == str else gpk
     sigma = groupsig.sign(msg, gsk, gpk)
     return signature.signature_export(sigma)
 
 def verify(sig: str, msg: str, gpk: str):
-    sig = signature.signature_import(SCHEME, sig)
+    groupsig.init(SCHEME)
+    gpk = grpkey.grpkey_import(SCHEME, gpk) if type(gpk) == str else gpk
+    sig = signature.signature_import(SCHEME, sig) if type(sig) == str else sig
     return groupsig.verify(sig, msg, gpk)
 
 def import_signing_key(gsk: str) -> dict:

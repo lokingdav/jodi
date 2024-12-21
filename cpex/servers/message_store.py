@@ -31,11 +31,10 @@ def success_response(content = {"message": "Created"}):
     
 @app.post("/publish")
 async def publish(req: PublishRequest):
-    msg = str(req.idx) + str(req.ctx)
-    if not groupsig.verify(req.sig, msg, config.TGS_GPK):
+    if not groupsig.verify(sig=req.sig, msg=str(req.idx) + str(req.ctx), gpk=config.TGS_GPK):
         return unauthorized_response()
     
-    value = str(req.idx) + '.' +str(req.ctx) + '.' + str(req.sig)
+    value = str(req.idx) + '.' + str(req.ctx) + '.' + str(req.sig)
     cache.cache_for_seconds(req.idx, value, config.REC_TTL_SECONDS)
     
     return success_response()

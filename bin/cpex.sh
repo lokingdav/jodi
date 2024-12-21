@@ -66,7 +66,8 @@ add_repository_node() {
     local port=$((STARTING_REPOSITORY_PORT + repo_id))
     local name="${MESSAGE_STORE_PREFIX}-${repo_id}"
     local command="uvicorn cpex.servers.message_store:app --host 0.0.0.0 --port 80 --reload"
-    local fqdn="localhost:$port"
+    local fqdn="$name"
+    local nodeId=$(echo -n "$name" | sha1sum | awk '{print $1}')
 
     # if protocol suite is atis, use atis-cps as the container name
     if [[ "$PROTOCOL_SUITE" == "atis" ]]; then
@@ -85,7 +86,7 @@ add_repository_node() {
         --name "$name" \
         --network "$COMPOSE_NETWORK_ID" \
         -p "0.0.0.0:$port:80/tcp" \
-        -e "REPO_ID=$repo_id" \
+        -e "REPO_ID=$nodeId" \
         -e "REPO_PORT=$port" \
         -e "REPO_FQDN=$fqdn" \
         -v "$(pwd):/app:rw" \
@@ -93,7 +94,7 @@ add_repository_node() {
         $command
     
     # Append $name, $port to conf/repositories.json
-    echo "{\"id\": \"$repo_id\", \"name\": \"$name\", \"fqdn\": \"$name\", \"url\": \"http://$fqdn\"}," >> conf/repositories.json
+    echo "{\"id\": \"$nodeId\", \"name\": \"$name\", \"fqdn\": \"$name\", \"url\": \"http://$fqdn\"}," >> conf/repositories.json
     echo ""
 }
 

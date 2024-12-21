@@ -14,29 +14,41 @@ def normalizeTs(timestamp: int) -> int:
 
 def get_call_details(src: str, dst: str):
     ts = normalizeTs(int(time.time()))
+    print(f'Call details: {src} -> {dst} @ {ts}')
     return src + dst + str(ts)
 
-def generate_call_id(call_details: str) -> bytes:
-    x0, r0 = Oprf.blind(bytes(call_details))
-    x1, r1 = Oprf.blind(bytes(call_details))
+def get_index_from_call_details(call_details: str) -> int:
+    return int(call_details.encode().hex(), 16) % config.OPRF_KEYLIST_SIZE
+
+async def generate_call_id(call_details: str) -> bytes:
+    idx: int = get_index_from_call_details(call_details)
+
+    print("Generating call ID for index: ", idx)
+
+    x0, r0 = Oprf.blind(call_details)
+    x1, r1 = Oprf.blind(call_details)
     x0_str, x1_str = Utils.to_base64(x0), Utils.to_base64(x1)
     
-    sig1_str = groupsig.sign(msg=x0_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
-    sig2_str = groupsig.sign(msg=x1_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
+    sig0_str = groupsig.sign(msg=str(idx) + x0_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
+    sig1_str = groupsig.sign(msg=str(idx) + x1_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
     reqs = [
-        {'url': config.OPRF_SERVER_1_URL + '/evaluate', 'data': {'x': x0_str, 'sig': sig1_str}},
-        {'url': config.OPRF_SERVER_2_URL + '/evaluate', 'data': {'x': x1_str, 'sig': sig2_str}},
+        {'url': config.OPRF_SERVER_1_URL + '/evaluate', 'data': { 'idx': idx, 'x': x0_str, 'sig': sig0_str}},
+        {'url': config.OPRF_SERVER_2_URL + '/evaluate', 'data': { 'idx': idx, 'x': x1_str, 'sig': sig1_str}},
     ]
 
-    res = http.posts(reqs=reqs)
-    L0: bytes = Oprf.unblind(res[0]['fx'], res[0]['vk'], r0)
-    L1: bytes = Oprf.unblind(res[1]['fx'], res[1]['vk'], r1)
+    res = await http.posts(reqs=reqs)
+    L0: bytes = Oprf.unblind(Utils.from_base64(res[0]['fx']), Utils.from_base64(res[0]['vk']), r0)
+    L1: bytes = Oprf.unblind(Utils.from_base64(res[1]['fx']), Utils.from_base64(res[1]['vk']), r1)
+
+    print("\nL0: ", Utils.to_base64(L0))
+    print("L1: ", Utils.to_base64(L1), "\n")
 
     return Utils.hash256(Utils.xor(L0, L1))
 
-def find_node(nodes, key: bytes) -> dict:
+def find_node(nodes: List[dict], key: bytes) -> dict:
     closest_node = None
     closest_dist = float('inf')
+    closest_dist_index = -1
 
     for i in range(len(nodes)):
         distance = int.from_bytes(
@@ -46,20 +58,22 @@ def find_node(nodes, key: bytes) -> dict:
             ), 
             byteorder='big'
         )
+
         if distance < closest_dist:
             closest_dist, closest_node = distance, nodes[i]
+            closest_dist_index = i
+            
+    return closest_node, closest_dist_index
 
-    return closest_node
-
-def create_publish_requests(count: int, call_id: bytes, ctx: bytes) -> List[dict]:
-    nodes = cache.find(constants.MESSAGE_STORES_KEY)
+def create_publish_requests(call_id: bytes, ctx: bytes, nodes: List[dict], count: int) -> List[dict]:
     if not nodes: raise Exception('No message store available')
 
     call_id, ctx, reqs = Utils.to_base64(call_id), Utils.to_base64(ctx), []
 
     for i in range(1, count + 1):
-        idx: bytes = Utils.hash256(call_id + str(i))
-        node: dict = find_node(nodes=nodes, key=idx)
+        idx: bytes = Utils.hash256(bytes(call_id + str(i), 'utf-8'))
+        node, index = find_node(nodes=nodes, key=idx)
+        idx = Utils.to_base64(idx)
         reqs.append({
             'url': node['url'] + '/publish',
             'data': { 
@@ -68,11 +82,11 @@ def create_publish_requests(count: int, call_id: bytes, ctx: bytes) -> List[dict
                 'sig': groupsig.sign(msg=idx + ctx, gsk=config.TGS_GSK, gpk=config.TGS_GPK) 
             }
         })
+        nodes.pop(index)
 
     return reqs
 
-def create_retrieve_requests(count: int, call_id: bytes) -> List[dict]:
-    nodes = cache.find(constants.MESSAGE_STORES_KEY)
+def create_retrieve_requests(call_id: bytes, nodes: List[dict], count: int) -> List[dict]:
     if not nodes: raise Exception('No message store available')
 
     call_id, reqs = Utils.to_base64(call_id), []
@@ -80,6 +94,7 @@ def create_retrieve_requests(count: int, call_id: bytes) -> List[dict]:
     for i in range(1, count + 1):
         idx: bytes = Utils.hash256(call_id + str(i))
         node: dict = find_node(nodes=nodes, key=idx)
+        idx = Utils.to_base64(idx)
         reqs.append({
             'url': node['url'] + '/retrieve',
             'data': { 
@@ -91,7 +106,7 @@ def create_retrieve_requests(count: int, call_id: bytes) -> List[dict]:
     return reqs
 
 def encrypt_and_mac(call_id: bytes, plaintext: str):
-    return Ciphering.enc(call_id, bytes(plaintext))
+    return Ciphering.enc(call_id, plaintext.encode())
 
 def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str):
     tokens, ciphertexts = [], []

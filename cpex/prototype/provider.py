@@ -3,7 +3,7 @@ from uuid import uuid4
 from pydantic import BaseModel
 import cpex.config as config
 import cpex.constants as constants
-from cpex.helpers import misc, http
+from cpex.helpers import misc, http, files
 from cpex.prototype.stirshaken.auth_service import AuthService
 from typing import List, Union
 from cpex.crypto import libcpex
@@ -26,12 +26,22 @@ class TDMSignal(BaseModel):
     From: str
 
 class Provider:
-    def __init__(self, pid: str, impl: bool, cps_url: str):
+    @staticmethod
+    def load_nodes():
+        nodes = files.read_json(config.CONF_DIR + '/repositories.json')
+        return nodes if nodes else []
+    
+    def __init__(self, pid: str, impl: bool, cps_url: str, nodes: List[dict] = []):
         self.pid = pid
         self.impl = impl
         self.cps_url = cps_url
         self.load_auth_service()
+        self.nodes = nodes
         self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
+
+        if not config.IS_ATIS_MODE and not self.nodes:
+            self.nodes = Provider.load_nodes()
+            
 
     def load_auth_service(self):
         name = f'sp_{self.pid}'
@@ -122,14 +132,20 @@ class Provider:
         
     async def cpex_publish(self, signal: SIPSignal):
         call_details: str = libcpex.get_call_details(src=signal.From, dst=signal.To)
-        call_id = libcpex.generate_call_id(call_details)
-        ctx = libcpex.encrypt_and_mac(call_id=call_id, msg=signal.Identity)
+        call_id = await libcpex.generate_call_id(call_details)
+        print("Call ID during publish: ", misc.base64encode(call_id))
+        ctx = libcpex.encrypt_and_mac(call_id=call_id, plaintext=signal.Identity)
         reqs = libcpex.create_publish_requests(
-            count=config.REPLICATION, 
             call_id=call_id, 
-            ctx=ctx
+            ctx=ctx,
+            nodes=self.nodes[:], # Copy of nodes
+            count=config.REPLICATION, 
         )
-        await http.posts(reqs=reqs)
+        print("Message stores during publish")
+        print([(r['url']) for r in reqs])
+        # raise Exception('Not implemented')
+        res = await http.posts(reqs=reqs)
+        print(res)
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
         print(f'--> Executes RETRIEVE')
@@ -161,9 +177,13 @@ class Provider:
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
         call_details: str = libcpex.get_call_details(src=signal.From, dst=signal.To)
-        call_id = libcpex.generate_call_id(call_details)
+        call_id = await libcpex.generate_call_id(call_details)
+        print("Call ID during retrieve: ", misc.base64encode(call_id))
         requests = libcpex.create_retrieve_requests(count=config.REPLICATION, call_id=call_id)
+        print("Message stores during publish")
+        print([(r['url']) for r in requests])
         responses = await http.posts(requests)
+        print("Retrieved responses", responses)
         tokens = libcpex.decrypt(call_id, responses)
         return tokens
             
