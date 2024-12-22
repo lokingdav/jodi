@@ -11,6 +11,18 @@ def override_json(fileloc: str, data: dict, indent: int = 2):
         file.write(json.dumps(data, indent=indent))
     return True
 
+def write_csv(fileloc: str, data: list):
+    with open(fileloc, 'w') as file:
+        for row in data:
+            file.write(", ".join([str(x) for x in row]) + "\n")
+    return True
+
+def append_csv(fileloc: str, data: list):
+    with open(fileloc, 'a') as file:
+        for row in data:
+            file.write(", ".join([str(x) for x in row]) + "\n")
+    return True
+
 def read_json(fileloc: str):
     if is_empty(fileloc):
         return False
@@ -28,3 +40,9 @@ def update_env_file(env_file_path: str, updates: dict):
     with open(env_file_path, "w") as env_file:
         for key, value in updated_env.items():
             env_file.write(f"{key}={value}\n")
+            
+def create_dir_if_not_exists(path):
+    try:
+        os.makedirs(path, exist_ok=True)
+    except Exception as e:
+        print(f"Error creating directory '{path}': {e}")

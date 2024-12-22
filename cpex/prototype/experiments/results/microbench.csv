@@ -1,0 +1,901 @@
+Operation, Runtime (ms)
+(1) Call ID Generation, 6.765
+(2) Encrypt and Sign, 7.888
+(3) Retrieve Req & Sign, 8.037
+(4) Verify and Decrypt, 9.875
+(5) Server OPRF Eval, 4.044
+(6) Provider Publish - Refs(1+2), 14.654
+(7) Message Store Publish, 5.129
+(8) Provider Retrieve - Refs(1+3+4), 24.678
+(9) Message Store Retrieve, 4.902
+(1) Call ID Generation, 6.375
+(2) Encrypt and Sign, 8.228
+(3) Retrieve Req & Sign, 7.906
+(4) Verify and Decrypt, 10.001
+(5) Server OPRF Eval, 3.983
+(6) Provider Publish - Refs(1+2), 14.603
+(7) Message Store Publish, 5.03
+(8) Provider Retrieve - Refs(1+3+4), 24.282
+(9) Message Store Retrieve, 5.087
+(1) Call ID Generation, 6.227
+(2) Encrypt and Sign, 7.868
+(3) Retrieve Req & Sign, 7.834
+(4) Verify and Decrypt, 9.728
+(5) Server OPRF Eval, 4.015
+(6) Provider Publish - Refs(1+2), 14.095
+(7) Message Store Publish, 4.953
+(8) Provider Retrieve - Refs(1+3+4), 23.789
+(9) Message Store Retrieve, 4.9
+(1) Call ID Generation, 6.214
+(2) Encrypt and Sign, 8.042
+(3) Retrieve Req & Sign, 8.598
+(4) Verify and Decrypt, 9.751
+(5) Server OPRF Eval, 3.929
+(6) Provider Publish - Refs(1+2), 14.256
+(7) Message Store Publish, 5.942
+(8) Provider Retrieve - Refs(1+3+4), 24.563
+(9) Message Store Retrieve, 5.222
+(1) Call ID Generation, 6.217
+(2) Encrypt and Sign, 7.969
+(3) Retrieve Req & Sign, 7.995
+(4) Verify and Decrypt, 9.939
+(5) Server OPRF Eval, 3.972
+(6) Provider Publish - Refs(1+2), 14.186
+(7) Message Store Publish, 4.956
+(8) Provider Retrieve - Refs(1+3+4), 24.151
+(9) Message Store Retrieve, 4.963
+(1) Call ID Generation, 6.481
+(2) Encrypt and Sign, 7.984
+(3) Retrieve Req & Sign, 8.133
+(4) Verify and Decrypt, 9.856
+(5) Server OPRF Eval, 3.962
+(6) Provider Publish - Refs(1+2), 14.465
+(7) Message Store Publish, 4.836
+(8) Provider Retrieve - Refs(1+3+4), 24.47
+(9) Message Store Retrieve, 4.926
+(1) Call ID Generation, 6.277
+(2) Encrypt and Sign, 7.904
+(3) Retrieve Req & Sign, 8.007
+(4) Verify and Decrypt, 9.677
+(5) Server OPRF Eval, 3.942
+(6) Provider Publish - Refs(1+2), 14.181
+(7) Message Store Publish, 4.789
+(8) Provider Retrieve - Refs(1+3+4), 23.961
+(9) Message Store Retrieve, 4.931
+(1) Call ID Generation, 6.271
+(2) Encrypt and Sign, 7.768
+(3) Retrieve Req & Sign, 8.047
+(4) Verify and Decrypt, 10.318
+(5) Server OPRF Eval, 3.864
+(6) Provider Publish - Refs(1+2), 14.04
+(7) Message Store Publish, 4.906
+(8) Provider Retrieve - Refs(1+3+4), 24.637
+(9) Message Store Retrieve, 5.18
+(1) Call ID Generation, 6.635
+(2) Encrypt and Sign, 7.679
+(3) Retrieve Req & Sign, 7.958
+(4) Verify and Decrypt, 10.185
+(5) Server OPRF Eval, 3.999
+(6) Provider Publish - Refs(1+2), 14.314
+(7) Message Store Publish, 5.726
+(8) Provider Retrieve - Refs(1+3+4), 24.778
+(9) Message Store Retrieve, 5.06
+(1) Call ID Generation, 6.266
+(2) Encrypt and Sign, 7.872
+(3) Retrieve Req & Sign, 8.12
+(4) Verify and Decrypt, 9.999
+(5) Server OPRF Eval, 4.117
+(6) Provider Publish - Refs(1+2), 14.138
+(7) Message Store Publish, 5.048
+(8) Provider Retrieve - Refs(1+3+4), 24.386
+(9) Message Store Retrieve, 5.311
+(1) Call ID Generation, 6.652
+(2) Encrypt and Sign, 8.534
+(3) Retrieve Req & Sign, 8.319
+(4) Verify and Decrypt, 9.997
+(5) Server OPRF Eval, 3.972
+(6) Provider Publish - Refs(1+2), 15.186
+(7) Message Store Publish, 5.212
+(8) Provider Retrieve - Refs(1+3+4), 24.967
+(9) Message Store Retrieve, 4.999
+(1) Call ID Generation, 6.169
+(2) Encrypt and Sign, 7.791
+(3) Retrieve Req & Sign, 7.908
+(4) Verify and Decrypt, 10.014
+(5) Server OPRF Eval, 3.945
+(6) Provider Publish - Refs(1+2), 13.96
+(7) Message Store Publish, 4.79
+(8) Provider Retrieve - Refs(1+3+4), 24.091
+(9) Message Store Retrieve, 4.957
+(1) Call ID Generation, 6.742
+(2) Encrypt and Sign, 7.814
+(3) Retrieve Req & Sign, 8.23
+(4) Verify and Decrypt, 10.053
+(5) Server OPRF Eval, 4.051
+(6) Provider Publish - Refs(1+2), 14.556
+(7) Message Store Publish, 4.976
+(8) Provider Retrieve - Refs(1+3+4), 25.025
+(9) Message Store Retrieve, 5.047
+(1) Call ID Generation, 6.127
+(2) Encrypt and Sign, 7.959
+(3) Retrieve Req & Sign, 7.974
+(4) Verify and Decrypt, 10.075
+(5) Server OPRF Eval, 3.883
+(6) Provider Publish - Refs(1+2), 14.086
+(7) Message Store Publish, 4.826
+(8) Provider Retrieve - Refs(1+3+4), 24.177
+(9) Message Store Retrieve, 4.966
+(1) Call ID Generation, 6.065
+(2) Encrypt and Sign, 7.739
+(3) Retrieve Req & Sign, 8.237
+(4) Verify and Decrypt, 13.163
+(5) Server OPRF Eval, 3.954
+(6) Provider Publish - Refs(1+2), 13.805
+(7) Message Store Publish, 4.896
+(8) Provider Retrieve - Refs(1+3+4), 27.466
+(9) Message Store Retrieve, 7.406
+(1) Call ID Generation, 6.346
+(2) Encrypt and Sign, 7.824
+(3) Retrieve Req & Sign, 8.143
+(4) Verify and Decrypt, 9.803
+(5) Server OPRF Eval, 3.95
+(6) Provider Publish - Refs(1+2), 14.17
+(7) Message Store Publish, 4.887
+(8) Provider Retrieve - Refs(1+3+4), 24.292
+(9) Message Store Retrieve, 4.913
+(1) Call ID Generation, 6.029
+(2) Encrypt and Sign, 7.694
+(3) Retrieve Req & Sign, 8.12
+(4) Verify and Decrypt, 9.861
+(5) Server OPRF Eval, 3.689
+(6) Provider Publish - Refs(1+2), 13.723
+(7) Message Store Publish, 4.731
+(8) Provider Retrieve - Refs(1+3+4), 24.01
+(9) Message Store Retrieve, 4.934
+(1) Call ID Generation, 6.331
+(2) Encrypt and Sign, 7.856
+(3) Retrieve Req & Sign, 8.22
+(4) Verify and Decrypt, 9.877
+(5) Server OPRF Eval, 3.907
+(6) Provider Publish - Refs(1+2), 14.186
+(7) Message Store Publish, 5.047
+(8) Provider Retrieve - Refs(1+3+4), 24.427
+(9) Message Store Retrieve, 5.023
+(1) Call ID Generation, 6.494
+(2) Encrypt and Sign, 7.709
+(3) Retrieve Req & Sign, 8.012
+(4) Verify and Decrypt, 9.959
+(5) Server OPRF Eval, 3.848
+(6) Provider Publish - Refs(1+2), 14.203
+(7) Message Store Publish, 5.219
+(8) Provider Retrieve - Refs(1+3+4), 24.465
+(9) Message Store Retrieve, 5.059
+(1) Call ID Generation, 6.174
+(2) Encrypt and Sign, 7.654
+(3) Retrieve Req & Sign, 8.125
+(4) Verify and Decrypt, 10.023
+(5) Server OPRF Eval, 3.966
+(6) Provider Publish - Refs(1+2), 13.828
+(7) Message Store Publish, 4.782
+(8) Provider Retrieve - Refs(1+3+4), 24.321
+(9) Message Store Retrieve, 4.973
+(1) Call ID Generation, 6.197
+(2) Encrypt and Sign, 7.733
+(3) Retrieve Req & Sign, 7.86
+(4) Verify and Decrypt, 10.318
+(5) Server OPRF Eval, 3.964
+(6) Provider Publish - Refs(1+2), 13.93
+(7) Message Store Publish, 5.153
+(8) Provider Retrieve - Refs(1+3+4), 24.375
+(9) Message Store Retrieve, 5.114
+(1) Call ID Generation, 6.104
+(2) Encrypt and Sign, 8.064
+(3) Retrieve Req & Sign, 8.084
+(4) Verify and Decrypt, 9.9
+(5) Server OPRF Eval, 3.938
+(6) Provider Publish - Refs(1+2), 14.168
+(7) Message Store Publish, 4.888
+(8) Provider Retrieve - Refs(1+3+4), 24.089
+(9) Message Store Retrieve, 4.99
+(1) Call ID Generation, 6.247
+(2) Encrypt and Sign, 7.656
+(3) Retrieve Req & Sign, 8.035
+(4) Verify and Decrypt, 9.848
+(5) Server OPRF Eval, 3.937
+(6) Provider Publish - Refs(1+2), 13.903
+(7) Message Store Publish, 5.05
+(8) Provider Retrieve - Refs(1+3+4), 24.13
+(9) Message Store Retrieve, 4.945
+(1) Call ID Generation, 6.511
+(2) Encrypt and Sign, 7.58
+(3) Retrieve Req & Sign, 8.044
+(4) Verify and Decrypt, 10.234
+(5) Server OPRF Eval, 4.038
+(6) Provider Publish - Refs(1+2), 14.091
+(7) Message Store Publish, 5.085
+(8) Provider Retrieve - Refs(1+3+4), 24.789
+(9) Message Store Retrieve, 5.14
+(1) Call ID Generation, 6.233
+(2) Encrypt and Sign, 7.729
+(3) Retrieve Req & Sign, 7.901
+(4) Verify and Decrypt, 9.767
+(5) Server OPRF Eval, 3.99
+(6) Provider Publish - Refs(1+2), 13.962
+(7) Message Store Publish, 4.804
+(8) Provider Retrieve - Refs(1+3+4), 23.901
+(9) Message Store Retrieve, 4.836
+(1) Call ID Generation, 6.113
+(2) Encrypt and Sign, 8.191
+(3) Retrieve Req & Sign, 8.64
+(4) Verify and Decrypt, 10.1
+(5) Server OPRF Eval, 3.884
+(6) Provider Publish - Refs(1+2), 14.304
+(7) Message Store Publish, 5.115
+(8) Provider Retrieve - Refs(1+3+4), 24.853
+(9) Message Store Retrieve, 4.986
+(1) Call ID Generation, 6.871
+(2) Encrypt and Sign, 8.179
+(3) Retrieve Req & Sign, 8.138
+(4) Verify and Decrypt, 11.482
+(5) Server OPRF Eval, 4.344
+(6) Provider Publish - Refs(1+2), 15.051
+(7) Message Store Publish, 5.163
+(8) Provider Retrieve - Refs(1+3+4), 26.492
+(9) Message Store Retrieve, 4.864
+(1) Call ID Generation, 6.072
+(2) Encrypt and Sign, 7.501
+(3) Retrieve Req & Sign, 7.875
+(4) Verify and Decrypt, 9.966
+(5) Server OPRF Eval, 3.836
+(6) Provider Publish - Refs(1+2), 13.572
+(7) Message Store Publish, 4.931
+(8) Provider Retrieve - Refs(1+3+4), 23.912
+(9) Message Store Retrieve, 4.722
+(1) Call ID Generation, 6.113
+(2) Encrypt and Sign, 7.615
+(3) Retrieve Req & Sign, 8.173
+(4) Verify and Decrypt, 9.934
+(5) Server OPRF Eval, 3.826
+(6) Provider Publish - Refs(1+2), 13.728
+(7) Message Store Publish, 4.821
+(8) Provider Retrieve - Refs(1+3+4), 24.22
+(9) Message Store Retrieve, 4.953
+(1) Call ID Generation, 5.997
+(2) Encrypt and Sign, 7.702
+(3) Retrieve Req & Sign, 8.081
+(4) Verify and Decrypt, 9.777
+(5) Server OPRF Eval, 3.749
+(6) Provider Publish - Refs(1+2), 13.699
+(7) Message Store Publish, 4.879
+(8) Provider Retrieve - Refs(1+3+4), 23.855
+(9) Message Store Retrieve, 4.756
+(1) Call ID Generation, 6.5
+(2) Encrypt and Sign, 7.863
+(3) Retrieve Req & Sign, 8.127
+(4) Verify and Decrypt, 10.075
+(5) Server OPRF Eval, 3.997
+(6) Provider Publish - Refs(1+2), 14.363
+(7) Message Store Publish, 4.845
+(8) Provider Retrieve - Refs(1+3+4), 24.702
+(9) Message Store Retrieve, 4.988
+(1) Call ID Generation, 6.271
+(2) Encrypt and Sign, 7.818
+(3) Retrieve Req & Sign, 8.011
+(4) Verify and Decrypt, 9.854
+(5) Server OPRF Eval, 3.939
+(6) Provider Publish - Refs(1+2), 14.089
+(7) Message Store Publish, 4.919
+(8) Provider Retrieve - Refs(1+3+4), 24.136
+(9) Message Store Retrieve, 4.826
+(1) Call ID Generation, 7.612
+(2) Encrypt and Sign, 7.722
+(3) Retrieve Req & Sign, 7.9
+(4) Verify and Decrypt, 10.221
+(5) Server OPRF Eval, 3.901
+(6) Provider Publish - Refs(1+2), 15.333
+(7) Message Store Publish, 4.772
+(8) Provider Retrieve - Refs(1+3+4), 25.732
+(9) Message Store Retrieve, 5.135
+(1) Call ID Generation, 6.329
+(2) Encrypt and Sign, 8.2
+(3) Retrieve Req & Sign, 7.905
+(4) Verify and Decrypt, 10.297
+(5) Server OPRF Eval, 4.017
+(6) Provider Publish - Refs(1+2), 14.53
+(7) Message Store Publish, 4.967
+(8) Provider Retrieve - Refs(1+3+4), 24.53
+(9) Message Store Retrieve, 4.837
+(1) Call ID Generation, 6.105
+(2) Encrypt and Sign, 7.413
+(3) Retrieve Req & Sign, 7.578
+(4) Verify and Decrypt, 9.188
+(5) Server OPRF Eval, 3.675
+(6) Provider Publish - Refs(1+2), 13.518
+(7) Message Store Publish, 5.165
+(8) Provider Retrieve - Refs(1+3+4), 22.871
+(9) Message Store Retrieve, 5.115
+(1) Call ID Generation, 5.701
+(2) Encrypt and Sign, 7.46
+(3) Retrieve Req & Sign, 7.62
+(4) Verify and Decrypt, 9.327
+(5) Server OPRF Eval, 3.725
+(6) Provider Publish - Refs(1+2), 13.161
+(7) Message Store Publish, 4.722
+(8) Provider Retrieve - Refs(1+3+4), 22.649
+(9) Message Store Retrieve, 5.098
+(1) Call ID Generation, 7.531
+(2) Encrypt and Sign, 8.567
+(3) Retrieve Req & Sign, 8.375
+(4) Verify and Decrypt, 9.961
+(5) Server OPRF Eval, 4.948
+(6) Provider Publish - Refs(1+2), 16.098
+(7) Message Store Publish, 5.158
+(8) Provider Retrieve - Refs(1+3+4), 25.868
+(9) Message Store Retrieve, 5.118
+(1) Call ID Generation, 6.134
+(2) Encrypt and Sign, 7.603
+(3) Retrieve Req & Sign, 7.778
+(4) Verify and Decrypt, 9.979
+(5) Server OPRF Eval, 3.774
+(6) Provider Publish - Refs(1+2), 13.738
+(7) Message Store Publish, 4.732
+(8) Provider Retrieve - Refs(1+3+4), 23.891
+(9) Message Store Retrieve, 5.066
+(1) Call ID Generation, 6.229
+(2) Encrypt and Sign, 7.836
+(3) Retrieve Req & Sign, 8.033
+(4) Verify and Decrypt, 10.131
+(5) Server OPRF Eval, 4.011
+(6) Provider Publish - Refs(1+2), 14.066
+(7) Message Store Publish, 4.909
+(8) Provider Retrieve - Refs(1+3+4), 24.393
+(9) Message Store Retrieve, 4.97
+(1) Call ID Generation, 5.792
+(2) Encrypt and Sign, 7.388
+(3) Retrieve Req & Sign, 7.499
+(4) Verify and Decrypt, 9.39
+(5) Server OPRF Eval, 3.755
+(6) Provider Publish - Refs(1+2), 13.18
+(7) Message Store Publish, 4.899
+(8) Provider Retrieve - Refs(1+3+4), 22.68
+(9) Message Store Retrieve, 4.727
+(1) Call ID Generation, 6.025
+(2) Encrypt and Sign, 7.346
+(3) Retrieve Req & Sign, 7.481
+(4) Verify and Decrypt, 9.147
+(5) Server OPRF Eval, 3.622
+(6) Provider Publish - Refs(1+2), 13.371
+(7) Message Store Publish, 4.776
+(8) Provider Retrieve - Refs(1+3+4), 22.653
+(9) Message Store Retrieve, 4.966
+(1) Call ID Generation, 5.987
+(2) Encrypt and Sign, 7.512
+(3) Retrieve Req & Sign, 7.646
+(4) Verify and Decrypt, 9.403
+(5) Server OPRF Eval, 3.756
+(6) Provider Publish - Refs(1+2), 13.499
+(7) Message Store Publish, 4.884
+(8) Provider Retrieve - Refs(1+3+4), 23.036
+(9) Message Store Retrieve, 4.925
+(1) Call ID Generation, 6.258
+(2) Encrypt and Sign, 7.602
+(3) Retrieve Req & Sign, 8.04
+(4) Verify and Decrypt, 9.778
+(5) Server OPRF Eval, 3.955
+(6) Provider Publish - Refs(1+2), 13.86
+(7) Message Store Publish, 4.92
+(8) Provider Retrieve - Refs(1+3+4), 24.076
+(9) Message Store Retrieve, 4.988
+(1) Call ID Generation, 6.173
+(2) Encrypt and Sign, 7.869
+(3) Retrieve Req & Sign, 7.816
+(4) Verify and Decrypt, 10.04
+(5) Server OPRF Eval, 4.014
+(6) Provider Publish - Refs(1+2), 14.042
+(7) Message Store Publish, 5.098
+(8) Provider Retrieve - Refs(1+3+4), 24.029
+(9) Message Store Retrieve, 4.932
+(1) Call ID Generation, 6.477
+(2) Encrypt and Sign, 7.727
+(3) Retrieve Req & Sign, 8.098
+(4) Verify and Decrypt, 9.78
+(5) Server OPRF Eval, 3.973
+(6) Provider Publish - Refs(1+2), 14.203
+(7) Message Store Publish, 5.039
+(8) Provider Retrieve - Refs(1+3+4), 24.354
+(9) Message Store Retrieve, 4.981
+(1) Call ID Generation, 6.236
+(2) Encrypt and Sign, 7.907
+(3) Retrieve Req & Sign, 8.039
+(4) Verify and Decrypt, 9.779
+(5) Server OPRF Eval, 3.939
+(6) Provider Publish - Refs(1+2), 14.143
+(7) Message Store Publish, 4.823
+(8) Provider Retrieve - Refs(1+3+4), 24.053
+(9) Message Store Retrieve, 4.957
+(1) Call ID Generation, 6.251
+(2) Encrypt and Sign, 8.117
+(3) Retrieve Req & Sign, 8.23
+(4) Verify and Decrypt, 9.836
+(5) Server OPRF Eval, 4.189
+(6) Provider Publish - Refs(1+2), 14.368
+(7) Message Store Publish, 5.101
+(8) Provider Retrieve - Refs(1+3+4), 24.317
+(9) Message Store Retrieve, 4.753
+(1) Call ID Generation, 6.283
+(2) Encrypt and Sign, 7.789
+(3) Retrieve Req & Sign, 7.857
+(4) Verify and Decrypt, 9.718
+(5) Server OPRF Eval, 3.91
+(6) Provider Publish - Refs(1+2), 14.072
+(7) Message Store Publish, 4.935
+(8) Provider Retrieve - Refs(1+3+4), 23.858
+(9) Message Store Retrieve, 4.914
+(1) Call ID Generation, 6.251
+(2) Encrypt and Sign, 7.665
+(3) Retrieve Req & Sign, 8.003
+(4) Verify and Decrypt, 9.995
+(5) Server OPRF Eval, 3.994
+(6) Provider Publish - Refs(1+2), 13.916
+(7) Message Store Publish, 4.797
+(8) Provider Retrieve - Refs(1+3+4), 24.249
+(9) Message Store Retrieve, 4.763
+(1) Call ID Generation, 6.223
+(2) Encrypt and Sign, 7.977
+(3) Retrieve Req & Sign, 8.253
+(4) Verify and Decrypt, 9.779
+(5) Server OPRF Eval, 3.967
+(6) Provider Publish - Refs(1+2), 14.201
+(7) Message Store Publish, 4.719
+(8) Provider Retrieve - Refs(1+3+4), 24.255
+(9) Message Store Retrieve, 4.876
+(1) Call ID Generation, 6.181
+(2) Encrypt and Sign, 7.641
+(3) Retrieve Req & Sign, 8.074
+(4) Verify and Decrypt, 9.85
+(5) Server OPRF Eval, 3.96
+(6) Provider Publish - Refs(1+2), 13.822
+(7) Message Store Publish, 4.868
+(8) Provider Retrieve - Refs(1+3+4), 24.104
+(9) Message Store Retrieve, 4.827
+(1) Call ID Generation, 6.287
+(2) Encrypt and Sign, 7.834
+(3) Retrieve Req & Sign, 8.057
+(4) Verify and Decrypt, 9.968
+(5) Server OPRF Eval, 3.971
+(6) Provider Publish - Refs(1+2), 14.121
+(7) Message Store Publish, 5.212
+(8) Provider Retrieve - Refs(1+3+4), 24.312
+(9) Message Store Retrieve, 5.007
+(1) Call ID Generation, 6.21
+(2) Encrypt and Sign, 7.877
+(3) Retrieve Req & Sign, 8.075
+(4) Verify and Decrypt, 10.087
+(5) Server OPRF Eval, 3.953
+(6) Provider Publish - Refs(1+2), 14.087
+(7) Message Store Publish, 4.824
+(8) Provider Retrieve - Refs(1+3+4), 24.372
+(9) Message Store Retrieve, 5.012
+(1) Call ID Generation, 6.091
+(2) Encrypt and Sign, 7.702
+(3) Retrieve Req & Sign, 7.818
+(4) Verify and Decrypt, 9.852
+(5) Server OPRF Eval, 3.961
+(6) Provider Publish - Refs(1+2), 13.794
+(7) Message Store Publish, 5.11
+(8) Provider Retrieve - Refs(1+3+4), 23.761
+(9) Message Store Retrieve, 5.21
+(1) Call ID Generation, 6.016
+(2) Encrypt and Sign, 7.911
+(3) Retrieve Req & Sign, 7.888
+(4) Verify and Decrypt, 9.45
+(5) Server OPRF Eval, 3.934
+(6) Provider Publish - Refs(1+2), 13.928
+(7) Message Store Publish, 4.966
+(8) Provider Retrieve - Refs(1+3+4), 23.354
+(9) Message Store Retrieve, 5.087
+(1) Call ID Generation, 6.224
+(2) Encrypt and Sign, 7.895
+(3) Retrieve Req & Sign, 7.731
+(4) Verify and Decrypt, 9.722
+(5) Server OPRF Eval, 3.897
+(6) Provider Publish - Refs(1+2), 14.119
+(7) Message Store Publish, 5.159
+(8) Provider Retrieve - Refs(1+3+4), 23.677
+(9) Message Store Retrieve, 5.285
+(1) Call ID Generation, 6.058
+(2) Encrypt and Sign, 7.659
+(3) Retrieve Req & Sign, 7.881
+(4) Verify and Decrypt, 9.59
+(5) Server OPRF Eval, 3.954
+(6) Provider Publish - Refs(1+2), 13.717
+(7) Message Store Publish, 4.817
+(8) Provider Retrieve - Refs(1+3+4), 23.529
+(9) Message Store Retrieve, 4.877
+(1) Call ID Generation, 6.402
+(2) Encrypt and Sign, 8.079
+(3) Retrieve Req & Sign, 8.01
+(4) Verify and Decrypt, 9.973
+(5) Server OPRF Eval, 4.082
+(6) Provider Publish - Refs(1+2), 14.481
+(7) Message Store Publish, 5.127
+(8) Provider Retrieve - Refs(1+3+4), 24.385
+(9) Message Store Retrieve, 4.951
+(1) Call ID Generation, 6.316
+(2) Encrypt and Sign, 8.625
+(3) Retrieve Req & Sign, 8.092
+(4) Verify and Decrypt, 9.824
+(5) Server OPRF Eval, 4.108
+(6) Provider Publish - Refs(1+2), 14.941
+(7) Message Store Publish, 5.025
+(8) Provider Retrieve - Refs(1+3+4), 24.232
+(9) Message Store Retrieve, 4.842
+(1) Call ID Generation, 6.238
+(2) Encrypt and Sign, 7.983
+(3) Retrieve Req & Sign, 7.916
+(4) Verify and Decrypt, 9.945
+(5) Server OPRF Eval, 3.935
+(6) Provider Publish - Refs(1+2), 14.221
+(7) Message Store Publish, 5.03
+(8) Provider Retrieve - Refs(1+3+4), 24.098
+(9) Message Store Retrieve, 5.156
+(1) Call ID Generation, 6.201
+(2) Encrypt and Sign, 7.834
+(3) Retrieve Req & Sign, 7.853
+(4) Verify and Decrypt, 9.966
+(5) Server OPRF Eval, 3.92
+(6) Provider Publish - Refs(1+2), 14.035
+(7) Message Store Publish, 4.897
+(8) Provider Retrieve - Refs(1+3+4), 24.019
+(9) Message Store Retrieve, 5.072
+(1) Call ID Generation, 6.341
+(2) Encrypt and Sign, 8.104
+(3) Retrieve Req & Sign, 8.105
+(4) Verify and Decrypt, 10.111
+(5) Server OPRF Eval, 3.981
+(6) Provider Publish - Refs(1+2), 14.445
+(7) Message Store Publish, 5.031
+(8) Provider Retrieve - Refs(1+3+4), 24.557
+(9) Message Store Retrieve, 4.938
+(1) Call ID Generation, 6.119
+(2) Encrypt and Sign, 7.899
+(3) Retrieve Req & Sign, 8.232
+(4) Verify and Decrypt, 9.942
+(5) Server OPRF Eval, 3.949
+(6) Provider Publish - Refs(1+2), 14.017
+(7) Message Store Publish, 5.444
+(8) Provider Retrieve - Refs(1+3+4), 24.293
+(9) Message Store Retrieve, 5.246
+(1) Call ID Generation, 6.1
+(2) Encrypt and Sign, 7.866
+(3) Retrieve Req & Sign, 8.078
+(4) Verify and Decrypt, 9.833
+(5) Server OPRF Eval, 3.96
+(6) Provider Publish - Refs(1+2), 13.966
+(7) Message Store Publish, 4.856
+(8) Provider Retrieve - Refs(1+3+4), 24.012
+(9) Message Store Retrieve, 4.817
+(1) Call ID Generation, 6.149
+(2) Encrypt and Sign, 7.788
+(3) Retrieve Req & Sign, 8.184
+(4) Verify and Decrypt, 10.827
+(5) Server OPRF Eval, 3.934
+(6) Provider Publish - Refs(1+2), 13.937
+(7) Message Store Publish, 5.001
+(8) Provider Retrieve - Refs(1+3+4), 25.16
+(9) Message Store Retrieve, 5.159
+(1) Call ID Generation, 6.129
+(2) Encrypt and Sign, 7.974
+(3) Retrieve Req & Sign, 7.952
+(4) Verify and Decrypt, 10.169
+(5) Server OPRF Eval, 3.978
+(6) Provider Publish - Refs(1+2), 14.103
+(7) Message Store Publish, 5.005
+(8) Provider Retrieve - Refs(1+3+4), 24.25
+(9) Message Store Retrieve, 5.133
+(1) Call ID Generation, 6.219
+(2) Encrypt and Sign, 8.007
+(3) Retrieve Req & Sign, 7.978
+(4) Verify and Decrypt, 9.924
+(5) Server OPRF Eval, 3.927
+(6) Provider Publish - Refs(1+2), 14.227
+(7) Message Store Publish, 4.898
+(8) Provider Retrieve - Refs(1+3+4), 24.121
+(9) Message Store Retrieve, 5.0
+(1) Call ID Generation, 6.167
+(2) Encrypt and Sign, 7.762
+(3) Retrieve Req & Sign, 8.025
+(4) Verify and Decrypt, 10.299
+(5) Server OPRF Eval, 3.944
+(6) Provider Publish - Refs(1+2), 13.929
+(7) Message Store Publish, 4.923
+(8) Provider Retrieve - Refs(1+3+4), 24.491
+(9) Message Store Retrieve, 4.769
+(1) Call ID Generation, 6.22
+(2) Encrypt and Sign, 8.2
+(3) Retrieve Req & Sign, 8.057
+(4) Verify and Decrypt, 10.062
+(5) Server OPRF Eval, 4.151
+(6) Provider Publish - Refs(1+2), 14.42
+(7) Message Store Publish, 5.34
+(8) Provider Retrieve - Refs(1+3+4), 24.34
+(9) Message Store Retrieve, 4.917
+(1) Call ID Generation, 6.139
+(2) Encrypt and Sign, 7.728
+(3) Retrieve Req & Sign, 7.992
+(4) Verify and Decrypt, 9.842
+(5) Server OPRF Eval, 3.946
+(6) Provider Publish - Refs(1+2), 13.867
+(7) Message Store Publish, 4.91
+(8) Provider Retrieve - Refs(1+3+4), 23.973
+(9) Message Store Retrieve, 4.996
+(1) Call ID Generation, 6.259
+(2) Encrypt and Sign, 7.839
+(3) Retrieve Req & Sign, 7.991
+(4) Verify and Decrypt, 9.797
+(5) Server OPRF Eval, 3.969
+(6) Provider Publish - Refs(1+2), 14.098
+(7) Message Store Publish, 5.105
+(8) Provider Retrieve - Refs(1+3+4), 24.047
+(9) Message Store Retrieve, 5.049
+(1) Call ID Generation, 6.263
+(2) Encrypt and Sign, 7.725
+(3) Retrieve Req & Sign, 8.384
+(4) Verify and Decrypt, 10.111
+(5) Server OPRF Eval, 3.902
+(6) Provider Publish - Refs(1+2), 13.988
+(7) Message Store Publish, 4.952
+(8) Provider Retrieve - Refs(1+3+4), 24.758
+(9) Message Store Retrieve, 5.059
+(1) Call ID Generation, 6.375
+(2) Encrypt and Sign, 8.013
+(3) Retrieve Req & Sign, 7.982
+(4) Verify and Decrypt, 10.439
+(5) Server OPRF Eval, 3.985
+(6) Provider Publish - Refs(1+2), 14.388
+(7) Message Store Publish, 5.144
+(8) Provider Retrieve - Refs(1+3+4), 24.796
+(9) Message Store Retrieve, 5.134
+(1) Call ID Generation, 6.24
+(2) Encrypt and Sign, 8.157
+(3) Retrieve Req & Sign, 8.058
+(4) Verify and Decrypt, 10.714
+(5) Server OPRF Eval, 3.943
+(6) Provider Publish - Refs(1+2), 14.397
+(7) Message Store Publish, 5.241
+(8) Provider Retrieve - Refs(1+3+4), 25.013
+(9) Message Store Retrieve, 5.017
+(1) Call ID Generation, 6.067
+(2) Encrypt and Sign, 7.599
+(3) Retrieve Req & Sign, 7.549
+(4) Verify and Decrypt, 9.54
+(5) Server OPRF Eval, 3.757
+(6) Provider Publish - Refs(1+2), 13.666
+(7) Message Store Publish, 5.372
+(8) Provider Retrieve - Refs(1+3+4), 23.156
+(9) Message Store Retrieve, 4.916
+(1) Call ID Generation, 5.863
+(2) Encrypt and Sign, 7.661
+(3) Retrieve Req & Sign, 7.611
+(4) Verify and Decrypt, 9.585
+(5) Server OPRF Eval, 3.729
+(6) Provider Publish - Refs(1+2), 13.524
+(7) Message Store Publish, 5.141
+(8) Provider Retrieve - Refs(1+3+4), 23.06
+(9) Message Store Retrieve, 4.714
+(1) Call ID Generation, 6.359
+(2) Encrypt and Sign, 7.919
+(3) Retrieve Req & Sign, 8.123
+(4) Verify and Decrypt, 10.194
+(5) Server OPRF Eval, 3.966
+(6) Provider Publish - Refs(1+2), 14.277
+(7) Message Store Publish, 4.998
+(8) Provider Retrieve - Refs(1+3+4), 24.676
+(9) Message Store Retrieve, 4.912
+(1) Call ID Generation, 6.225
+(2) Encrypt and Sign, 7.787
+(3) Retrieve Req & Sign, 8.083
+(4) Verify and Decrypt, 10.193
+(5) Server OPRF Eval, 3.929
+(6) Provider Publish - Refs(1+2), 14.012
+(7) Message Store Publish, 4.99
+(8) Provider Retrieve - Refs(1+3+4), 24.501
+(9) Message Store Retrieve, 5.189
+(1) Call ID Generation, 6.141
+(2) Encrypt and Sign, 7.827
+(3) Retrieve Req & Sign, 8.014
+(4) Verify and Decrypt, 10.418
+(5) Server OPRF Eval, 3.996
+(6) Provider Publish - Refs(1+2), 13.969
+(7) Message Store Publish, 4.95
+(8) Provider Retrieve - Refs(1+3+4), 24.574
+(9) Message Store Retrieve, 5.025
+(1) Call ID Generation, 6.181
+(2) Encrypt and Sign, 7.894
+(3) Retrieve Req & Sign, 7.928
+(4) Verify and Decrypt, 9.898
+(5) Server OPRF Eval, 3.933
+(6) Provider Publish - Refs(1+2), 14.075
+(7) Message Store Publish, 4.951
+(8) Provider Retrieve - Refs(1+3+4), 24.006
+(9) Message Store Retrieve, 4.861
+(1) Call ID Generation, 6.375
+(2) Encrypt and Sign, 7.885
+(3) Retrieve Req & Sign, 8.167
+(4) Verify and Decrypt, 10.521
+(5) Server OPRF Eval, 3.872
+(6) Provider Publish - Refs(1+2), 14.259
+(7) Message Store Publish, 4.874
+(8) Provider Retrieve - Refs(1+3+4), 25.063
+(9) Message Store Retrieve, 5.295
+(1) Call ID Generation, 6.074
+(2) Encrypt and Sign, 7.74
+(3) Retrieve Req & Sign, 8.093
+(4) Verify and Decrypt, 9.984
+(5) Server OPRF Eval, 3.957
+(6) Provider Publish - Refs(1+2), 13.814
+(7) Message Store Publish, 5.109
+(8) Provider Retrieve - Refs(1+3+4), 24.151
+(9) Message Store Retrieve, 5.349
+(1) Call ID Generation, 6.273
+(2) Encrypt and Sign, 8.113
+(3) Retrieve Req & Sign, 8.222
+(4) Verify and Decrypt, 10.14
+(5) Server OPRF Eval, 3.938
+(6) Provider Publish - Refs(1+2), 14.385
+(7) Message Store Publish, 5.167
+(8) Provider Retrieve - Refs(1+3+4), 24.634
+(9) Message Store Retrieve, 4.965
+(1) Call ID Generation, 9.338
+(2) Encrypt and Sign, 8.356
+(3) Retrieve Req & Sign, 7.936
+(4) Verify and Decrypt, 10.131
+(5) Server OPRF Eval, 3.971
+(6) Provider Publish - Refs(1+2), 17.694
+(7) Message Store Publish, 5.266
+(8) Provider Retrieve - Refs(1+3+4), 27.405
+(9) Message Store Retrieve, 5.118
+(1) Call ID Generation, 5.987
+(2) Encrypt and Sign, 7.65
+(3) Retrieve Req & Sign, 7.729
+(4) Verify and Decrypt, 9.612
+(5) Server OPRF Eval, 3.693
+(6) Provider Publish - Refs(1+2), 13.637
+(7) Message Store Publish, 5.182
+(8) Provider Retrieve - Refs(1+3+4), 23.328
+(9) Message Store Retrieve, 4.993
+(1) Call ID Generation, 5.858
+(2) Encrypt and Sign, 7.639
+(3) Retrieve Req & Sign, 7.734
+(4) Verify and Decrypt, 9.96
+(5) Server OPRF Eval, 3.796
+(6) Provider Publish - Refs(1+2), 13.497
+(7) Message Store Publish, 5.301
+(8) Provider Retrieve - Refs(1+3+4), 23.552
+(9) Message Store Retrieve, 4.969
+(1) Call ID Generation, 6.15
+(2) Encrypt and Sign, 7.778
+(3) Retrieve Req & Sign, 7.943
+(4) Verify and Decrypt, 9.952
+(5) Server OPRF Eval, 3.963
+(6) Provider Publish - Refs(1+2), 13.928
+(7) Message Store Publish, 4.997
+(8) Provider Retrieve - Refs(1+3+4), 24.045
+(9) Message Store Retrieve, 5.1
+(1) Call ID Generation, 6.101
+(2) Encrypt and Sign, 8.061
+(3) Retrieve Req & Sign, 8.24
+(4) Verify and Decrypt, 10.043
+(5) Server OPRF Eval, 3.923
+(6) Provider Publish - Refs(1+2), 14.163
+(7) Message Store Publish, 5.077
+(8) Provider Retrieve - Refs(1+3+4), 24.384
+(9) Message Store Retrieve, 4.911
+(1) Call ID Generation, 6.132
+(2) Encrypt and Sign, 7.895
+(3) Retrieve Req & Sign, 8.058
+(4) Verify and Decrypt, 9.791
+(5) Server OPRF Eval, 3.953
+(6) Provider Publish - Refs(1+2), 14.028
+(7) Message Store Publish, 4.775
+(8) Provider Retrieve - Refs(1+3+4), 23.981
+(9) Message Store Retrieve, 4.893
+(1) Call ID Generation, 6.243
+(2) Encrypt and Sign, 7.958
+(3) Retrieve Req & Sign, 7.934
+(4) Verify and Decrypt, 9.858
+(5) Server OPRF Eval, 4.073
+(6) Provider Publish - Refs(1+2), 14.201
+(7) Message Store Publish, 5.03
+(8) Provider Retrieve - Refs(1+3+4), 24.035
+(9) Message Store Retrieve, 4.844
+(1) Call ID Generation, 6.141
+(2) Encrypt and Sign, 7.883
+(3) Retrieve Req & Sign, 7.945
+(4) Verify and Decrypt, 10.135
+(5) Server OPRF Eval, 3.916
+(6) Provider Publish - Refs(1+2), 14.024
+(7) Message Store Publish, 4.74
+(8) Provider Retrieve - Refs(1+3+4), 24.22
+(9) Message Store Retrieve, 4.867
+(1) Call ID Generation, 6.11
+(2) Encrypt and Sign, 7.643
+(3) Retrieve Req & Sign, 8.2
+(4) Verify and Decrypt, 10.001
+(5) Server OPRF Eval, 3.957
+(6) Provider Publish - Refs(1+2), 13.753
+(7) Message Store Publish, 4.999
+(8) Provider Retrieve - Refs(1+3+4), 24.311
+(9) Message Store Retrieve, 4.886
+(1) Call ID Generation, 5.96
+(2) Encrypt and Sign, 7.688
+(3) Retrieve Req & Sign, 7.919
+(4) Verify and Decrypt, 11.785
+(5) Server OPRF Eval, 3.812
+(6) Provider Publish - Refs(1+2), 13.648
+(7) Message Store Publish, 4.969
+(8) Provider Retrieve - Refs(1+3+4), 25.665
+(9) Message Store Retrieve, 6.872
+(1) Call ID Generation, 5.904
+(2) Encrypt and Sign, 7.547
+(3) Retrieve Req & Sign, 7.734
+(4) Verify and Decrypt, 9.333
+(5) Server OPRF Eval, 3.757
+(6) Provider Publish - Refs(1+2), 13.451
+(7) Message Store Publish, 4.88
+(8) Provider Retrieve - Refs(1+3+4), 22.97
+(9) Message Store Retrieve, 4.803
+(1) Call ID Generation, 5.813
+(2) Encrypt and Sign, 7.627
+(3) Retrieve Req & Sign, 7.625
+(4) Verify and Decrypt, 9.284
+(5) Server OPRF Eval, 3.734
+(6) Provider Publish - Refs(1+2), 13.44
+(7) Message Store Publish, 5.025
+(8) Provider Retrieve - Refs(1+3+4), 22.722
+(9) Message Store Retrieve, 4.868
+(1) Call ID Generation, 6.293
+(2) Encrypt and Sign, 7.954
+(3) Retrieve Req & Sign, 8.197
+(4) Verify and Decrypt, 9.785
+(5) Server OPRF Eval, 3.902
+(6) Provider Publish - Refs(1+2), 14.247
+(7) Message Store Publish, 5.13
+(8) Provider Retrieve - Refs(1+3+4), 24.275
+(9) Message Store Retrieve, 4.951
+(1) Call ID Generation, 6.535
+(2) Encrypt and Sign, 7.971
+(3) Retrieve Req & Sign, 7.888
+(4) Verify and Decrypt, 9.941
+(5) Server OPRF Eval, 4.098
+(6) Provider Publish - Refs(1+2), 14.506
+(7) Message Store Publish, 4.752
+(8) Provider Retrieve - Refs(1+3+4), 24.363
+(9) Message Store Retrieve, 4.729
+(1) Call ID Generation, 6.053
+(2) Encrypt and Sign, 7.924
+(3) Retrieve Req & Sign, 7.925
+(4) Verify and Decrypt, 9.93
+(5) Server OPRF Eval, 3.896
+(6) Provider Publish - Refs(1+2), 13.976
+(7) Message Store Publish, 4.788
+(8) Provider Retrieve - Refs(1+3+4), 23.907
+(9) Message Store Retrieve, 4.86
+(1) Call ID Generation, 5.942
+(2) Encrypt and Sign, 7.413
+(3) Retrieve Req & Sign, 7.691
+(4) Verify and Decrypt, 9.4
+(5) Server OPRF Eval, 3.752
+(6) Provider Publish - Refs(1+2), 13.356
+(7) Message Store Publish, 4.691
+(8) Provider Retrieve - Refs(1+3+4), 23.033
+(9) Message Store Retrieve, 5.106
+(1) Call ID Generation, 5.896
+(2) Encrypt and Sign, 7.625
+(3) Retrieve Req & Sign, 7.594
+(4) Verify and Decrypt, 9.437
+(5) Server OPRF Eval, 3.784
+(6) Provider Publish - Refs(1+2), 13.521
+(7) Message Store Publish, 4.727
+(8) Provider Retrieve - Refs(1+3+4), 22.926
+(9) Message Store Retrieve, 4.953

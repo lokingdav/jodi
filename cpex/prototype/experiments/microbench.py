@@ -1,11 +1,13 @@
-import time
+import time, os, asyncio
 from cpex.helpers import misc, http, files
 from cpex.crypto import libcpex, groupsig
 from pylibcpex import Oprf, Utils
 from cpex import config
 from cpex.models import persistence, cache
 
-numIters = 1000
+
+numIters = 100
+
 
 # Sample src, dst and JWT token
 src = '16841333538'
@@ -18,11 +20,10 @@ token = "eyJhbGciOiJFUzI1NiIsInBwdCI6InNoYWtlbiIsInR5cCI6InBhc3Nwb3J0IiwieDV1Ijo
 def toMs(seconds):
     return round(seconds * 1000, 3)
 
-def benchProviderAndServerPublish():
+async def benchCpexProtocol(printResults=True):
     call_id_time = 0
     server_oprf_time = 0
     provider_enc_sign_time = 0
-    retrieval_time = 0
     
     message_stores = persistence.get_repositories()
     
@@ -78,24 +79,56 @@ def benchProviderAndServerPublish():
     )
     create_ret_reqs_and_sign = time.perf_counter() - create_ret_reqs_and_sign
     
+    # Message Store operations for 1 store
+    message_store_ret_time = time.perf_counter()
+    ret_req = ret_reqs[0]['data']
+    gpk = groupsig.get_gpk() 
+    groupsig.verify(sig=ret_req['sig'], msg=ret_req['idx'], gpk=gpk)
+    value = cache.find(ret_req['idx'])
+    (msidx, msctx, mssig) = value.split('.')
+    message_store_ret_time = time.perf_counter() - message_store_ret_time
+    
     responses = [res['data'] for res in storage_reqs] # Retrieve responses from storage requests
     
     verify_and_decrypt = time.perf_counter()
     tokens = libcpex.decrypt(call_id=call_id, responses=responses, src=src, dst=dst)
     verify_and_decrypt = time.perf_counter() - verify_and_decrypt
     
-    print(f"\nCall ID generation:\t{toMs(call_id_time)} ms")
-    print(f"Encrypt and Sign:\t{toMs(provider_enc_sign_time)} ms")
-    print(f"Retrieve Req & Sign:\t{toMs(create_ret_reqs_and_sign)} ms")
-    print(f"Verify and Decrypt:\t{toMs(verify_and_decrypt)} ms")
-    print('--------------------------------------')
-    print(f"Server OPRF Eval:\t{toMs(server_oprf_time)} ms")
-    print(f"Provider Publish:\t{toMs(call_id_time + provider_enc_sign_time)} ms")
-    print(f"Mes. Store Publish:\t{toMs(message_store_pub_time)} ms")
-    print(f"Provider Retrieve:\t{toMs(call_id_time + create_ret_reqs_and_sign + verify_and_decrypt)} ms\n")
+    results = [
+        ['(1) Call ID Generation', toMs(call_id_time)],
+        ['(2) Encrypt and Sign', toMs(provider_enc_sign_time)],
+        ['(3) Retrieve Req & Sign', toMs(create_ret_reqs_and_sign)],
+        ['(4) Verify and Decrypt', toMs(verify_and_decrypt)],
+        ['(5) Server OPRF Eval', toMs(server_oprf_time)],
+        ['(6) Provider Publish - Refs(1+2)', toMs(call_id_time + provider_enc_sign_time)],
+        ['(7) Message Store Publish', toMs(message_store_pub_time)],
+        ['(8) Provider Retrieve - Refs(1+3+4)', toMs(call_id_time + create_ret_reqs_and_sign + verify_and_decrypt)],
+        ['(9) Message Store Retrieve', toMs(message_store_ret_time)],
+    ]
+    
+    if printResults:
+        print("\nMicrobenchmark Results:")
+        for result in results:
+            print(f"{result[0]}: {result[1]} ms")
+        print("\n")
+        
+    return results
+    
 
-def main():
-    benchProviderAndServerPublish()
+async def main():
+    results_folder = os.path.dirname(os.path.abspath(__file__)) + '/results'
+    files.create_dir_if_not_exists(results_folder)
+    resutlsloc = f"{results_folder}/microbench.csv"
+    results = [['Operation', 'Runtime (ms)']]
+    files.write_csv(resutlsloc, results)
+    
+    print(f"Running {numIters} iterations of the CPEX protocol microbenchmark...")
+    start = time.perf_counter()
+    results = await asyncio.gather(*[benchCpexProtocol(printResults=_ == numIters - 1) for _ in range(numIters)])
+    for result in results:
+        files.append_csv(resutlsloc, result)
+    end = round(time.perf_counter() - start, 2)
+    print(f"Results have been saved to {resutlsloc}. Total time taken: {end} seconds.")
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
