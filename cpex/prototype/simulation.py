@@ -27,7 +27,6 @@ async def simulate_call(entry: dict):
     
     message_stores = persistence.get_repositories()
     
-
     providers, signal, start_token, final_token = {}, None, None, None
     
     for i, (idx, impl) in enumerate(route):
@@ -51,16 +50,14 @@ async def simulate_call(entry: dict):
             
             providers[pid] = provider
             
-        if i == 0:
+        if i == 0: # Originating provider
             signal, start_token = await provider.originate()
-        elif i == len(route) - 1:
+        elif i == len(route) - 1: # Terminating provider
             final_token = await provider.terminate(signal)
-        else:
+        else: # Intermediate provider
             signal = await provider.receive(signal)
     
-    # assert start_token is not None
-    # assert final_token is not None
-    # assert start_token == final_token
+    assert start_token == final_token
     
     return entry.get('_id')
 

@@ -97,7 +97,6 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     
     # 5. Send requests to all repositories
     responses = await http.posts(reqs)
-    print("Responses: ", responses) 
     return success_response()
 
 @app.post("/republish/{dest}/{orig}")

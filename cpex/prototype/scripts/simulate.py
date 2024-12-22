@@ -1,10 +1,12 @@
-import argparse, traceback
+import argparse
+import traceback
+import asyncio  # <-- Make sure to import asyncio
 from cpex.prototype import simulation
 from cpex.models import persistence
 
 def handle_gen(args):
-    print(f"Starting Data Generation...", 
-          f"Providers = {args.num_providers}", 
+    print(f"Starting Data Generation...",
+          f"Providers = {args.num_providers}",
           f"Deploy rate = {args.deploy_rate}"
     )
     try:
@@ -14,7 +16,7 @@ def handle_gen(args):
             force_clean=args.force_clean
         )
     except Exception as ex:
-        print("> Error: ", ex)
+        print("> Error:", ex)
 
 async def handle_run(args):
     try:
@@ -26,13 +28,13 @@ async def handle_run(args):
             simulation.run()
         print("SIMULATION COMPLETED")
     except Exception as ex:
-        print("An error occured:", ex)
+        print("An error occurred:", ex)
         traceback.print_exc()
 
 def handle_clean(args):
     if args.force_clean is False:
         if persistence.has_pending_routes():
-            print("Pending call routes exists. Force cleansing with the -f option")
+            print("Pending call routes exist. Force cleansing with the -f option")
             return
     
     print("Cleaning up resources...", end='')
@@ -41,25 +43,45 @@ def handle_clean(args):
 
 
 if __name__ == '__main__':
+    # Create the main parser
     parser = argparse.ArgumentParser(description="Running CPeX Experiments")
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands: gen, run, clean")
 
+    # Subparser for `gen`
     parser_gen = subparsers.add_parser('gen', help="Generate configuration")
-    parser_gen.add_argument("-n", "--num-providers", help="Number of providers in the network", required=True, type=int)
-    parser_gen.add_argument("-r", "--deploy-rate", help="STIR/SHAKEN deployment rate in percentage. Default=14", default=14, type=float)
-    parser_gen.add_argument('-f', "--force-clean", action="store_true", default=False, help="Force clean existing records")
+    parser_gen.add_argument("-n", "--num-providers",
+                            help="Number of providers in the network",
+                            required=True, type=int)
+    parser_gen.add_argument("-r", "--deploy-rate",
+                            help="STIR/SHAKEN deployment rate in percentage. Default=14",
+                            default=14, type=float)
+    parser_gen.add_argument('-f', "--force-clean",
+                            action="store_true", default=False,
+                            help="Force clean existing records")
     parser_gen.set_defaults(func=handle_gen)
 
+    # Subparser for `run`
     parser_run = subparsers.add_parser('run', help="Run the experiment")
-    parser_run.add_argument("-c", "--call-path", required=False, help="Parameter a for the experiment")
+    parser_run.add_argument("-c", "--call-path", required=False,
+                            help="Parameter for the experiment")
     parser_run.set_defaults(func=handle_run)
 
+    # Subparser for `clean`
     parser_clean = subparsers.add_parser('clean', help="Clean up resources")
-    parser_clean.add_argument('-f', "--force-clean", action="store_true", default=False, help="Force clean existing records")
+    parser_clean.add_argument('-f', "--force-clean",
+                              action="store_true", default=False,
+                              help="Force clean existing records")
     parser_clean.set_defaults(func=handle_clean)
 
+    # Parse the arguments
     args = parser.parse_args()
+
+    # Dispatch to the appropriate function
     if args.command:
-        args.func(args)
+        # If the chosen sub-command’s function is a coroutine, run it with asyncio
+        if asyncio.iscoroutinefunction(args.func):
+            asyncio.run(args.func(args))
+        else:
+            args.func(args)
     else:
         parser.print_help()
