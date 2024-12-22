@@ -16,12 +16,11 @@ def handle_gen(args):
     except Exception as ex:
         print("> Error: ", ex)
 
-def handle_run(args):
+async def handle_run(args):
     try:
         if args.call_path:
             entry = {'route': simulation.get_route_from_bitstring(args.call_path)}
-            simulation.load_private_keys(len(entry['route']))
-            simulation.simulate_call(entry=entry)
+            await simulation.simulate_call(entry=entry)
         else:
             print("Simulating pending routes...")
             simulation.run()

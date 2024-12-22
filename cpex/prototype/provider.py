@@ -22,21 +22,16 @@ class SIPSignal(TDMSignal):
     CallId: str = str(uuid4())
 
 class Provider:
-    @staticmethod
-    def load_nodes():
-        nodes = files.read_json(config.CONF_DIR + '/repositories.json')
-        return nodes if nodes else []
-    
-    def __init__(self, pid: str, impl: bool, cps_url: str, nodes: List[dict] = []):
+    def __init__(self, pid: str, impl: bool, cps_url: str = None, message_stores: List[dict] = []):
         self.pid = pid
         self.impl = impl
         self.cps_url = cps_url
         self.load_auth_service()
-        self.nodes = nodes
+        self.message_stores = message_stores
         self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
 
-        if not config.IS_ATIS_MODE and not self.nodes:
-            self.nodes = Provider.load_nodes()
+        if not self.message_stores and not config.IS_ATIS_MODE:
+            self.message_stores = persistence.get_repositories()
             
 
     def load_auth_service(self):
@@ -133,7 +128,7 @@ class Provider:
         reqs = libcpex.create_publish_requests(
             call_id=call_id, 
             ctx=ctx,
-            nodes=self.nodes[:], # Copy of nodes
+            nodes=self.message_stores[:], # Copy of nodes
             count=config.REPLICATION, 
         )
         await http.posts(reqs=reqs)
@@ -170,7 +165,7 @@ class Provider:
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
         call_details: str = libcpex.get_call_details(src=signal.From, dst=signal.To)
         call_id = await libcpex.generate_call_id(call_details)
-        reqs = libcpex.create_retrieve_requests(call_id=call_id, nodes=self.nodes[:], count=config.REPLICATION)
+        reqs = libcpex.create_retrieve_requests(call_id=call_id, nodes=self.message_stores[:], count=config.REPLICATION)
         responses = await http.posts(reqs)
         responses = [r for r in responses if '_error' not in r]
         tokens = libcpex.decrypt(call_id=call_id, responses=responses, src=signal.From, dst=signal.To)

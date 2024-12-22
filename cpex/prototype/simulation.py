@@ -8,15 +8,6 @@ from cpex import config, constants
 from cpex.prototype.provider import Provider
 
 processes = 4
-vsp_priv_keys = {}
-keyfile = config.CONF_DIR + '/sp.sks.json'
-
-def load_private_keys(num = 0):
-    print('num', num)
-    global vsp_priv_keys
-    vsp_priv_keys = files.read_json(keyfile)
-    if not vsp_priv_keys or num > len(vsp_priv_keys.keys()):
-        init_provider_private_keys(num)
 
 def simulate_call_sync(entry: dict):
     return asyncio.run(simulate_call(entry=entry))
@@ -33,19 +24,31 @@ async def simulate_call(entry: dict):
     
     if len(set([p for (p, _) in route])) == 1:
         return entry.get('_id')
-        
+    
+    message_stores = persistence.get_repositories()
+    
+
     providers, signal, start_token, final_token = {}, None, None, None
     
     for i, (idx, impl) in enumerate(route):
-        pid = 'vsp_' + str(idx)
+        pid = 'P' + str(idx)
         provider: Provider = providers.get(pid)
         
         if not provider:
+            if config.IS_ATIS_MODE:
+                cps_url = message_stores[random.randint(0, len(message_stores) - 1)].get('url')
+                stores = []
+            else:
+                stores = message_stores[:]
+                cps_url = None
+
             provider = Provider(
                 pid=pid, 
-                impl=bool(int(impl)), 
-                priv_key_pem=vsp_priv_keys[pid]
+                impl=bool(int(impl)),
+                cps_url=cps_url,
+                message_stores=stores
             )
+            
             providers[pid] = provider
             
         if i == 0:
@@ -65,50 +68,6 @@ def get_route_from_bitstring(path: str):
     if not path.isdigit() or set(path) > {'0', '1'}:
         raise Exception('Invalid format string for call path: Accepted values are binary digits')
     return [(i, int(d)) for i, d in enumerate(path)]
-
-def gen_provider_credentials(start: int, num_providers: int):
-    keydata = {}
-    pki = files.read_json(config.CONF_DIR + '/cas.certs.json')
-    
-    print(f"> Generating Keys for vsp-{start} to vsp-{num_providers-1}...", end='')
-    
-    for i in range(start, num_providers):
-        pid = f'vsp_{i}'
-        rand_ca = pki[constants.INTERMEDIATE_CA_KEY][random.randint(0, len(pki[constants.INTERMEDIATE_CA_KEY]) - 1)]
-        sk, csr = certs.client_keygen(name=pid)
-        
-        signed_cert_str = certs.sign_csr(
-            csr_str=csr,
-            ca_private_key_str=rand_ca[constants.PRIV_KEY],
-            ca_cert_str=rand_ca[constants.CERT_KEY],
-            days_valid=90
-        )
-        
-        keydata[pid] = sk
-        persistence.store_cert(key=pid, cert=signed_cert_str)
-    
-    print("DONE")
-    return keydata
-
-def init_provider_private_keys(num_providers: int):
-    global vsp_priv_keys
-    print(f"Generating STIR/SHAKEN credentials for {num_providers} Provider(s)")
-    
-    modified = False
-    vsp_priv_keys = files.read_json(keyfile)
-    
-    if vsp_priv_keys is False:
-        modified = True
-        vsp_priv_keys = gen_provider_credentials(start=0, num_providers=num_providers)
-    elif type(vsp_priv_keys) is dict and len(vsp_priv_keys.keys()) < num_providers:
-        modified = True
-        vsp_priv_keys.update(gen_provider_credentials(
-            start=len(vsp_priv_keys.keys()),
-            num_providers=num_providers
-        ))
-    
-    if modified:
-        files.override_json(fileloc=keyfile, data=vsp_priv_keys)
 
 def clean():
     persistence.clean_routes()
@@ -137,11 +96,7 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     persistence.save_routes(routes)
     print("DONE")
     
-    init_provider_private_keys(num_providers=num_providers)
-    
 def run():
-    load_private_keys()
-    
     with Pool(processes=processes) as pool:
         start_idx, batch_size = 1, 10
         routes = persistence.retrieve_pending_routes(limit=batch_size)

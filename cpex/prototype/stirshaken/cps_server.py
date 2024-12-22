@@ -39,8 +39,8 @@ def authorize_request(authorization: str, passports: List[str] = None) -> dict:
         return None
     return decoded
 
-def get_storage_key(dest: str, orig: str):
-    return f'cps{config.NODE_ID}.{dest}.{orig}'
+def get_record_key(dest: str, orig: str):
+    return f'cps.{config.NODE_ID}.{dest}.{orig}'
 
 def success_response(content={"message": "OK"}):
     return JSONResponse(content=content, status_code=status.HTTP_200_OK)
@@ -61,7 +61,7 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
         return unauthorized_response()
     
     # 2. Store passports in cache for 15 seconds
-    cache.cache_for_seconds(key=get_storage_key(dest=dest, orig=orig), value=request.passports, seconds=tmax)
+    cache.cache_for_seconds(key=get_record_key(dest=dest, orig=orig), value=request.passports, seconds=tmax)
 
     if not repositories:
         return success_response()
@@ -108,7 +108,7 @@ async def republish(dest: str, orig: str, request: RepublishRequest, authorizati
         return unauthorized_response()
     
     # 2. Store passports in cache for 15 seconds
-    cache.cache_for_seconds(key=get_storage_key(dest=dest, orig=orig), value=request.passports, seconds=tmax)
+    cache.cache_for_seconds(key=get_record_key(dest=dest, orig=orig), value=request.passports, seconds=tmax)
 
     return success_response()
 
@@ -120,7 +120,7 @@ async def republish(dest: str, orig: str, authorization: str = Header(None)):
         return unauthorized_response()
     
     # 2. Retrieve passports from cache
-    passports = cache.find(key=get_storage_key(dest=dest, orig=orig), dtype=dict)
+    passports = cache.find(key=get_record_key(dest=dest, orig=orig), dtype=dict)
 
     if not passports:
         return not_found_response()
