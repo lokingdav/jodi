@@ -25,7 +25,8 @@ class EvaluateRequest(BaseModel):
     
 @app.post("/evaluate")
 async def evaluate(req: EvaluateRequest):
-    if not groupsig.verify(req.sig, str(req.idx) + str(req.x), config.TGS_GPK):
+    gpk = groupsig.get_gpk()
+    if not groupsig.verify(sig=req.sig, msg=str(req.idx) + str(req.x), gpk=gpk):
         return JSONResponse(
             content={"message": "Invalid Signature"}, 
             status_code=status.HTTP_401_UNAUTHORIZED

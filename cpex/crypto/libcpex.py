@@ -26,8 +26,9 @@ def create_evaluation_requests(call_details: str) -> bytes:
     x1, r1 = Oprf.blind(call_details)
     x0_str, x1_str = Utils.to_base64(x0), Utils.to_base64(x1)
     
-    sig0_str = groupsig.sign(msg=str(idx) + x0_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
-    sig1_str = groupsig.sign(msg=str(idx) + x1_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
+    gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
+    sig0_str = groupsig.sign(msg=str(idx) + x0_str, gsk=gsk, gpk=gpk)
+    sig1_str = groupsig.sign(msg=str(idx) + x1_str, gsk=gsk, gpk=gpk)
     
     requests = [
         {'url': config.OPRF_SERVER_1_URL + '/evaluate', 'data': { 'idx': idx, 'x': x0_str, 'sig': sig0_str}},
@@ -73,7 +74,8 @@ def create_storage_requests(call_id: bytes, ctx: bytes, nodes: List[dict], count
     if not nodes: raise Exception('No message store available')
 
     call_id, ctx, reqs = Utils.to_base64(call_id), Utils.to_base64(ctx), []
-
+    gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
+    
     for i in range(1, count + 1):
         idx: bytes = Utils.hash256(bytes(call_id + str(i), 'utf-8'))
         node, index = find_node(nodes=nodes, key=idx)
@@ -83,7 +85,7 @@ def create_storage_requests(call_id: bytes, ctx: bytes, nodes: List[dict], count
             'data': { 
                 'idx': idx, 
                 'ctx': ctx, 
-                'sig': groupsig.sign(msg=idx + ctx, gsk=config.TGS_GSK, gpk=config.TGS_GPK) 
+                'sig': groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk) 
             }
         })
         nodes.pop(index)
@@ -94,6 +96,7 @@ def create_retrieve_requests(call_id: bytes, nodes: List[dict], count: int) -> L
     if not nodes: raise Exception('No message store available')
 
     call_id, reqs = Utils.to_base64(call_id), []
+    gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
 
     for i in range(1, count + 1):
         idx: bytes = Utils.hash256(bytes(call_id + str(i), 'utf-8'))
@@ -103,7 +106,7 @@ def create_retrieve_requests(call_id: bytes, nodes: List[dict], count: int) -> L
             'url': node['url'] + '/retrieve',
             'data': { 
                 'idx': idx, 
-                'sig': groupsig.sign(msg=idx, gsk=config.TGS_GSK, gpk=config.TGS_GPK) 
+                'sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk) 
             }
         })
         nodes.pop(index)
@@ -115,9 +118,9 @@ def encrypt_and_mac(call_id: bytes, plaintext: str):
 
 def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str):
     src, dst, tokens = str(src), str(dst), []
-    
+    gpk = groupsig.get_gpk()
     for res in responses:
-        if not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=config.TGS_GPK):
+        if not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=gpk):
             continue
         tokens.append(Ciphering.dec(call_id, Utils.from_base64(res['ctx'])))
 

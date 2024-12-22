@@ -1,5 +1,6 @@
 from pygroupsig import groupsig, constants, signature, memkey, grpkey, mgrkey, gml as GML
 from cpex import config
+import time
 
 SCHEME = constants.BBS04_CODE
 
@@ -36,25 +37,26 @@ def mgr_generate_member_keys(msk, gpk, gml):
     
     return memkey.memkey_export(usk)
         
-def get_gpk():
+def get_gpk(gpk: str = None):
     groupsig.init(SCHEME, 0)
-    if not config.TGS_GPK:
+    gpk = gpk if gpk else config.TGS_GPK
+    if not gpk:
         raise Exception('GPK not set')
     return grpkey.grpkey_import(SCHEME, config.TGS_GPK)
+
+def get_gsk(gsk: str = None):
+    groupsig.init(SCHEME, 0)
+    gsk = gsk if gsk else config.TGS_GSK
+    if not gsk:
+        raise Exception('GSK not set')
+    return memkey.memkey_import(SCHEME, config.TGS_GSK)
     
-def sign(msg: str, gsk: str, gpk: str) -> str:
+def sign(msg: str, gsk, gpk) -> str:
     groupsig.init(SCHEME)
-    gsk = memkey.memkey_import(SCHEME, gsk) if type(gsk) == str else gsk
-    gpk = grpkey.grpkey_import(SCHEME, gpk) if type(gpk) == str else gpk
     sigma = groupsig.sign(msg, gsk, gpk)
     return signature.signature_export(sigma)
 
-def verify(sig: str, msg: str, gpk: str):
+def verify(sig: str, msg: str, gpk) -> bool:
     groupsig.init(SCHEME)
-    gpk = grpkey.grpkey_import(SCHEME, gpk) if type(gpk) == str else gpk
     sig = signature.signature_import(SCHEME, sig) if type(sig) == str else sig
     return groupsig.verify(sig, msg, gpk)
-
-def import_signing_key(gsk: str) -> dict:
-    groupsig.init(SCHEME, 0)
-    return memkey.memkey_import(SCHEME, gsk)

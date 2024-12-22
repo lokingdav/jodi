@@ -34,17 +34,19 @@ def get_record_key(idx: str):
     
 @app.post("/publish")
 async def publish(req: PublishRequest):
-    if not groupsig.verify(sig=req.sig, msg=str(req.idx) + str(req.ctx), gpk=config.TGS_GPK):
+    gpk = groupsig.get_gpk()
+    if not groupsig.verify(sig=req.sig, msg=req.idx + req.ctx, gpk=gpk):
         return unauthorized_response()
     
-    value = str(req.idx) + '.' + str(req.ctx) + '.' + str(req.sig)
+    value = req.idx + '.' + req.ctx + '.' + req.sig
     cache.cache_for_seconds(get_record_key(req.idx), value, config.REC_TTL_SECONDS)
     
     return success_response()
     
 @app.post("/retrieve")
 async def retrieve(req: RetrieveRequest):
-    if not groupsig.verify(req.sig, req.idx, config.TGS_GPK):
+    gpk = groupsig.get_gpk()
+    if not groupsig.verify(sig=req.sig, msg=req.idx, gpk=gpk):
         return unauthorized_response()
     
     value = cache.find(get_record_key(req.idx))
