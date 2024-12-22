@@ -19,7 +19,7 @@ def get_call_details(src: str, dst: str):
 def get_index_from_call_details(call_details: str) -> int:
     return int(call_details.encode().hex(), 16) % config.OPRF_KEYLIST_SIZE
 
-async def generate_call_id(call_details: str) -> bytes:
+def create_evaluation_requests(call_details: str) -> bytes:
     idx: int = get_index_from_call_details(call_details)
 
     x0, r0 = Oprf.blind(call_details)
@@ -28,16 +28,26 @@ async def generate_call_id(call_details: str) -> bytes:
     
     sig0_str = groupsig.sign(msg=str(idx) + x0_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
     sig1_str = groupsig.sign(msg=str(idx) + x1_str, gsk=config.TGS_GSK, gpk=config.TGS_GPK)
-    reqs = [
+    
+    requests = [
         {'url': config.OPRF_SERVER_1_URL + '/evaluate', 'data': { 'idx': idx, 'x': x0_str, 'sig': sig0_str}},
         {'url': config.OPRF_SERVER_2_URL + '/evaluate', 'data': { 'idx': idx, 'x': x1_str, 'sig': sig1_str}},
     ]
+    return requests, [r0, r1]
 
-    res = await http.posts(reqs=reqs)
-    L0: bytes = Oprf.unblind(Utils.from_base64(res[0]['fx']), Utils.from_base64(res[0]['vk']), r0)
-    L1: bytes = Oprf.unblind(Utils.from_base64(res[1]['fx']), Utils.from_base64(res[1]['vk']), r1)
-
+def create_call_id(s1res: dict, s2res: dict, scalars) -> bytes:
+    L0: bytes = Oprf.unblind(
+        Utils.from_base64(s1res['fx']), 
+        Utils.from_base64(s1res['vk']), 
+        scalars[0]
+    )
+    L1: bytes = Oprf.unblind(
+        Utils.from_base64(s2res['fx']), 
+        Utils.from_base64(s2res['vk']), 
+        scalars[1]
+    )
     return Utils.hash256(Utils.xor(L0, L1))
+
 
 def find_node(nodes: List[dict], key: bytes) -> dict:
     closest_node = None
@@ -59,7 +69,7 @@ def find_node(nodes: List[dict], key: bytes) -> dict:
             
     return closest_node, closest_dist_index
 
-def create_publish_requests(call_id: bytes, ctx: bytes, nodes: List[dict], count: int) -> List[dict]:
+def create_storage_requests(call_id: bytes, ctx: bytes, nodes: List[dict], count: int) -> List[dict]:
     if not nodes: raise Exception('No message store available')
 
     call_id, ctx, reqs = Utils.to_base64(call_id), Utils.to_base64(ctx), []

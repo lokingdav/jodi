@@ -32,10 +32,6 @@ async def evaluate(req: EvaluateRequest):
         )
     
     privk, publk = kr_instance.get_key(req.idx)
-
-    print(f"\nReceived request for index {req.idx}")
-    print(f"Private Key: {misc.base64encode(privk)}")
-    print(f"Public Key: {misc.base64encode(publk)}\n")
     
     return JSONResponse(
         content=oprf.evaluate(privk=privk, publk=publk, x=req.x), 
