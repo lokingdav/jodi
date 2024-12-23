@@ -4,9 +4,10 @@ from cpex.crypto import libcpex, groupsig
 from pylibcpex import Oprf, Utils
 from cpex import config
 from cpex.models import persistence, cache
+from multiprocessing import Pool
 
 
-numIters = 100
+numIters = 1000
 
 
 # Sample src, dst and JWT token
@@ -20,7 +21,7 @@ token = "eyJhbGciOiJFUzI1NiIsInBwdCI6InNoYWtlbiIsInR5cCI6InBhc3Nwb3J0IiwieDV1Ijo
 def toMs(seconds):
     return round(seconds * 1000, 3)
 
-async def benchCpexProtocol(printResults=True):
+def benchCpexProtocol(printResults=True):
     call_id_time = 0
     server_oprf_time = 0
     provider_enc_sign_time = 0
@@ -124,7 +125,9 @@ async def main():
     
     print(f"Running {numIters} iterations of the CPEX protocol microbenchmark...")
     start = time.perf_counter()
-    results = await asyncio.gather(*[benchCpexProtocol(printResults=_ == numIters - 1) for _ in range(numIters)])
+    results = []
+    with Pool(processes=os.cpu_count()) as pool:
+        results = pool.map(benchCpexProtocol, [False] * numIters)
     for result in results:
         files.append_csv(resutlsloc, result)
     end = round(time.perf_counter() - start, 2)
