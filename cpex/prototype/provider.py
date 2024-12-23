@@ -37,7 +37,7 @@ class Provider:
             self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
 
         if not self.message_stores and not config.IS_ATIS_MODE:
-            self.message_stores = persistence.get_repositories()
+            raise Exception('Message stores are required for non-ATIS mode')
             
 
     def load_auth_service(self):

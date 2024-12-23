@@ -14,6 +14,8 @@ def env(envname, default="", dtype=None):
 
 CPEX_VERSION = env('CPEX_VERSION', '1.0.0')
 BASE_REPO_PORT = env('BASE_REPO_PORT', 10000)
+COMPOSE_NETWORK_ID = "cpex_net"
+CPEX_DOCKER_IMAGE = "cpex"
 
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)
 CONF_DIR = env("CONF_DIR", "conf")
@@ -39,6 +41,8 @@ REPOSITORIES_COUNT = env("REPOSITORIES_COUNT", 1, dtype=int)
 CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
 
 IS_ATIS_MODE = PROTOCOL_SUITE == PROTOCOL_SUITE_ATIS
+REPO_CONTAINER_PREFIX = "atis-cps-" if IS_ATIS_MODE else "cpex-ms-"
+HOST_APP_PATH = env('HOST_APP_PATH')
 
 CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cert-repo')
 

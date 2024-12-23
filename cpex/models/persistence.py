@@ -1,4 +1,4 @@
-from cpex.config  import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME, NODE_ID
+from cpex.config  import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME, REPO_CONTAINER_PREFIX, NODE_ID
 from cpex.constants import STATUS_PENDING, STATUS_DONE, CERT_KEY
 from pymongo import MongoClient
 
@@ -81,7 +81,20 @@ def seed_repositories(items):
         conn[DB_NAME].repositories.delete_many({})
     insert(collection='repositories', records=items)
     
+def add_repositories(items):
+    # add or update repositories
+    with open_db() as conn:
+        for item in items:
+            conn[DB_NAME].repositories.find_one_and_update(
+                {'_id': item['id']},
+                {'$set': item},
+                upsert=True
+            )
+    
 def get_repositories():
     with open_db() as conn:
-        repos = list(conn[DB_NAME].repositories.find())
-    return [repo for repo in repos if repo.get('id') != NODE_ID]
+        repos = list(conn[DB_NAME].repositories.find({
+            "name": {"$regex": f"^{REPO_CONTAINER_PREFIX}"},
+            "id": {"$ne": NODE_ID}
+        }))
+    return repos

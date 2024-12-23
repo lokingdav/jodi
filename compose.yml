@@ -37,6 +37,12 @@ services:
     <<: *cpex-service
     container_name: cpex-exp
     command: tail -f /dev/null
+    environment:
+      - DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
+      - HOST_APP_PATH=${HOST_APP_PATH}
+    volumes:
+      - '.:/app'
+      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
 
 # Cache and Database
   cache:
