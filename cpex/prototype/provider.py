@@ -180,8 +180,8 @@ class Provider:
             else:
                 tokens = await self.cpex_retrieve_token(signal=signal)
             self.latencies.append(time.perf_counter() - start_time)
-            
-            signal = self.convert_tdm_to_sip(signal=signal, token=tokens[0])
+            token = tokens[0] if len(tokens) > 0 else ''
+            signal = self.convert_tdm_to_sip(signal=signal, token=token)
         except Exception as e:
             self.log_msg(f'Error while executing RETRIEVE: {e}')
             traceback.print_exc()

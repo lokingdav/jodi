@@ -70,11 +70,20 @@ def retrieve_pending_routes(collection_id: int, mode: str, limit:int = 1000, log
 def save_routes(collection_id: int, routes: list):
     insert(collection=f'routes_{collection_id}', records=routes)
         
-def mark_simulated(ids):
+def mark_simulated(collection_id: int, ids: list):
+    collection = f'routes_{collection_id}' 
     with open_db() as conn:
         filter = {'_id': {'$in': ids}}
         update = {'$set': {'status': STATUS_DONE}}
-        conn[DB_NAME].routes.update_many(filter=filter, update=update)
+        conn[DB_NAME][collection].update_many(filter=filter, update=update)
+
+def reset_marked_routes(collection_id: int):
+    collection = f'routes_{collection_id}' 
+    print(f"Resetting status of routes in {collection}")
+    with open_db() as conn:
+        update = {'$set': {'status': STATUS_PENDING}}
+        conn[DB_NAME][collection].update_many({}, update)
+        
         
 def store_credential(name: str, cred: dict):
     with open_db() as conn:

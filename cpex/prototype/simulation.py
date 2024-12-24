@@ -10,7 +10,10 @@ from cpex import config, constants
 from cpex.prototype.provider import Provider
 
 def simulate_call_sync(options: dict):
-    return asyncio.run(simulate_call(options))
+    # print(f"Simulating call with options: {options}")
+    res = asyncio.run(simulate_call(options))
+    # print(f'after simulate_call {options.get("_id")}')
+    return res
 
 async def simulate_call(options: dict):
     mode: str = options.get('mode')
@@ -67,7 +70,7 @@ async def simulate_call(options: dict):
     total = 0
     for provider in providers.values():
         total += provider.get_latency_ms()
-    
+    # print(f"Simulated call path of length {len(route)} and latency {total} ms")
     return (options.get('_id'), total, len(route), is_correct)
 
 def get_route_from_bitstring(path: str):
@@ -110,11 +113,13 @@ def run(num_provs: int, repo_count: int, mode: str):
         
         if len(routes) == 0:
             raise Exception("No route to simulate. Please generate routes")
-        
+                
         metrics, success, failed = np.array([]), 0, 0
 
         while len(routes) > 0:
+            print(f"Simulating {len(routes)} routes")
             results = pool.map(simulate_call_sync, routes)
+            print("pool->map->simulate_call_sync done")
             ids = []
             for (rid, latency_ms, _, is_correct) in results:
                 ids.append(rid)
@@ -124,14 +129,20 @@ def run(num_provs: int, repo_count: int, mode: str):
                         success += 1
                     else:
                         failed += 1
-                
-            persistence.mark_simulated(ids)
+            
+            print('Marking simulated routes')
+            persistence.mark_simulated(
+                collection_id=num_provs,
+                ids=ids
+            )
 
+            print('Retrieving pending routes')
             routes = persistence.retrieve_pending_routes(
                 collection_id=num_provs,
                 mode=mode,
                 limit=batch_size
             )
-        
-        return [mode, repo_count, num_provs, metrics.min(), metrics.max(), metrics.mean(), metrics.std(), success, failed]
+        print('Simulation completed')
+        dp = 2
+        return [mode, repo_count, num_provs, round(metrics.min(), dp), round(metrics.max(), dp), round(metrics.mean(), dp), round(metrics.std(), dp), success, failed]
             

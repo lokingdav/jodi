@@ -5,7 +5,7 @@ from multiprocessing import Pool
 from cpex.models import persistence
 from cpex.helpers import files
 
-provider_groups = [10] #, 200, 400, 800, 1600, 3200]
+provider_groups = [10, 20] #, 200, 400, 800, 1600, 3200]
 repo_groups = [10]#, 20, 40, 80, 160, 320]
 deploy_rate = 14
 
@@ -18,8 +18,6 @@ def setup_repos(count: int, mode: str):
 
 def run_datagen():
     groups = persistence.filter_route_collection_ids(provider_groups)
-    print(f"Generating data for {groups}")
-
     with Pool(processes=os.cpu_count()) as pool:
         pool.starmap(
             simulation.datagen, 
@@ -33,15 +31,16 @@ def main(resutlsloc: str, mode: str):
         setup_repos(repo_count, mode)
         for num_provs in provider_groups:
             print(f"Running simulation with {num_provs} providers and {repo_count} repositories")
-            results += simulation.run(
+
+            results.append(simulation.run(
                 num_provs=num_provs,
                 repo_count=repo_count,
                 mode=mode
-            )
-            # files.append_csv(resutlsloc, results)
-    print(results)
-
-    compose.remove_repositories(mode=mode)
+            ))
+            
+    files.append_csv(resutlsloc, results)
+    print("Results written to", resutlsloc)
+    # compose.remove_repositories(mode=mode)
 
 def prepare_results_file():
     results_folder = os.path.dirname(os.path.abspath(__file__)) + '/results'
@@ -50,8 +49,13 @@ def prepare_results_file():
     files.write_csv(resutlsloc, [['mode', 'num_repos', 'num_provs', 'min', 'max', 'mean', 'std', 'success', 'failed']])
     return resutlsloc
 
+def reset_routes():
+    for num_provs in provider_groups:
+        persistence.reset_marked_routes(num_provs)
+
 if __name__ == "__main__":
     run_datagen()
     resutlsloc = prepare_results_file()
+    reset_routes()
     main(resutlsloc=resutlsloc, mode=constants.MODE_CPEX)
-    # main(constants.MODE_ATIS)
+    
