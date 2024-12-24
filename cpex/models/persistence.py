@@ -76,25 +76,6 @@ def get_cert(key: str):
     cred: dict = get_credential(key)
     return cred.get('cert') if cred else None
 
-def seed_repositories(items):
-    with open_db() as conn:
-        conn[DB_NAME].repositories.delete_many({})
-    insert(collection='repositories', records=items)
-    
-def add_repositories(items):
-    # add or update repositories
-    with open_db() as conn:
-        for item in items:
-            conn[DB_NAME].repositories.find_one_and_update(
-                {'_id': item['id']},
-                {'$set': item},
-                upsert=True
-            )
-    
-def get_repositories():
-    with open_db() as conn:
-        repos = list(conn[DB_NAME].repositories.find({
-            "name": {"$regex": f"^{REPO_CONTAINER_PREFIX}"},
-            "id": {"$ne": NODE_ID}
-        }))
-    return repos
+
+def save_metrics(metrics: list):
+    insert(collection='scalability_metrics', records=metrics)

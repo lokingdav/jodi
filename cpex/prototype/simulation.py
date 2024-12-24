@@ -1,7 +1,7 @@
 import random, asyncio
 from multiprocessing import Pool, Manager
 from cpex.prototype import network
-from cpex.models import persistence
+from cpex.models import cache, persistence
 from cpex.helpers import errors, files
 from cpex.prototype.stirshaken import certs
 from cpex import config, constants
@@ -14,7 +14,6 @@ def simulate_call_sync(entry: dict):
 
 async def simulate_call(entry: dict):
     route = entry.get('route', [])
-    print('CALL ROUTE:', route)
     
     if len(route) == 0:
         raise Exception('Invalid simulation parameter')
@@ -25,8 +24,8 @@ async def simulate_call(entry: dict):
     if len(set([p for (p, _) in route])) == 1:
         return entry.get('_id')
     
-    message_stores = persistence.get_repositories()
-    
+    message_stores = cache.get_all_repositories()
+
     providers, signal, start_token, final_token = {}, None, None, None
     
     for i, (idx, impl) in enumerate(route):
@@ -57,16 +56,19 @@ async def simulate_call(entry: dict):
         else: # Intermediate provider
             signal = await provider.receive(signal)
     
-    assert start_token == final_token
+    is_correct = start_token == final_token
+    total = 0
+    for provider in providers.values():
+        total += provider.get_latency_ms()
     
-    return entry.get('_id')
+    return (entry.get('_id'), total, len(route), is_correct)
 
 def get_route_from_bitstring(path: str):
     if not path.isdigit() or set(path) > {'0', '1'}:
         raise Exception('Invalid format string for call path: Accepted values are binary digits')
     return [(i, int(d)) for i, d in enumerate(path)]
 
-def clean():
+def cleanup():
     persistence.clean_routes()
 
 def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = False):
@@ -80,7 +82,7 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
             raise Exception(errors.CALL_ROUTES_ALREADY_GENERTED)
         print("DONE")
     
-    clean()
+    cleanup()
     
     print("> Generate phone network and call routes...", end='')
     routes, stats = network.create(
@@ -103,8 +105,18 @@ def run():
         
         while len(routes) > 0:
             print(f"> Simulating {len(routes)} routes in Batch {start_idx}")
-            simulated_ids = pool.map(simulate_call_sync, routes)
-            persistence.mark_simulated(simulated_ids)
+            results = pool.map(simulate_call_sync, routes)
+            ids = [], metrics = []
+            for (rid, latency_ms, num_hops, is_correct) in results:
+                ids.append(rid)
+                metrics.append({
+                    'latency_ms': latency_ms,
+                    'num_hops': num_hops,
+                    'is_correct': is_correct
+                })
+                
+            persistence.mark_simulated(ids)
+            persistence.save_metrics(metrics)
             
             routes = persistence.retrieve_pending_routes(limit=batch_size)
             start_idx += 1

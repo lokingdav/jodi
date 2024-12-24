@@ -1,6 +1,6 @@
 import json
 from redis import Redis
-from cpex.config import CACHE_HOST, CACHE_PORT, CACHE_PASS, CACHE_DB
+from cpex.config import CACHE_HOST, CACHE_PORT, CACHE_PASS, CACHE_DB, REPO_CONTAINER_PREFIX, NODE_ID
 
 def connect():
     return Redis(
@@ -34,3 +34,10 @@ def cache_for_seconds(key: str, value: str, seconds: int):
     if type(value) != str:
         raise TypeError("Value must be a string")
     return connect().setex(key, seconds, value)
+
+def get_other_repositories():
+    all_repos = get_all_repositories()
+    return [repo for repo in all_repos if repo.get('id') != NODE_ID]
+
+def get_all_repositories():
+    return find('repositories', dict)

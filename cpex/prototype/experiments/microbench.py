@@ -3,7 +3,7 @@ from cpex.helpers import misc, http, files
 from cpex.crypto import libcpex, groupsig
 from pylibcpex import Oprf, Utils
 from cpex import config
-from cpex.models import persistence, cache
+from cpex.models import cache
 from multiprocessing import Pool
 
 
@@ -26,7 +26,7 @@ def benchCpexProtocol(printResults=True):
     server_oprf_time = 0
     provider_enc_sign_time = 0
     
-    message_stores = persistence.get_repositories()
+    message_stores = cache.get_all_repositories()
     
     # Begin Call ID Generation
     call_id_time = time.perf_counter()

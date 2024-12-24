@@ -31,14 +31,14 @@ async def handle_run(args):
         print("An error occurred:", ex)
         traceback.print_exc()
 
-def handle_clean(args):
+def handle_cleanup(args):
     if args.force_clean is False:
         if persistence.has_pending_routes():
             print("Pending call routes exist. Force cleansing with the -f option")
             return
     
     print("Cleaning up resources...", end='')
-    simulation.clean()
+    simulation.cleanup()
     print("DONE")
 
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     parser_clean.add_argument('-f', "--force-clean",
                               action="store_true", default=False,
                               help="Force clean existing records")
-    parser_clean.set_defaults(func=handle_clean)
+    parser_clean.set_defaults(func=handle_cleanup)
 
     # Parse the arguments
     args = parser.parse_args()

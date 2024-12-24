@@ -1,13 +1,13 @@
-import docker, os, argparse
+import docker, os, argparse, json
 from cpex import config
-from cpex.models import persistence
+from cpex.models import cache
 from pylibcpex import Utils
 from multiprocessing import Pool
 
 def get_client():
     return docker.from_env()
 
-def count_running_containers_by_name_prefix(prefix):
+def count_containers(prefix):
     client = get_client()
     containers = client.containers.list()
     matching_containers = [container for container in containers if container.name.startswith(prefix)]
@@ -37,20 +37,27 @@ def add_repository(repo_id):
     )
     
     print(f"Started container {name}")
+
+def cache_repositories():
+    repos = []
+    containers = get_client().containers.list()
+    for container in containers:
+        if container.name.startswith(config.REPO_CONTAINER_PREFIX):
+            repos.append({
+                'id': Utils.hash160(container.name.encode()).hex(),
+                'name': container.name,
+                'fqdn': container.name,
+                'url': f'http://{container.name}'
+            })
+    cache.save('repositories', json.dumps(repos))
     
-    return { 'id': node_id, 'name': name, 'fqdn': name, 'url': f'http://{name}' }
     
 def add_repositories(count: int):
-    nodes = []
-    start_id = count_running_containers_by_name_prefix(config.REPO_CONTAINER_PREFIX)
+    start_id = count_containers(config.REPO_CONTAINER_PREFIX)
     ids = list(range(start_id, start_id + count))
-    
     with Pool(processes= os.cpu_count()) as pool:
-        nodes = pool.map(add_repository, ids)
-
-    if nodes:
-        print(f"Added {len(nodes)} repositories")
-        persistence.add_repositories(nodes)
+        pool.map(add_repository, ids)
+    cache_repositories()
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

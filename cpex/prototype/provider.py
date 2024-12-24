@@ -1,4 +1,4 @@
-import random, traceback
+import random, traceback, time
 from uuid import uuid4
 from pydantic import BaseModel
 import cpex.config as config
@@ -29,16 +29,23 @@ class Provider:
     def __init__(self, pid: str, impl: bool, cps_url: str = None, message_stores: List[dict] = []):
         self.pid = pid
         self.impl = impl
+        self.cps_fqdn = None
         self.cps_url = cps_url
         self.load_auth_service()
         self.message_stores = message_stores
+        self.latencies: list = []
 
         if self.cps_url:
             self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
 
         if not self.message_stores and not config.IS_ATIS_MODE:
             raise Exception('Message stores are required for non-ATIS mode')
-            
+    
+    def get_latency(self):
+        return round(sum(self.latencies), 4)
+    
+    def get_latency_ms(self):
+        return round(self.get_latency() * 1000, 2)
 
     def load_auth_service(self):
         name = f'sp_{self.pid}'
@@ -112,10 +119,14 @@ class Provider:
         
         print(f'--> Executes PUBLISH')
         
+        start_time = time.perf_counter()
+        
         if config.IS_ATIS_MODE:
             await self.atis_publish(signal=sip_signal)
         else:
             await self.cpex_publish(signal=sip_signal)
+            
+        self.latencies.append(time.perf_counter() - start_time)
         
         return tdm_signal
         
@@ -154,11 +165,13 @@ class Provider:
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
         print(f'--> Executes RETRIEVE')
         try: 
+            start_time = time.perf_counter()
             if config.IS_ATIS_MODE:
                 tokens = await self.atis_retrieve_token(signal=signal)
             else:
                 tokens = await self.cpex_retrieve_token(signal=signal)
-
+            self.latencies.append(time.perf_counter() - start_time)
+            
             signal = self.convert_tdm_to_sip(signal=signal, token=tokens[0])
         except Exception as e:
             print('Error while executing RETRIEVE:', e)

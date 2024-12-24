@@ -11,16 +11,14 @@ from cpex.helpers import misc, files, http
 
 tmax = 15
 credential = None
-repositories = []
 
 def init_server():
-    global credential, repositories
+    global credential
 
     credential = persistence.get_credential(name=f'cps_{config.NODE_ID}')
     if not credential:
         credential = stirsetup.issue_cert(name=f'cps_{config.NODE_ID}')
 
-    repositories = persistence.get_repositories()
     return FastAPI()
         
 class PublishRequest(BaseModel):
@@ -62,6 +60,8 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     
     # 2. Store passports in cache for 15 seconds
     cache.cache_for_seconds(key=get_record_key(dest=dest, orig=orig), value=request.passports, seconds=tmax)
+
+    repositories = cache.get_other_repositories()
 
     if not repositories:
         return success_response()
