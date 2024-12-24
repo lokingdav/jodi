@@ -43,5 +43,15 @@ def create(num_providers:int, deploy_rate: float = 10.0) -> Tuple[list, dict]:
     graph = nx.barabasi_albert_graph(n=num_providers, m=2)
     routes, stats = get_all_routes(compute_shortest_paths(graph=graph))
     adopters = get_stirshaken_adopters(graph=graph, deploy_rate=deploy_rate)
-    return [{'_id': i, 'status': STATUS_PENDING,'route': [(r, adopters[int(r)]) for r in route]} for i, route in enumerate(routes)], stats
+    data = []
+    for i, route in enumerate(routes):
+        _route = [(r, adopters[int(r)]) for r in route]
+        if all([r[1] == 1 for r in _route]):
+            continue
+        data.append({
+            '_id': i,
+            'status': STATUS_PENDING,
+            'route': _route
+        })
+    return data, stats
     

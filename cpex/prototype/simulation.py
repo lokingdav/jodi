@@ -12,10 +12,11 @@ from cpex.prototype.provider import Provider
 def simulate_call_sync(options: dict):
     # print(f"Simulating call with options: {options}")
     res = asyncio.run(simulate_call(options))
-    # print(f'after simulate_call {options.get("_id")}')
+    print(f'after simulate_call {options.get("_id")}')
     return res
 
 async def simulate_call(options: dict):
+    # print(f"Simulating call: {options.get('_id')}")
     mode: str = options.get('mode')
 
     if mode not in constants.MODES:
@@ -70,7 +71,7 @@ async def simulate_call(options: dict):
     total = 0
     for provider in providers.values():
         total += provider.get_latency_ms()
-    # print(f"Simulated call path of length {len(route)} and latency {total} ms")
+    print(f"Simulated call path of length {len(route)} and latency {total} ms")
     return (options.get('_id'), total, len(route), is_correct)
 
 def get_route_from_bitstring(path: str):
@@ -102,7 +103,7 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     print(f"> Generated phone network and with {num_providers} providers")
     
 def run(num_provs: int, repo_count: int, mode: str):
-    with Pool(processes=os.cpu_count()) as pool:
+    with Pool(processes=5) as pool:
         batch_size = 100
         batch_num = 1
 

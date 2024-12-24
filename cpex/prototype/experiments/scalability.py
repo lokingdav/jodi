@@ -5,7 +5,7 @@ from multiprocessing import Pool
 from cpex.models import persistence
 from cpex.helpers import files
 
-provider_groups = [10, 20, 30] #, 200, 400, 800, 1600, 3200]
+provider_groups = [10,20 ] #, 200, 400, 800, 1600, 3200]
 repo_groups = [10]#, 20, 40, 80, 160, 320]
 deploy_rate = 14
 
