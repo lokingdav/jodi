@@ -35,22 +35,29 @@ def insert_certs(items: list):
         return
     insert(collection="certs", records=items)
 
-def has_pending_routes():
+def has_pending_routes(collection_id: int):
+    collection = f'routes_{collection_id}'
     with open_db() as conn:
-        route = conn[DB_NAME].routes.find_one({'status': STATUS_PENDING})
+        route = conn[DB_NAME][collection].find_one({'status': STATUS_PENDING})
     return route
 
-def retrieve_pending_routes(limit:int = 1000):
+def clean_routes(collection_id: int = ''):
+    # clean up all collections with the prefix 'routes_'
+    prefix = f'routes_{collection_id}'
     with open_db() as conn:
-        routes = list(conn[DB_NAME].routes.find({'status': STATUS_PENDING}, limit=limit))
+        for collection in conn[DB_NAME].list_collection_names():
+            if collection.startswith(prefix):
+                # Drop the collection
+                conn[DB_NAME][collection].drop()
+
+def retrieve_pending_routes(collection_id: int, limit:int = 1000):
+    collection = f'routes_{collection_id}'
+    with open_db() as conn:
+        routes = list(conn[DB_NAME][collection].find({'status': STATUS_PENDING}, limit=limit))
     return routes
 
-def save_routes(routes: list):
-    insert(collection='routes', records=routes)
-    
-def clean_routes():
-    with open_db() as conn:
-        conn[DB_NAME].routes.delete_many({})
+def save_routes(collection_id: int, routes: list):
+    insert(collection=f'routes_{collection_id}', records=routes)
         
 def mark_simulated(ids):
     with open_db() as conn:

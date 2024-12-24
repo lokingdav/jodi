@@ -1,8 +1,10 @@
+import os
 from cpex.prototype import compose, simulation
-from cpex import config
+from cpex import config, constants
+from multiprocessing import Pool
 
-repo_groups = [10, 20, 40, 80, 160, 320, 640]
-provider_groups = [100, 200, 400, 800, 1600, 3200, 6400]
+provider_groups = [100, 200, 400, 800, 1600, 3200]
+repo_groups = [10, 20, 40, 80, 160, 320]
 deploy_rate = 14
 
 def setup_repos(count: int, mode: str):
@@ -12,15 +14,23 @@ def setup_repos(count: int, mode: str):
         print(f"Adding {count - num} repositories")
         compose.add_repositories(count - num)
 
-def run_experiment(num_provs: int, mode: str):
-    simulation.datagen(num_providers=num_provs, deploy_rate=deploy_rate, force_clean=True)
-    simulation.run(mode=mode)
+def run_datagen():
+    with Pool(processes=os.cpu_count()) as pool:
+        pool.starmap(
+            simulation.datagen, 
+            [(num_provs, deploy_rate, True) for num_provs in provider_groups]
+        )
 
 def main(mode: str):
+    print(f"Running scalability experiment in {mode} mode")
     for repo_count in repo_groups:
         setup_repos(repo_count, mode)
         for num_provs in provider_groups:
-            run_experiment(num_provs, mode)
-            
+            simulation.run(num_provs=num_provs, mode=mode)
+
+    compose.remove_repositories(mode=mode)
+
 if __name__ == "__main__":
-    main('cpex')
+    run_datagen()
+    # main(constants.MODE_CPEX)
+    # main(constants.MODE_ATIS)

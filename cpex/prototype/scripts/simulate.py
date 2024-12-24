@@ -35,11 +35,6 @@ async def handle_run(args):
         traceback.print_exc()
 
 def handle_cleanup(args):
-    if args.force_clean is False:
-        if persistence.has_pending_routes():
-            print("Pending call routes exist. Force cleansing with the -f option")
-            return
-    
     print("Cleaning up resources...", end='')
     simulation.cleanup()
     print("DONE")

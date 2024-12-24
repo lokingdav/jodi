@@ -73,32 +73,28 @@ def get_route_from_bitstring(path: str):
         raise Exception('Invalid format string for call path: Accepted values are binary digits')
     return [(i, int(d)) for i, d in enumerate(path)]
 
-def cleanup():
-    persistence.clean_routes()
+def cleanup(collection_id: str = ''):
+    persistence.clean_routes(collection_id=collection_id)
 
 def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = False):
+    print(f'> Generating phone network with {num_providers} providers')
+
     if deploy_rate < 0 or deploy_rate > 100:
         raise Exception("Deployment rate can only be a valid number from 0 to 100")
     
     if force_clean is False:
-        print("> Checking if routes already exists...", end='')
-        if persistence.has_pending_routes():
-            print("DONE")
+        if persistence.has_pending_routes(collection_id=num_providers):
             raise Exception(errors.CALL_ROUTES_ALREADY_GENERTED)
-        print("DONE")
     
-    cleanup()
+    cleanup(collection_id=num_providers)
     
-    print("> Generate phone network and call routes...", end='')
     routes, stats = network.create(
         num_providers=num_providers, 
         deploy_rate=deploy_rate
     )
-    print("DONE")
     
-    print("> Saving routes to database...", end='')
-    persistence.save_routes(routes)
-    print("DONE")
+    persistence.save_routes(collection_id=num_providers, routes=routes)
+    print(f"> Generated phone network and with {num_providers} providers")
     
 def run(mode: str):
     with Pool(processes=processes) as pool:
