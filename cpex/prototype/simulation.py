@@ -1,13 +1,13 @@
-import random, asyncio
-from multiprocessing import Pool, Manager
+import random, asyncio, os
+import numpy as np
+from multiprocessing import Pool
+
 from cpex.prototype import network
 from cpex.models import cache, persistence
 from cpex.helpers import errors, files
 from cpex.prototype.stirshaken import certs
 from cpex import config, constants
 from cpex.prototype.provider import Provider
-
-processes = 4
 
 def simulate_call_sync(options: dict):
     return asyncio.run(simulate_call(options))
@@ -16,7 +16,7 @@ async def simulate_call(options: dict):
     mode: str = options.get('mode')
 
     if mode not in constants.MODES:
-        raise Exception('Invalid simulation mode')
+        raise Exception(f"Invalid simulation mode: {mode}")
     
     route = options.get('route', [])
     
@@ -48,8 +48,10 @@ async def simulate_call(options: dict):
             provider = Provider(
                 pid=pid, 
                 impl=bool(int(impl)),
+                mode=mode,
                 cps_url=cps_url,
-                message_stores=stores
+                message_stores=stores,
+                log=options.get('log', True)
             )
             
             providers[pid] = provider
@@ -96,32 +98,40 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     persistence.save_routes(collection_id=num_providers, routes=routes)
     print(f"> Generated phone network and with {num_providers} providers")
     
-def run(mode: str):
-    with Pool(processes=processes) as pool:
-        start_idx, batch_size = 1, 10
-        routes = persistence.retrieve_pending_routes(limit=batch_size)
+def run(num_provs: int, repo_count: int, mode: str):
+    with Pool(processes=os.cpu_count()) as pool:
+        batch_size = 1000
+
+        routes = persistence.retrieve_pending_routes(
+            collection_id=num_provs,
+            limit=batch_size,
+            mode=mode
+        )
         
         if len(routes) == 0:
             raise Exception("No route to simulate. Please generate routes")
         
-        routes = [{**r, 'mode': mode} for r in routes]
-        
+        metrics, success, failed = np.array([]), 0, 0
+
         while len(routes) > 0:
-            print(f"> Simulating {len(routes)} routes in Batch {start_idx}")
             results = pool.map(simulate_call_sync, routes)
-            ids = [], metrics = []
-            for (rid, latency_ms, num_hops, is_correct) in results:
+            ids = []
+            for (rid, latency_ms, _, is_correct) in results:
                 ids.append(rid)
-                metrics.append({
-                    'mode': mode,
-                    'latency_ms': latency_ms,
-                    'num_hops': num_hops,
-                    'is_correct': is_correct
-                })
+                if latency_ms > 0:
+                    metrics = np.append(metrics, latency_ms)
+                    if is_correct:
+                        success += 1
+                    else:
+                        failed += 1
                 
             persistence.mark_simulated(ids)
-            persistence.save_metrics(metrics)
-            
-            routes = persistence.retrieve_pending_routes(limit=batch_size)
-            start_idx += 1
+
+            routes = persistence.retrieve_pending_routes(
+                collection_id=num_provs,
+                mode=mode,
+                limit=batch_size
+            )
+        
+        return [mode, repo_count, num_provs, metrics.min(), metrics.max(), metrics.mean(), metrics.std(), success, failed]
             

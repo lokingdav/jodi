@@ -1,5 +1,6 @@
 import json, os
-from dotenv import dotenv_values, set_key
+from dotenv import dotenv_values
+from typing import List
 
 def is_empty(fileloc: str):
     if not os.path.exists(fileloc):
@@ -17,7 +18,7 @@ def write_csv(fileloc: str, data: list):
             file.write(", ".join([str(x) for x in row]) + "\n")
     return True
 
-def append_csv(fileloc: str, data: list):
+def append_csv(fileloc: str, data: List[List[str]]):
     with open(fileloc, 'a') as file:
         for row in data:
             file.write(", ".join([str(x) for x in row]) + "\n")

@@ -50,11 +50,22 @@ def clean_routes(collection_id: int = ''):
                 # Drop the collection
                 conn[DB_NAME][collection].drop()
 
-def retrieve_pending_routes(collection_id: int, limit:int = 1000):
+def filter_route_collection_ids(groups: list):
+    ids = []
+    with open_db() as conn:
+        collections = conn[DB_NAME].list_collection_names()
+        for group in groups:
+            collection = f'routes_{group}'
+            if str(collection) not in collections:
+                ids.append(group)
+    return ids
+
+def retrieve_pending_routes(collection_id: int, mode: str, limit:int = 1000, log: bool = False):
     collection = f'routes_{collection_id}'
     with open_db() as conn:
         routes = list(conn[DB_NAME][collection].find({'status': STATUS_PENDING}, limit=limit))
-    return routes
+    return [{**r, 'mode': mode, 'log': log} for r in routes]
+
 
 def save_routes(collection_id: int, routes: list):
     insert(collection=f'routes_{collection_id}', records=routes)

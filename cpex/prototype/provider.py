@@ -26,7 +26,7 @@ class SIPSignal(BaseModel):
     CallId: str = str(uuid4())
 
 class Provider:
-    def __init__(self, pid: str, impl: bool, mode: str, cps_url: str = None, message_stores: List[dict] = []):
+    def __init__(self, pid: str, impl: bool, mode: str, cps_url: str = None, message_stores: List[dict] = [], log: bool = True):
         self.pid = pid
         self.impl = impl
         self.mode = mode
@@ -35,12 +35,17 @@ class Provider:
         self.load_auth_service()
         self.message_stores = message_stores
         self.latencies: list = []
+        self.log = log
 
         if self.cps_url:
             self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
 
         if not self.message_stores and not self.is_atis_mode():
             self.message_stores = cache.get_all_repositories(mode=self.mode)
+
+    def log_msg(self, msg):
+        if self.log:
+            print(msg)
     
     def is_atis_mode(self):
         return config.is_atis_mode(self.mode)
@@ -67,7 +72,7 @@ class Provider:
         dst = misc.fake_number(1) if dst is None else dst
         attest = random.choice(['A', 'B', 'C'])
         
-        print(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) ORIGINATES Call From src={src} to dst={dst} with attest={attest}')
+        self.log_msg(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) ORIGINATES Call From src={src} to dst={dst} with attest={attest}')
         token = self.auth_service.create_passport(orig=src, dest=dst, attest=attest)
         signal = {'To': dst, 'From': src, 'Pid': self.pid}
         signal = SIPSignal(**signal, Identity=token)
@@ -75,12 +80,12 @@ class Provider:
         if not self.impl:
             signal: TDMSignal = await self.publish(sip_signal=signal)
             
-        print('--> Forwards', get_type(signal))
+        self.log_msg(f'--> Forwards {get_type(signal)}')
             
         return signal, token
     
     async def receive(self, incoming_signal: Union[SIPSignal, TDMSignal]) -> Union[SIPSignal, TDMSignal]:
-        print(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) RECEIVES', get_type(incoming_signal))
+        self.log_msg(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) RECEIVES {get_type(incoming_signal)}')
 
         outgoing_signal = None
 
@@ -100,11 +105,11 @@ class Provider:
                 # if no need to convert to SIP, then just forward the signal
                 outgoing_signal = self.convert_tdm_from_tdm(incoming_signal)
         
-        print('--> Forwards', get_type(outgoing_signal))
+        self.log_msg(f'--> Forwards {get_type(outgoing_signal)}')
         return outgoing_signal
     
     async def terminate(self, incoming_signal: Union[SIPSignal, TDMSignal]):
-        print(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) TERMINATES', get_type(incoming_signal))
+        self.log_msg(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) TERMINATES {get_type(incoming_signal)}')
 
         if isinstance(incoming_signal, SIPSignal):
             return incoming_signal.Identity
@@ -112,7 +117,7 @@ class Provider:
         # Incoming signal is TDM so let's retrieve
         terminated_signal: SIPSignal = await self.retrieve(signal=incoming_signal)
 
-        print('--> Call Terminated')
+        self.log_msg('--> Call Terminated')
         return terminated_signal.Identity
         
     async def publish(self, sip_signal: SIPSignal) -> TDMSignal:
@@ -121,7 +126,7 @@ class Provider:
         if not sip_signal.Identity:
             return tdm_signal
         
-        print(f'--> Executes PUBLISH')
+        self.log_msg(f'--> Executes PUBLISH')
         
         start_time = time.perf_counter()
         
@@ -167,7 +172,7 @@ class Provider:
         await http.posts(reqs=reqs)
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
-        print(f'--> Executes RETRIEVE')
+        self.log_msg(f'--> Executes RETRIEVE')
         try: 
             start_time = time.perf_counter()
             if self.is_atis_mode():
@@ -178,7 +183,7 @@ class Provider:
             
             signal = self.convert_tdm_to_sip(signal=signal, token=tokens[0])
         except Exception as e:
-            print('Error while executing RETRIEVE:', e)
+            self.log_msg(f'Error while executing RETRIEVE: {e}')
             traceback.print_exc()
             signal = self.convert_tdm_to_sip(signal=signal)
         return signal
