@@ -1,7 +1,7 @@
 from os import getenv
 from dotenv import load_dotenv
 
-from cpex.constants import PROTOCOL_SUITE_CPEX, PROTOCOL_SUITE_ATIS
+from cpex.constants import MODE_ATIS
 
 load_dotenv(override=True)
 
@@ -36,12 +36,15 @@ NODE_ID = env('NODE_ID')
 REPO_PORT = env('REPO_PORT')
 REPO_FQDN = env('REPO_FQDN')
 
-PROTOCOL_SUITE = env("PROTOCOL_SUITE", PROTOCOL_SUITE_CPEX)
 REPOSITORIES_COUNT = env("REPOSITORIES_COUNT", 1, dtype=int)
 CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
 
-IS_ATIS_MODE = PROTOCOL_SUITE == PROTOCOL_SUITE_ATIS
-REPO_CONTAINER_PREFIX = "atis-cps-" if IS_ATIS_MODE else "cpex-ms-"
+def get_container_prefix(mode: str):
+    return "atis-cps-" if mode == MODE_ATIS else "cpex-ms-"
+
+def is_atis_mode(mode: str):
+    return mode == MODE_ATIS
+
 HOST_APP_PATH = env('HOST_APP_PATH')
 
 CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cert-repo')

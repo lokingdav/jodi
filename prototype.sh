@@ -8,7 +8,6 @@ if [[ -f .env ]]; then
     export $(grep -v '^#' .env | xargs)
 fi
 
-PROTOCOL_SUITE=${PROTOCOL_SUITE:-cpex}
 COMPOSE_FILE=compose.prototype.yml
 
 CMD=$1

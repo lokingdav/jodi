@@ -7,7 +7,7 @@ from cpex.helpers import misc, http, files
 from cpex.prototype.stirshaken.auth_service import AuthService
 from typing import List, Union
 from cpex.crypto import libcpex
-from cpex.models import persistence
+from cpex.models import persistence, cache
 from cpex.prototype.stirshaken import stirsetup
 
 def get_type(instance):
@@ -26,9 +26,10 @@ class SIPSignal(BaseModel):
     CallId: str = str(uuid4())
 
 class Provider:
-    def __init__(self, pid: str, impl: bool, cps_url: str = None, message_stores: List[dict] = []):
+    def __init__(self, pid: str, impl: bool, mode: str, cps_url: str = None, message_stores: List[dict] = []):
         self.pid = pid
         self.impl = impl
+        self.mode = mode
         self.cps_fqdn = None
         self.cps_url = cps_url
         self.load_auth_service()
@@ -38,8 +39,11 @@ class Provider:
         if self.cps_url:
             self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
 
-        if not self.message_stores and not config.IS_ATIS_MODE:
-            raise Exception('Message stores are required for non-ATIS mode')
+        if not self.message_stores and not self.is_atis_mode():
+            self.message_stores = cache.get_all_repositories(mode=self.mode)
+    
+    def is_atis_mode(self):
+        return config.is_atis_mode(self.mode)
     
     def get_latency(self):
         return round(sum(self.latencies), 4)
@@ -121,7 +125,7 @@ class Provider:
         
         start_time = time.perf_counter()
         
-        if config.IS_ATIS_MODE:
+        if self.is_atis_mode():
             await self.atis_publish(signal=sip_signal)
         else:
             await self.cpex_publish(signal=sip_signal)
@@ -166,7 +170,7 @@ class Provider:
         print(f'--> Executes RETRIEVE')
         try: 
             start_time = time.perf_counter()
-            if config.IS_ATIS_MODE:
+            if self.is_atis_mode():
                 tokens = await self.atis_retrieve_token(signal=signal)
             else:
                 tokens = await self.cpex_retrieve_token(signal=signal)

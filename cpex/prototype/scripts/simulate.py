@@ -3,6 +3,7 @@ import traceback
 import asyncio  # <-- Make sure to import asyncio
 from cpex.prototype import simulation
 from cpex.models import persistence
+from cpex import constants
 
 def handle_gen(args):
     print(f"Starting Data Generation...",
@@ -21,8 +22,10 @@ def handle_gen(args):
 async def handle_run(args):
     try:
         if args.call_path:
-            entry = {'route': simulation.get_route_from_bitstring(args.call_path)}
-            await simulation.simulate_call(entry=entry)
+            await simulation.simulate_call({
+                'mode': args.mode,
+                'route': simulation.get_route_from_bitstring(args.call_path)
+            })
         else:
             print("Simulating pending routes...")
             simulation.run()
@@ -45,6 +48,8 @@ def handle_cleanup(args):
 if __name__ == '__main__':
     # Create the main parser
     parser = argparse.ArgumentParser(description="Running CPeX Experiments")
+    parser.add_argument("--mode", help="Mode of operation", default=constants.MODE_CPEX, choices=constants.MODES)
+
     subparsers = parser.add_subparsers(dest="command", help="Sub-commands: gen, run, clean")
 
     # Subparser for `gen`

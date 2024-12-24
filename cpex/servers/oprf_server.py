@@ -3,9 +3,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 
-import cpex.config as config
 from cpex.crypto import groupsig, oprf
-from cpex.helpers import misc
 
 kr_instance = None
 

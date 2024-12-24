@@ -9,11 +9,16 @@ from cpex.prototype.provider import Provider
 
 processes = 4
 
-def simulate_call_sync(entry: dict):
-    return asyncio.run(simulate_call(entry=entry))
+def simulate_call_sync(options: dict):
+    return asyncio.run(simulate_call(options))
 
-async def simulate_call(entry: dict):
-    route = entry.get('route', [])
+async def simulate_call(options: dict):
+    mode: str = options.get('mode')
+
+    if mode not in constants.MODES:
+        raise Exception('Invalid simulation mode')
+    
+    route = options.get('route', [])
     
     if len(route) == 0:
         raise Exception('Invalid simulation parameter')
@@ -22,9 +27,9 @@ async def simulate_call(entry: dict):
         raise Exception("Route parameter must be an instance of a list")
     
     if len(set([p for (p, _) in route])) == 1:
-        return entry.get('_id')
+        return options.get('_id')
     
-    message_stores = cache.get_all_repositories()
+    message_stores = cache.get_all_repositories(mode=mode)
 
     providers, signal, start_token, final_token = {}, None, None, None
     
@@ -33,7 +38,7 @@ async def simulate_call(entry: dict):
         provider: Provider = providers.get(pid)
         
         if not provider:
-            if config.IS_ATIS_MODE:
+            if config.is_atis_mode(mode):
                 cps_url = message_stores[random.randint(0, len(message_stores) - 1)].get('url')
                 stores = []
             else:
@@ -61,7 +66,7 @@ async def simulate_call(entry: dict):
     for provider in providers.values():
         total += provider.get_latency_ms()
     
-    return (entry.get('_id'), total, len(route), is_correct)
+    return (options.get('_id'), total, len(route), is_correct)
 
 def get_route_from_bitstring(path: str):
     if not path.isdigit() or set(path) > {'0', '1'}:
@@ -95,13 +100,15 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     persistence.save_routes(routes)
     print("DONE")
     
-def run():
+def run(mode: str):
     with Pool(processes=processes) as pool:
         start_idx, batch_size = 1, 10
         routes = persistence.retrieve_pending_routes(limit=batch_size)
         
         if len(routes) == 0:
             raise Exception("No route to simulate. Please generate routes")
+        
+        routes = [{**r, 'mode': mode} for r in routes]
         
         while len(routes) > 0:
             print(f"> Simulating {len(routes)} routes in Batch {start_idx}")
@@ -110,6 +117,7 @@ def run():
             for (rid, latency_ms, num_hops, is_correct) in results:
                 ids.append(rid)
                 metrics.append({
+                    'mode': mode,
                     'latency_ms': latency_ms,
                     'num_hops': num_hops,
                     'is_correct': is_correct

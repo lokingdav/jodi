@@ -1,4 +1,4 @@
-from cpex.config  import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME, REPO_CONTAINER_PREFIX, NODE_ID
+from cpex.config  import DB_USER, DB_PASS, DB_HOST, DB_PORT, DB_NAME
 from cpex.constants import STATUS_PENDING, STATUS_DONE, CERT_KEY
 from pymongo import MongoClient
 
