@@ -1,11 +1,11 @@
-import os
+import os, time
 from cpex.prototype import compose, simulation
 from cpex import config, constants
 from multiprocessing import Pool
 from cpex.models import persistence
 from cpex.helpers import files
 
-provider_groups = [10, 20] #, 200, 400, 800, 1600, 3200]
+provider_groups = [10, 20, 30] #, 200, 400, 800, 1600, 3200]
 repo_groups = [10]#, 20, 40, 80, 160, 320]
 deploy_rate = 14
 
@@ -30,8 +30,7 @@ def main(resutlsloc: str, mode: str):
     for repo_count in repo_groups:
         setup_repos(repo_count, mode)
         for num_provs in provider_groups:
-            print(f"Running simulation with {num_provs} providers and {repo_count} repositories")
-
+            print(f"\nRunning simulation with {num_provs}({num_provs * (num_provs - 1) // 2}) providers and {repo_count} repositories")
             results.append(simulation.run(
                 num_provs=num_provs,
                 repo_count=repo_count,

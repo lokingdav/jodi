@@ -103,7 +103,8 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     
 def run(num_provs: int, repo_count: int, mode: str):
     with Pool(processes=os.cpu_count()) as pool:
-        batch_size = 1000
+        batch_size = 100
+        batch_num = 1
 
         routes = persistence.retrieve_pending_routes(
             collection_id=num_provs,
@@ -117,9 +118,9 @@ def run(num_provs: int, repo_count: int, mode: str):
         metrics, success, failed = np.array([]), 0, 0
 
         while len(routes) > 0:
-            print(f"Simulating {len(routes)} routes")
+            print(f"-> Simulating {len(routes)} routes in batch {batch_num}")
             results = pool.map(simulate_call_sync, routes)
-            print("pool->map->simulate_call_sync done")
+            # print("pool->map->simulate_call_sync done")
             ids = []
             for (rid, latency_ms, _, is_correct) in results:
                 ids.append(rid)
@@ -130,19 +131,20 @@ def run(num_provs: int, repo_count: int, mode: str):
                     else:
                         failed += 1
             
-            print('Marking simulated routes')
+            print('-> Marking simulated routes')
             persistence.mark_simulated(
                 collection_id=num_provs,
                 ids=ids
             )
+            batch_num += 1
 
-            print('Retrieving pending routes')
+            print('-> Retrieving pending routes')
             routes = persistence.retrieve_pending_routes(
                 collection_id=num_provs,
                 mode=mode,
                 limit=batch_size
             )
-        print('Simulation completed')
+        print('-> Simulation completed')
         dp = 2
         return [mode, repo_count, num_provs, round(metrics.min(), dp), round(metrics.max(), dp), round(metrics.mean(), dp), round(metrics.std(), dp), success, failed]
             

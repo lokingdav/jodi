@@ -1,3 +1,1 @@
 mode, num_repos, num_provs, min, max, mean, std, success, failed
-cpex, 10, 10, 84.6, 224.6, 119.77, 24.85, 29, 2
-cpex, 10, 20, 77.2, 276.8, 148.86, 54.47, 172, 0

@@ -60,7 +60,7 @@ def filter_route_collection_ids(groups: list):
                 ids.append(group)
     return ids
 
-def retrieve_pending_routes(collection_id: int, mode: str, limit:int = 1000, log: bool = False):
+def retrieve_pending_routes(collection_id: int, mode: str, limit:int = 100, log: bool = False):
     collection = f'routes_{collection_id}'
     with open_db() as conn:
         routes = list(conn[DB_NAME][collection].find({'status': STATUS_PENDING}, limit=limit))
