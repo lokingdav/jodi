@@ -40,4 +40,5 @@ def get_other_repositories():
     return [repo for repo in all_repos if repo.get('id') != NODE_ID]
 
 def get_all_repositories():
-    return find('repositories', dict)
+    repos = find('repositories', dict)
+    return [repo for repo in repos if repo.get('name', '').startswith(REPO_CONTAINER_PREFIX)]

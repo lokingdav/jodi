@@ -50,7 +50,16 @@ def cache_repositories():
                 'url': f'http://{container.name}'
             })
     cache.save('repositories', json.dumps(repos))
-    
+
+def remove_repositories():
+    client = get_client()
+    containers = client.containers.list()
+    for container in containers:
+        if container.name.startswith(config.REPO_CONTAINER_PREFIX):
+            container.stop()
+            container.remove()
+            print(f"Removed container {container.name}")
+    cache.save('repositories', json.dumps([]))
     
 def add_repositories(count: int):
     start_id = count_containers(config.REPO_CONTAINER_PREFIX)

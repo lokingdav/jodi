@@ -5,7 +5,6 @@ import cpex.config as config
 
 def groupsig_setup():
     if config.TGS_GPK and config.TGS_GSK and config.TGS_GML and config.TGS_MSK:
-        print("Group signature already setup")
         return
     
     msk, gpk, gml, gsk = groupsig.setup()

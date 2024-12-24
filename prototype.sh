@@ -43,7 +43,7 @@ build_image() {
 compose_up() {
     echo "Starting Docker Compose services..."
     docker compose -f $COMPOSE_FILE up -d
-    docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --repos --groupsig
+    docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
 }
 
 compose_down() {
