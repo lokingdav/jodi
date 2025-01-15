@@ -155,18 +155,15 @@ class Provider:
         
     async def cpex_publish(self, signal: SIPSignal):
         # Call ID generation
-        call_details: str = libcpex.get_call_details(src=signal.From, dst=signal.To)
+        call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
         requests, scalars = libcpex.create_evaluation_requests(call_details)
         responses = await http.posts(reqs=requests)
         call_id = libcpex.create_call_id(s1res=responses[0], s2res=responses[1], scalars=scalars)
         
         # Encrypt and MAC, then sign the requests
-        ctx = libcpex.encrypt_and_mac(call_id=call_id, plaintext=signal.Identity)
         reqs = libcpex.create_storage_requests(
             call_id=call_id, 
-            ctx=ctx,
-            nodes=self.message_stores[:], # Copy of nodes
-            count=config.REPLICATION, 
+            msg=signal.Identity,
         )
         
         await http.posts(reqs=reqs)
@@ -203,7 +200,7 @@ class Provider:
         return response
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
-        call_details: str = libcpex.get_call_details(src=signal.From, dst=signal.To)
+        call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
         requests, scalars = libcpex.create_evaluation_requests(call_details)
         res = await http.posts(reqs=requests)
         call_id = libcpex.create_call_id(s1res=res[0], s2res=res[1], scalars=scalars)

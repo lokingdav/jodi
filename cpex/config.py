@@ -17,6 +17,10 @@ BASE_REPO_PORT = env('BASE_REPO_PORT', 10000)
 COMPOSE_NETWORK_ID = "cpex_net"
 CPEX_DOCKER_IMAGE = "cpex"
 
+STORES_KEY = 'cpex.nodes.ms'
+EVALS_KEY = 'cpex.nodes.ev'
+CPS_KEY = 'atis.cps'
+
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)
 CONF_DIR = env("CONF_DIR", "conf")
 
@@ -40,7 +44,7 @@ REPOSITORIES_COUNT = env("REPOSITORIES_COUNT", 1, dtype=int)
 CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
 
 def get_container_prefix(mode: str):
-    return "atis-cps-" if mode == MODE_ATIS else "cpex-ms-"
+    return "atis-cps-" if mode == MODE_ATIS else "cpex-nd-"
 
 def is_atis_mode(mode: str):
     return mode == MODE_ATIS
@@ -63,6 +67,5 @@ TGS_GSK = env('TGS_GSK')
 # OPRF Parameters
 OPRF_KEYLIST_SIZE = env('OPRF_KEYLIST_SIZE', 10, dtype=int)
 OPRF_INTERVAL_SECONDS = env('OPRF_INTERVAL_SECONDS', 2 * T_MAX_SECONDS, dtype=int)
-OPRF_SERVER_1_URL = env('OPRF_SERVER_1_URL', 'http://oprf-s1')
-OPRF_SERVER_2_URL = env('OPRF_SERVER_2_URL', 'http://oprf-s2')
+OPRF_EV_PARAM = env('OPRF_EV_PARAM', 2)
 

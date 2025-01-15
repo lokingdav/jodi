@@ -3,118 +3,103 @@ from pylibcpex import Oprf, Utils, Ciphering
 import cpex.config as config
 import cpex.constants as constants
 from cpex.crypto import groupsig
-from cpex.helpers import http
+from cpex.helpers import http, dht
 from cpex.models import cache
 from typing import List
-import jwt, time
+import jwt, time, re
 
-def normalizeTs(timestamp: int) -> int:
+
+def normalize_ts(timestamp: int) -> int:
     seconds_in_minute = 60
     return timestamp - (timestamp % seconds_in_minute)
 
-def get_call_details(src: str, dst: str):
-    ts = normalizeTs(int(time.time()))
-    return src + dst + str(ts)
+def normalize_tn(tn: str): 
+    tn = re.sub(r"[^\d]", "", tn)
+    return f"+{tn}"
+    
+def normalize_call_details(src: str, dst: str):
+    ts = normalize_ts(int(time.time()))
+    return normalize_tn(src) + normalize_tn(dst) + str(ts)
 
 def get_index_from_call_details(call_details: str) -> int:
-    return int(call_details.encode().hex(), 16) % config.OPRF_KEYLIST_SIZE
+    digest: bytes = Utils.hash160(call_details)
+    return int(digest.hex(), 16) % config.OPRF_KEYLIST_SIZE
 
 def create_evaluation_requests(call_details: str) -> bytes:
-    idx: int = get_index_from_call_details(call_details)
-
-    x0, r0 = Oprf.blind(call_details)
-    x1, r1 = Oprf.blind(call_details)
-    x0_str, x1_str = Utils.to_base64(x0), Utils.to_base64(x1)
-    
+    i_k: int = get_index_from_call_details(call_details)
+    calldt_hash = Utils.hash256(bytes(call_details, 'utf-8'))
+    evaluators = dht.get_evals(key=calldt_hash, count=config.OPRF_EV_PARAM)
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
-    sig0_str = groupsig.sign(msg=str(idx) + x0_str, gsk=gsk, gpk=gpk)
-    sig1_str = groupsig.sign(msg=str(idx) + x1_str, gsk=gsk, gpk=gpk)
     
-    requests = [
-        {'url': config.OPRF_SERVER_1_URL + '/evaluate', 'data': { 'idx': idx, 'x': x0_str, 'sig': sig0_str}},
-        {'url': config.OPRF_SERVER_2_URL + '/evaluate', 'data': { 'idx': idx, 'x': x1_str, 'sig': sig1_str}},
-    ]
-    return requests, [r0, r1]
+    masks = []
+    requests = []
+    for ev in evaluators:
+        x, mask = Oprf.blind(call_details)
+        masks.append(mask)
+        x = Utils.to_base64(x)
+        sig: str = groupsig.sign(msg=str(i_k) + x, gsk=gsk, gpk=gpk)
+        requests.append({
+            'url': ev.get('url') + '/evaluate', 
+            'data': { 'i_k': i_k, 'x': x, 'sig': sig}
+        })
+    return requests, masks
 
-def create_call_id(s1res: dict, s2res: dict, scalars) -> bytes:
-    L0: bytes = Oprf.unblind(
-        Utils.from_base64(s1res['fx']), 
-        Utils.from_base64(s1res['vk']), 
-        scalars[0]
-    )
-    L1: bytes = Oprf.unblind(
-        Utils.from_base64(s2res['fx']), 
-        Utils.from_base64(s2res['vk']), 
-        scalars[1]
-    )
-    return Utils.hash256(Utils.xor(L0, L1))
-
-
-def find_node(nodes: List[dict], key: bytes) -> dict:
-    closest_node = None
-    closest_dist = float('inf')
-    closest_dist_index = -1
-
-    for i in range(len(nodes)):
-        distance = int.from_bytes(
-            Utils.xor(
-                bytes.fromhex(nodes[i]['id']), # hex of hash160
-                Utils.hash160(key) # hash key to 160 bits
-            ), 
-            byteorder='big'
+def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
+    xor = [0] * 32
+    for i in range(len(responses)):
+        cid_i = Oprf.unblind(
+            Utils.from_base64(responses[i]['fx']), 
+            Utils.from_base64(responses[i]['vk']), 
+            masks[i]
         )
+        xor = Utils.xor(xor, cid_i)
+    return Utils.hash256(xor)
 
-        if distance < closest_dist:
-            closest_dist, closest_node = distance, nodes[i]
-            closest_dist_index = i
-            
-    return closest_node, closest_dist_index
-
-def create_storage_requests(call_id: bytes, ctx: bytes, nodes: List[dict], count: int) -> List[dict]:
-    if not nodes: raise Exception('No message store available')
-
-    call_id, ctx, reqs = Utils.to_base64(call_id), Utils.to_base64(ctx), []
+def create_storage_requests(call_id: bytes, msg: str) -> List[dict]:
+    stores = dht.get_stores(key=call_id, count=config.REPLICATION)
+    call_id_str = Utils.to_base64(call_id)
+    ctx = Utils.to_base64(ctx)
+    requests = []
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
     
-    for i in range(1, count + 1):
-        idx: bytes = Utils.hash256(bytes(call_id + str(i), 'utf-8'))
-        node, index = find_node(nodes=nodes, key=idx)
-        idx = Utils.to_base64(idx)
-        reqs.append({
-            'url': node['url'] + '/publish',
+    for store in stores:
+        idx = Utils.to_base64(Utils.hash256(bytes(call_id_str + store['id'], 'utf-8')))
+        ctx = encrypt_and_mac(call_id=call_id, plaintext=msg.encode('utf-8'))
+        requests.append({
+            'url': store['url'] + '/publish',
             'data': { 
                 'idx': idx, 
                 'ctx': ctx, 
                 'sig': groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk) 
             }
         })
-        nodes.pop(index)
 
-    return reqs
+    return requests
 
-def create_retrieve_requests(call_id: bytes, nodes: List[dict], count: int) -> List[dict]:
-    if not nodes: raise Exception('No message store available')
-
-    call_id, reqs = Utils.to_base64(call_id), []
+def create_retrieve_requests(call_id: bytes) -> List[dict]:
+    stores = dht.get_stores(key=call_id, count=config.REPLICATION)
+    call_id =Utils.to_base64(call_id)
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
+    
+    reqs = []
 
-    for i in range(1, count + 1):
-        idx: bytes = Utils.hash256(bytes(call_id + str(i), 'utf-8'))
-        node, index = find_node(nodes=nodes, key=idx)
-        idx = Utils.to_base64(idx)
+    for store in stores:
+        idx = Utils.to_base64(Utils.hash256(bytes(call_id + store['id'], 'utf-8')))
         reqs.append({
-            'url': node['url'] + '/retrieve',
+            'url': store['url'] + '/retrieve',
             'data': { 
                 'idx': idx, 
                 'sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk) 
             }
         })
-        nodes.pop(index)
 
     return reqs
 
-def encrypt_and_mac(call_id: bytes, plaintext: str):
-    return Ciphering.enc(call_id, plaintext.encode())
+def encrypt_and_mac(call_id: bytes, plaintext: str) -> str:
+    c_0 = Utils.random_bytes(32)
+    kenc = Utils.hash256(Utils.xor(c_0, call_id))
+    c_1 = Ciphering.enc(kenc, plaintext.encode())
+    return Utils.to_base64(c_0) + '.' + Utils.to_base64(c_1)
 
 def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str):
     src, dst, tokens = str(src), str(dst), []

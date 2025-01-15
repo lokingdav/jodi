@@ -9,21 +9,6 @@ x-cpex-service: &cpex-service
     - net
 
 services:
-# OPRF Servers
-  oprf-s1:
-    <<: *cpex-service
-    container_name: oprf-s1
-    command: uvicorn cpex.servers.oprf_server:app --host 0.0.0.0 --port 80 --reload
-    ports:
-      - 9001:80
-
-  oprf-s2:
-    <<: *cpex-service
-    container_name: oprf-s2
-    command: uvicorn cpex.servers.oprf_server:app --host 0.0.0.0 --port 80 --reload
-    ports:
-      - 9002:80
-
 # Atis OOB Services
   cert-repo:
     <<: *cpex-service
@@ -53,16 +38,7 @@ services:
       - 6379:6379
     networks:
       - net
-
-  cache-ui:
-    container_name: cpex-cache-ui
-    image: redis/redisinsight:latest
-    platform: linux/x86_64
-    ports:
-      - 5540:5540
-    networks:
-      - net
-
+  
   mongo:
     container_name: cpex-mongo
     image: mongo

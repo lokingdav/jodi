@@ -30,7 +30,7 @@ def benchCpexProtocol(printResults=True):
     
     # Begin Call ID Generation
     call_id_time = time.perf_counter()
-    call_details = libcpex.get_call_details(src=src, dst=src)
+    call_details = libcpex.normalize_call_details(src=src, dst=src)
     requests, scalars = libcpex.create_evaluation_requests(call_details)
     call_id_time = time.perf_counter() - call_id_time
     
