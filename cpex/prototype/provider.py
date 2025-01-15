@@ -26,22 +26,18 @@ class SIPSignal(BaseModel):
     CallId: str = str(uuid4())
 
 class Provider:
-    def __init__(self, pid: str, impl: bool, mode: str, cps_url: str = None, message_stores: List[dict] = [], log: bool = True):
+    def __init__(self, pid: str, impl: bool, mode: str, cps_url: str = None, log: bool = True):
         self.pid = pid
         self.impl = impl
         self.mode = mode
         self.cps_fqdn = None
         self.cps_url = cps_url
         self.load_auth_service()
-        self.message_stores = message_stores
         self.latencies: list = []
         self.log = log
 
         if self.cps_url:
             self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
-
-        if not self.message_stores and not self.is_atis_mode():
-            self.message_stores = cache.get_all_repositories(mode=self.mode)
 
     def log_msg(self, msg):
         if self.log:
@@ -156,9 +152,9 @@ class Provider:
     async def cpex_publish(self, signal: SIPSignal):
         # Call ID generation
         call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
-        requests, scalars = libcpex.create_evaluation_requests(call_details)
+        requests, masks = libcpex.create_evaluation_requests(call_details)
         responses = await http.posts(reqs=requests)
-        call_id = libcpex.create_call_id(s1res=responses[0], s2res=responses[1], scalars=scalars)
+        call_id = libcpex.create_call_id(responses=responses, masks=masks)
         
         # Encrypt and MAC, then sign the requests
         reqs = libcpex.create_storage_requests(

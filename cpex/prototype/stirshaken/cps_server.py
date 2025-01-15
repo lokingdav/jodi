@@ -61,7 +61,7 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     # 2. Store passports in cache for 15 seconds
     cache.cache_for_seconds(key=get_record_key(dest=dest, orig=orig), value=request.passports, seconds=tmax)
 
-    repositories = cache.get_other_repositories(constants.MODE_ATIS)
+    repositories = cache.get_other_cpses()
 
     if not repositories:
         return success_response()

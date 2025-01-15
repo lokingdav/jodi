@@ -45,14 +45,18 @@ def create_evaluation_requests(call_details: str) -> bytes:
     return requests, masks
 
 def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
-    xor = [0] * 32
+    xor = None
     for i in range(len(responses)):
         cid_i = Oprf.unblind(
             Utils.from_base64(responses[i]['fx']), 
             Utils.from_base64(responses[i]['vk']), 
             masks[i]
         )
-        xor = Utils.xor(xor, cid_i)
+        if xor is None:
+            xor = cid_i
+        else:
+            xor = Utils.xor(xor, cid_i)
+        
     return Utils.hash256(xor)
 
 def create_storage_requests(call_id: bytes, msg: str) -> List[dict]:

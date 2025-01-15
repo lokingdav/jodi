@@ -12,7 +12,7 @@ COMPOSE_FILE=compose.prototype.yml
 
 CMD=$1
 VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash')
-MESSAGE_STORE_PREFIX="cpex-ms"
+CPEX_NODE_PREFIX="cpex-node"
 CPS_PREFIX="atis-cps"
 
 # Create configuration directory if it doesn't exist
@@ -46,9 +46,9 @@ compose_up() {
 }
 
 compose_down() {
-    docker ps -aq --filter "name=^${MESSAGE_STORE_PREFIX}" --filter "name=^${CPS_PREFIX}" | grep -q . && \
+    docker ps -aq --filter "name=^${CPEX_NODE_PREFIX}" --filter "name=^${CPS_PREFIX}" | grep -q . && \
     echo "Removing Dynamically Added Containers..." && \
-    docker ps -aq --filter "name=^${MESSAGE_STORE_PREFIX}" --filter "name=^${CPS_PREFIX}" | xargs docker rm -f
+    docker ps -aq --filter "name=^${CPEX_NODE_PREFIX}" --filter "name=^${CPS_PREFIX}" | xargs docker rm -f
 
     echo "Stopping Docker Compose services..."
     docker compose -f $COMPOSE_FILE down

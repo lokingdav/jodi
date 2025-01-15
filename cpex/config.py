@@ -44,7 +44,7 @@ REPOSITORIES_COUNT = env("REPOSITORIES_COUNT", 1, dtype=int)
 CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
 
 def get_container_prefix(mode: str):
-    return "atis-cps-" if mode == MODE_ATIS else "cpex-nd-"
+    return "atis-cps-" if mode == MODE_ATIS else "cpex-node-"
 
 def is_atis_mode(mode: str):
     return mode == MODE_ATIS
