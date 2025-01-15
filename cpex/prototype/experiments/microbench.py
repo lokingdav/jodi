@@ -14,82 +14,74 @@ numIters = 1000
 src = '16841333538'
 dst = '16847000540'
 token = "eyJhbGciOiJFUzI1NiIsInBwdCI6InNoYWtlbiIsInR5cCI6InBhc3Nwb3J0IiwieDV1IjoiaHR0cDovL2NlcnQtcmVwby9jZXJ0cy9zcF8xIn0.eyJpYXQiOjE3MzQ4OTU2NjMsImF0dGVzdCI6IkMiLCJvcmlnIjp7InRuIjpbIjE2ODQxMzMzNTM4Il19LCJkZXN0Ijp7InRuIjpbIjE2ODQ3MDAwNTQwIl19fQ.7xC7RuEnCAp62ZSvmtWsZ3Hco-bvT9EU-JoFk48HzINCh4GLaDTR8o7S042TrB5cWK6kCwSMjddoiH5JUExB3g"
+
 # OPRF keys for server 1 and server 2
-(sk1, pk1) = Oprf.keygen()
-(sk2, pk2) = Oprf.keygen()
+Keypairs = [Oprf.keygen() for _ in range(config.OPRF_EV_PARAM)]
 
 def toMs(seconds):
     return round(seconds * 1000, 3)
 
 def benchCpexProtocol(printResults=True):
     call_id_time = 0
-    server_oprf_time = 0
+    evaluator_time = 0
     provider_enc_sign_time = 0
-    
-    message_stores = cache.get_all_repositories(mode=constants.MODE_CPEX)
-    
+        
     # Begin Call ID Generation
     call_id_time = time.perf_counter()
     call_details = libcpex.normalize_call_details(src=src, dst=src)
-    requests, scalars = libcpex.create_evaluation_requests(call_details)
+    requests, masks = libcpex.create_evaluation_requests(call_details)
     call_id_time = time.perf_counter() - call_id_time
     
     responses = []
-    # OPRF Evaluation by Server 1 and Server 2
-    server_oprf_time = time.perf_counter()
-    gpk = groupsig.get_gpk()
-    groupsig.verify(requests[0]['data']['sig'], str(requests[0]['data']['idx']) + requests[0]['data']['x'], gpk=gpk)
-    (fx1, vk1) = Oprf.evaluate(sk1, pk1, Utils.from_base64(requests[0]['data']['x']))
-    responses.append({ "fx": Utils.to_base64(fx1), "vk": Utils.to_base64(vk1) })
-    server_oprf_time = time.perf_counter() - server_oprf_time
+    evaluator_time = time.perf_counter()
+    for i, req in enumerate(requests):
+        gpk = groupsig.get_gpk()
+        groupsig.verify(requests[0]['data']['sig'], str(requests[0]['data']['i_k']) + requests[0]['data']['x'], gpk=gpk)
+        (fx, vk) = Oprf.evaluate(Keypairs[i][0], Keypairs[i][1], Utils.from_base64(requests[0]['data']['x']))
+        responses.append({
+            "fx": Utils.to_base64(fx), 
+            "vk": Utils.to_base64(vk) 
+        })
+    # Average time taken to evaluate OPRF by a single evaluator
+    evaluator_time = (time.perf_counter() - evaluator_time) / len(requests)
     
-    groupsig.verify(requests[1]['data']['sig'], str(requests[1]['data']['idx']) + requests[1]['data']['x'], gpk=gpk)
-    (fx2, vk2) = Oprf.evaluate(sk2, pk2, Utils.from_base64(requests[1]['data']['x']))
-    responses.append({ "fx": Utils.to_base64(fx2), "vk": Utils.to_base64(vk2) })
-    
+    # Finish Call ID Generation
     call_id_resume = time.perf_counter()
-    call_id = libcpex.create_call_id(s1res=responses[0], s2res=responses[1], scalars=scalars)
+    call_id = libcpex.create_call_id(responses=responses, masks=masks)
     call_id_time += time.perf_counter() - call_id_resume
     
     # Encrypt and MAC, then sign the requests
     provider_enc_sign_time = time.perf_counter()
-    ctx = libcpex.encrypt_and_mac(call_id=call_id, plaintext=token)
-    storage_reqs = libcpex.create_storage_requests(
-        call_id=call_id, 
-        ctx=ctx,
-        nodes=message_stores[:],
-        count=config.REPLICATION, 
-    )
+    storage_reqs = libcpex.create_storage_requests(call_id=call_id, msg=token)
     provider_enc_sign_time = time.perf_counter() - provider_enc_sign_time
     
-    # Message Store operations for 1 store
+    # Message Store operations 
     message_store_pub_time = time.perf_counter()
-    req = storage_reqs[0]['data']
-    gpk = groupsig.get_gpk() 
-    groupsig.verify(sig=req['sig'], msg=req['idx'] + req['ctx'], gpk=gpk)
-    value = req['idx'] + '.' + req['ctx'] + '.' + req['sig']
-    cache.cache_for_seconds(req['idx'], value, config.REC_TTL_SECONDS)
-    message_store_pub_time = time.perf_counter() - message_store_pub_time
+    for storage_req in storage_reqs:
+        gpk = groupsig.get_gpk() 
+        req = storage_req['data']
+        groupsig.verify(sig=req['sig'], msg=req['idx'] + req['ctx'], gpk=gpk)
+        value = req['idx'] + '.' + req['ctx'] + '.' + req['sig']
+        cache.cache_for_seconds(req['idx'], value, config.REC_TTL_SECONDS)
+    # Average time taken to store a message by a single store
+    message_store_pub_time = (time.perf_counter() - message_store_pub_time) / len(storage_reqs)
     
     # Retrieval Protocol
     create_ret_reqs_and_sign = time.perf_counter()
-    ret_reqs = libcpex.create_retrieve_requests(
-        call_id=call_id, 
-        nodes=message_stores[:], 
-        count=config.REPLICATION
-    )
+    ret_reqs = libcpex.create_retrieve_requests(call_id=call_id)
     create_ret_reqs_and_sign = time.perf_counter() - create_ret_reqs_and_sign
     
     # Message Store operations for 1 store
+    responses = []
     message_store_ret_time = time.perf_counter()
-    ret_req = ret_reqs[0]['data']
-    gpk = groupsig.get_gpk() 
-    groupsig.verify(sig=ret_req['sig'], msg=ret_req['idx'], gpk=gpk)
-    value = cache.find(ret_req['idx'])
-    (msidx, msctx, mssig) = value.split('.')
-    message_store_ret_time = time.perf_counter() - message_store_ret_time
-    
-    responses = [res['data'] for res in storage_reqs] # Retrieve responses from storage requests
+    for ret_req in ret_reqs:
+        gpk = groupsig.get_gpk() 
+        groupsig.verify(sig=ret_req['data']['sig'], msg=ret_req['data']['idx'], gpk=gpk)
+        value = cache.find(ret_req['data']['idx'])
+        (msidx, msctx, mssig) = value.split('.')
+        responses.append({'idx': msidx, 'ctx': msctx, 'sig': mssig})
+    # Average time taken to retrieve a message by a single store
+    message_store_ret_time = (time.perf_counter() - message_store_ret_time) / len(ret_reqs)
     
     verify_and_decrypt = time.perf_counter()
     tokens = libcpex.decrypt(call_id=call_id, responses=responses, src=src, dst=dst)
@@ -100,7 +92,7 @@ def benchCpexProtocol(printResults=True):
         ['(2) Encrypt and Sign', toMs(provider_enc_sign_time)],
         ['(3) Retrieve Req & Sign', toMs(create_ret_reqs_and_sign)],
         ['(4) Verify and Decrypt', toMs(verify_and_decrypt)],
-        ['(5) Server OPRF Eval', toMs(server_oprf_time)],
+        ['(5) Server OPRF Eval', toMs(evaluator_time)],
         ['(6) Provider Publish - Refs(1+2)', toMs(call_id_time + provider_enc_sign_time)],
         ['(7) Message Store Publish', toMs(message_store_pub_time)],
         ['(8) Provider Retrieve - Refs(1+3+4)', toMs(call_id_time + create_ret_reqs_and_sign + verify_and_decrypt)],

@@ -82,7 +82,7 @@ def create_storage_requests(call_id: bytes, msg: str) -> List[dict]:
 
 def create_retrieve_requests(call_id: bytes) -> List[dict]:
     stores = dht.get_stores(key=call_id, count=config.REPLICATION)
-    call_id =Utils.to_base64(call_id)
+    call_id = Utils.to_base64(call_id)
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
     
     reqs = []
@@ -103,7 +103,7 @@ def encrypt_and_mac(call_id: bytes, plaintext: str) -> str:
     c_0 = Utils.random_bytes(32)
     kenc = Utils.hash256(Utils.xor(c_0, call_id))
     c_1 = Ciphering.enc(kenc, plaintext.encode())
-    return Utils.to_base64(c_0) + '.' + Utils.to_base64(c_1)
+    return Utils.to_base64(c_0) + ':' + Utils.to_base64(c_1)
 
 def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str):
     src, dst, tokens = str(src), str(dst), []
@@ -111,6 +111,8 @@ def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str):
     for res in responses:
         if not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=gpk):
             continue
-        tokens.append(Ciphering.dec(call_id, Utils.from_base64(res['ctx'])))
-
-    return list(set(tokens))
+        c_0, c_1 = res['ctx'].split(':')
+        kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_id))
+        msg: bytes = Ciphering.dec(kenc, Utils.from_base64(c_1))
+        if msg: return msg.decode('utf-8')
+    return None
