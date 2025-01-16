@@ -50,7 +50,7 @@ def cache_repositories(mode: str):
             continue
         
         noderec = {
-            'id': Utils.hash160(container.name.encode()).hex(),
+            'id': Utils.hash256(container.name.encode()).hex(),
             'name': container.name,
             'fqdn': container.name,
             'url': f'http://{container.name}'

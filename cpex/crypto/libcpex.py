@@ -22,17 +22,26 @@ def normalize_call_details(src: str, dst: str):
     return normalize_tn(src) + normalize_tn(dst) + str(ts)
 
 def get_index_from_call_details(call_details: str) -> int:
-    digest: bytes = Utils.hash160(call_details)
+    digest: bytes = Utils.hash160(call_details.encode('utf-8'))
     return int(digest.hex(), 16) % config.OPRF_KEYLIST_SIZE
 
 def create_evaluation_requests(call_details: str) -> bytes:
+    start = time.perf_counter()
     i_k: int = get_index_from_call_details(call_details)
+    print(f"compute i_k: {(time.perf_counter() - start) * 1000}ms")
+    start = time.perf_counter()
     calldt_hash = Utils.hash256(bytes(call_details, 'utf-8'))
+    print(f"compute calldt_hash: {(time.perf_counter() - start) * 1000}ms")
+    start = time.perf_counter()
     evaluators = dht.get_evals(key=calldt_hash, count=config.OPRF_EV_PARAM)
+    print(f"get_evals: {(time.perf_counter() - start) * 1000}ms")
+    start = time.perf_counter()
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
+    print(f"get gsk, gpk: {(time.perf_counter() - start) * 1000}ms")
     
     masks = []
     requests = []
+    start = time.perf_counter()
     for ev in evaluators:
         x, mask = Oprf.blind(call_details)
         masks.append(mask)
@@ -42,6 +51,7 @@ def create_evaluation_requests(call_details: str) -> bytes:
             'url': ev.get('url') + '/evaluate', 
             'data': { 'i_k': i_k, 'x': x, 'sig': sig}
         })
+    print(f"create requests: {(time.perf_counter() - start) * 1000}ms")
     return requests, masks
 
 def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
@@ -62,13 +72,13 @@ def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
 def create_storage_requests(call_id: bytes, msg: str) -> List[dict]:
     stores = dht.get_stores(key=call_id, count=config.REPLICATION)
     call_id_str = Utils.to_base64(call_id)
-    ctx = Utils.to_base64(ctx)
+
     requests = []
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
     
     for store in stores:
         idx = Utils.to_base64(Utils.hash256(bytes(call_id_str + store['id'], 'utf-8')))
-        ctx = encrypt_and_mac(call_id=call_id, plaintext=msg.encode('utf-8'))
+        ctx = encrypt_and_mac(call_id=call_id, plaintext=msg)
         requests.append({
             'url': store['url'] + '/publish',
             'data': { 
@@ -102,7 +112,7 @@ def create_retrieve_requests(call_id: bytes) -> List[dict]:
 def encrypt_and_mac(call_id: bytes, plaintext: str) -> str:
     c_0 = Utils.random_bytes(32)
     kenc = Utils.hash256(Utils.xor(c_0, call_id))
-    c_1 = Ciphering.enc(kenc, plaintext.encode())
+    c_1 = Ciphering.enc(kenc, plaintext.encode('utf-8'))
     return Utils.to_base64(c_0) + ':' + Utils.to_base64(c_1)
 
 def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str):
