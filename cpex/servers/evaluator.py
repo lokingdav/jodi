@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from cpex.crypto import groupsig, oprf
 
 kr_instance = None
+gpk = groupsig.get_gpk()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,7 +24,6 @@ class EvaluateRequest(BaseModel):
     
 @app.post("/evaluate")
 async def evaluate(req: EvaluateRequest):
-    gpk = groupsig.get_gpk()
     if not groupsig.verify(sig=req.sig, msg=str(req.idx) + str(req.x), gpk=gpk):
         return JSONResponse(
             content={"message": "Invalid Signature"}, 

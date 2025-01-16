@@ -7,6 +7,7 @@ from cpex.crypto import groupsig
 from cpex.models import cache
 
 app = FastAPI()
+gpk = groupsig.get_gpk()
 
 class PublishRequest(BaseModel):
     idx: str
@@ -34,7 +35,6 @@ def get_record_key(idx: str):
     
 @app.post("/publish")
 async def publish(req: PublishRequest):
-    gpk = groupsig.get_gpk()
     if not groupsig.verify(sig=req.sig, msg=req.idx + req.ctx, gpk=gpk):
         return unauthorized_response()
     
@@ -45,7 +45,6 @@ async def publish(req: PublishRequest):
     
 @app.post("/retrieve")
 async def retrieve(req: RetrieveRequest):
-    gpk = groupsig.get_gpk()
     if not groupsig.verify(sig=req.sig, msg=req.idx, gpk=gpk):
         return unauthorized_response()
     
