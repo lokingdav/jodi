@@ -7,7 +7,7 @@ from cpex.models import cache
 from multiprocessing import Pool
 
 
-numIters = 1
+numIters = 10
 
 
 # Sample src, dst and JWT token
@@ -19,7 +19,7 @@ def toMs(seconds):
     return round(seconds * 1000, 3)
 
 def benchCpexProtocol(options):
-    print('Running with options:', options)
+    # print('Running with options:', options)
     config.OPRF_EV_PARAM = options['num_ev']
     config.REPLICATION = options['num_ms']
 
@@ -35,7 +35,7 @@ def benchCpexProtocol(options):
     call_details = libcpex.normalize_call_details(src=src, dst=src)
     requests, masks = libcpex.create_evaluation_requests(call_details)
     call_id_time = time.perf_counter() - call_id_time
-    print(f"Call ID Pre Request: {toMs(call_id_time)}ms")
+    # print(f"Call ID Pre Request: {toMs(call_id_time)}ms")
 
     assert len(requests) == config.OPRF_EV_PARAM, f"Expected {config.OPRF_EV_PARAM} requests, got {len(requests)}"
     
@@ -50,9 +50,9 @@ def benchCpexProtocol(options):
             "vk": Utils.to_base64(vk) 
         })
     # Average time taken to evaluate OPRF by a single evaluator
-    print("Total Evaluator Time: ", toMs(time.perf_counter() - evaluator_time))
+    # print("Total Evaluator Time: ", toMs(time.perf_counter() - evaluator_time))
     evaluator_time = (time.perf_counter() - evaluator_time) / len(requests)
-    print("Average Evaluator Time: ", toMs(evaluator_time))
+    # print("Average Evaluator Time: ", toMs(evaluator_time))
     latency += evaluator_time
 
     assert len(responses) == config.OPRF_EV_PARAM, f"Expected {config.OPRF_EV_PARAM} responses, got {len(responses)}"
@@ -60,7 +60,7 @@ def benchCpexProtocol(options):
     # Finish Call ID Generation
     call_id_resume = time.perf_counter()
     call_id = libcpex.create_call_id(responses=responses, masks=masks)
-    print(f"Call ID Post Request: {toMs(time.perf_counter() - call_id_resume)}ms")
+    # print(f"Call ID Post Request: {toMs(time.perf_counter() - call_id_resume)}ms")
     call_id_time += time.perf_counter() - call_id_resume
     latency += call_id_time
     

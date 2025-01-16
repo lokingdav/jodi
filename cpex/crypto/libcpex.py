@@ -26,18 +26,18 @@ def get_index_from_call_details(call_details: str) -> int:
     return int(digest.hex(), 16) % config.OPRF_KEYLIST_SIZE
 
 def create_evaluation_requests(call_details: str) -> bytes:
-    start = time.perf_counter()
+    # start = time.perf_counter()
     i_k: int = get_index_from_call_details(call_details)
-    print(f"compute i_k: {(time.perf_counter() - start) * 1000}ms")
-    start = time.perf_counter()
+    # print(f"compute i_k: {(time.perf_counter() - start) * 1000}ms")
+    # start = time.perf_counter()
     calldt_hash = Utils.hash256(bytes(call_details, 'utf-8'))
-    print(f"compute calldt_hash: {(time.perf_counter() - start) * 1000}ms")
-    start = time.perf_counter()
+    # print(f"compute calldt_hash: {(time.perf_counter() - start) * 1000}ms")
+    # start = time.perf_counter()
     evaluators = dht.get_evals(key=calldt_hash, count=config.OPRF_EV_PARAM)
-    print(f"get_evals: {(time.perf_counter() - start) * 1000}ms")
-    start = time.perf_counter()
+    # print(f"get_evals: {(time.perf_counter() - start) * 1000}ms")
+    # start = time.perf_counter()
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
-    print(f"get gsk, gpk: {(time.perf_counter() - start) * 1000}ms")
+    # print(f"get gsk, gpk: {(time.perf_counter() - start) * 1000}ms")
     
     masks = []
     requests = []
@@ -51,7 +51,7 @@ def create_evaluation_requests(call_details: str) -> bytes:
             'url': ev.get('url') + '/evaluate', 
             'data': { 'i_k': i_k, 'x': x, 'sig': sig}
         })
-    print(f"create requests: {(time.perf_counter() - start) * 1000}ms")
+    # print(f"create requests: {(time.perf_counter() - start) * 1000}ms")
     return requests, masks
 
 def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
