@@ -1,5 +1,5 @@
 import time, os, asyncio, json
-from cpex.helpers import misc, http, files
+from cpex.helpers import misc, http, files, dht
 from cpex.crypto import libcpex, groupsig
 from pylibcpex import Oprf, Utils
 from cpex import config, constants
@@ -27,11 +27,12 @@ def toMs(seconds):
 def init_worker():
     global cache_client
     cache_client = cache.connect()
+    dht.set_cache_client(cache_client)
 
 def cid_generation(Keypairs):
     start_client_part_1 = time.perf_counter()
     call_details = libcpex.normalize_call_details(src=src, dst=src)
-    requests, masks = libcpex.create_evaluation_requests(call_details, gsk=gsk, gpk=gpk, evals=evals)
+    requests, masks = libcpex.create_evaluation_requests(call_details, gsk=gsk, gpk=gpk)
     client_part_1_time = time.perf_counter() - start_client_part_1
 
     assert len(requests) == config.OPRF_EV_PARAM, f"Expected {config.OPRF_EV_PARAM} requests, got {len(requests)}"
@@ -76,7 +77,7 @@ def benchCpexProtocol(options):
     
     # Encrypt and MAC, then sign the requests
     provider_enc_sign_time = time.perf_counter()
-    storage_reqs = libcpex.create_storage_requests(call_id=cidgen1['call_id'], msg=token, gsk=gsk, gpk=gpk, stores=stores)
+    storage_reqs = libcpex.create_storage_requests(call_id=cidgen1['call_id'], msg=token, gsk=gsk, gpk=gpk)
     provider_enc_sign_time = time.perf_counter() - provider_enc_sign_time
     
     # Message Store operations 
@@ -96,7 +97,7 @@ def benchCpexProtocol(options):
     
     # Retrieval Protocol
     create_ret_reqs_and_sign = time.perf_counter()
-    ret_reqs = libcpex.create_retrieve_requests(call_id=cidgen1['call_id'], gsk=gsk, gpk=gpk, stores=stores)
+    ret_reqs = libcpex.create_retrieve_requests(call_id=cidgen1['call_id'], gsk=gsk, gpk=gpk)
     create_ret_reqs_and_sign = time.perf_counter() - create_ret_reqs_and_sign
     
     # Message Store operations for 1 store
