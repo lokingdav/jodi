@@ -35,6 +35,7 @@ def main(resutlsloc: str, mode: str):
     
     print(f"Running scalability experiment in {mode} mode")
     results = []
+    
     for node_grp in node_groups:
         setup_nodes(node_grp[0], mode, ntype='ev')
         setup_nodes(node_grp[1], mode, ntype='ms')
@@ -54,7 +55,7 @@ def main(resutlsloc: str, mode: str):
 
 def prepare_results_file():
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/scalability.csv"
-    files.write_csv(resutlsloc, [['mode', 'num_provs', 'num_ev', 'num_ms' 'lat_min', 'lat_max', 'lat_mean', 'lat_std', 'success', 'failed']])
+    files.write_csv(resutlsloc, [['mode', 'num_provs', 'num_ev', 'num_ms', 'lat_min', 'lat_max', 'lat_mean', 'lat_std', 'success', 'failed']])
     return resutlsloc
 
 def reset_routes():
