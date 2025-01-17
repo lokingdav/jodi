@@ -65,6 +65,8 @@ def cid_generation(Keypairs):
 def benchCpexProtocol(options):
     global cache_client
 
+    print(f"Running with {options['num_ev']} EVs and {options['num_ms']} MSs")
+
     config.OPRF_EV_PARAM = options['num_ev']
     config.REPLICATION = options['num_ms']
 
@@ -157,35 +159,23 @@ def create_nodes():
 
 async def main():
     create_nodes()
-
-    results_folder = os.path.dirname(os.path.abspath(__file__)) + '/results'
-    files.create_dir_if_not_exists(results_folder)
-    resutlsloc = f"{results_folder}/microbench.csv"
-    files.write_csv(resutlsloc, [[
-        'Num Evals',
-        'Num Stores',
-        'PUB:P', 
-        'PUB:EV',
-        'PUB:MS',
-        'RET:P',
-        'RET:MS',
-        'Latency'
-    ]])
+    resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/microbench.csv"
+    files.write_csv(resutlsloc, [['Num Evals', 'Num Stores', 'PUB:P', 'PUB:EV', 'PUB:MS', 'RET:P', 'RET:MS', 'Latency']])
     
     print(f"Running {numIters} iterations of the CPEX protocol microbenchmark...")
     start = time.perf_counter()
     params = []
 
-    count = 10
-    for n_ev in range(1, count+1):
-        for n_ms in range(1, count+1):
-            params.append({'num_ms': n_ms, 'num_ev': n_ev})
 
-    for _ in range(numIters):
-        print(f"Iteration {_+1}/{numIters}")
-        with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
-            results = pool.map(benchCpexProtocol, params)
-            files.append_csv(resutlsloc, results)
+        # print(f"Iteration {_+1}/{numIters}")
+    with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
+        count = 10
+        for _ in range(numIters):
+            for n_ev in range(1, count+1):
+                for n_ms in range(1, count+1):
+                    params.append({'num_ms': n_ms, 'num_ev': n_ev})
+        results = pool.map(benchCpexProtocol, params)
+        files.append_csv(resutlsloc, results)
 
     end = round(time.perf_counter() - start, 2)
     print(f"Results have been saved to {resutlsloc}.\nTotal time taken: {end} seconds.")
