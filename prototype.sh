@@ -11,7 +11,7 @@ fi
 COMPOSE_FILE=compose.prototype.yml
 
 CMD=$1
-VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash')
+VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash' 'runexp')
 CPEX_NODE_PREFIX="cpex-node"
 CPS_PREFIX="atis-cps"
 
@@ -62,6 +62,28 @@ open_bash() {
     docker exec -it cpex-exp /bin/bash
 }
 
+run_experiments() {
+    local exp=$1
+    local allowed=(1 2)
+
+    echo "Running experiment '$exp'..."
+    cmd_prefix="docker exec -it cpex-exp python cpex/prototype/experiments"
+
+    case "$exp" in
+        1)
+            $cmd_prefix"/microbench.py"
+            ;;
+        2)
+            $cmd_prefix"/scalability.py"
+            ;;
+        *)
+            echo "Invalid experiment number. Allowed: ${allowed[*]}"
+            exit 1
+            ;;
+    esac
+    
+}
+
 validate_cmds
 
 case "$CMD" in
@@ -83,6 +105,9 @@ case "$CMD" in
         ;;
     bash)
         open_bash
+        ;;
+    runexp)
+        run_experiments $2
         ;;
     *)
         echo "Unknown command: $CMD"

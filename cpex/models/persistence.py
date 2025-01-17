@@ -79,7 +79,6 @@ def mark_simulated(collection_id: int, ids: list):
 
 def reset_marked_routes(collection_id: int):
     collection = f'routes_{collection_id}' 
-    print(f"Resetting status of routes in {collection}")
     with open_db() as conn:
         update = {'$set': {'status': STATUS_PENDING}}
         conn[DB_NAME][collection].update_many({}, update)

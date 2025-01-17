@@ -1,12 +1,24 @@
 import asyncio, argparse
 from cpex.prototype.provider import Provider
+from cpex.helpers import dht
+from cpex.models import cache
+from cpex.crypto import groupsig
+
+dht.set_cache_client(cache.connect())
+gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
 
 async def main(mode: str):
-    provider = Provider(pid='1', impl=False, mode=mode, cps_url='http://atis-cps-1')
+    provider = Provider(
+        pid='1', 
+        impl=False, 
+        mode=mode, 
+        cps_url='http://atis-cps-1',
+        gsk=gsk,
+        gpk=gpk
+    )
     signal, token = await provider.originate()
     res = await provider.retrieve(signal)
     assert token == res.Identity
-    print('\nResponse:\n', res)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

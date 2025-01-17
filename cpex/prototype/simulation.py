@@ -1,22 +1,28 @@
 import random, asyncio, os
 import numpy as np
 from multiprocessing import Pool
-
+from typing import Tuple
+from cpex.crypto import groupsig
 from cpex.prototype import network
 from cpex.models import cache, persistence
-from cpex.helpers import errors, files
+from cpex.helpers import errors, files, dht
 from cpex.prototype.stirshaken import certs
 from cpex import config, constants
 from cpex.prototype.provider import Provider
 
+gsk, gpk = None, None
+
+def init_worker():
+    global gsk, gpk
+    dht.set_cache_client(cache.connect())
+    gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
+
 def simulate_call_sync(options: dict):
-    # print(f"Simulating call with options: {options}")
     res = asyncio.run(simulate_call(options))
     print(f'after simulate_call {options.get("_id")}')
     return res
 
 async def simulate_call(options: dict):
-    # print(f"Simulating call: {options.get('_id')}")
     mode: str = options.get('mode')
 
     if mode not in constants.MODES:
@@ -33,8 +39,6 @@ async def simulate_call(options: dict):
     if len(set([p for (p, _) in route])) == 1:
         return options.get('_id')
     
-    message_stores = cache.get_all_repositories(mode=mode)
-
     providers, signal, start_token, final_token = {}, None, None, None
     
     for i, (idx, impl) in enumerate(route):
@@ -42,20 +46,13 @@ async def simulate_call(options: dict):
         provider: Provider = providers.get(pid)
         
         if not provider:
-            if config.is_atis_mode(mode):
-                cps_url = message_stores[random.randint(0, len(message_stores) - 1)].get('url')
-                stores = []
-            else:
-                stores = message_stores[:]
-                cps_url = None
-
             provider = Provider(
                 pid=pid, 
                 impl=bool(int(impl)),
                 mode=mode,
-                cps_url=cps_url,
-                message_stores=stores,
-                log=options.get('log', True)
+                log=options.get('log', True),
+                gsk=gsk,
+                gpk=gpk
             )
             
             providers[pid] = provider
@@ -69,8 +66,10 @@ async def simulate_call(options: dict):
     
     is_correct = start_token == final_token
     total = 0
+    
     for provider in providers.values():
         total += provider.get_latency_ms()
+        
     print(f"Simulated call path of length {len(route)} and latency {total} ms")
     return (options.get('_id'), total, len(route), is_correct)
 
@@ -102,8 +101,8 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     persistence.save_routes(collection_id=num_providers, routes=routes)
     print(f"> Generated phone network and with {num_providers} providers")
     
-def run(num_provs: int, repo_count: int, mode: str):
-    with Pool(processes=5) as pool:
+def run(num_provs: int, node_grp: Tuple[int, int], mode: str):
+    with Pool(processes=5, initializer=init_worker) as pool:
         batch_size = 100
         batch_num = 1
 
@@ -121,9 +120,8 @@ def run(num_provs: int, repo_count: int, mode: str):
         while len(routes) > 0:
             print(f"-> Simulating {len(routes)} routes in batch {batch_num}")
             results = pool.map(simulate_call_sync, routes)
-            # print("pool->map->simulate_call_sync done")
             ids = []
-            for (rid, latency_ms, _, is_correct) in results:
+            for (rid, latency_ms, len_routes, is_correct) in results:
                 ids.append(rid)
                 if latency_ms > 0:
                     metrics = np.append(metrics, latency_ms)
@@ -147,5 +145,16 @@ def run(num_provs: int, repo_count: int, mode: str):
             )
         print('-> Simulation completed')
         dp = 2
-        return [mode, repo_count, num_provs, round(metrics.min(), dp), round(metrics.max(), dp), round(metrics.mean(), dp), round(metrics.std(), dp), success, failed]
+        return [
+            mode, 
+            num_provs, 
+            node_grp[0], # EV
+            node_grp[1], # MS 
+            round(metrics.min(), dp), 
+            round(metrics.max(), dp), 
+            round(metrics.mean(), dp), 
+            round(metrics.std(), dp), 
+            success, 
+            failed
+        ]
             

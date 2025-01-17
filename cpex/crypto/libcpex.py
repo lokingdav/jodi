@@ -8,7 +8,6 @@ from cpex.models import cache
 from typing import List
 import jwt, time, re
 
-
 def normalize_ts(timestamp: int) -> int:
     seconds_in_minute = 60
     return timestamp - (timestamp % seconds_in_minute)
@@ -31,7 +30,6 @@ def create_evaluation_requests(call_details: str, gsk, gpk, evals=None) -> bytes
     evaluators = dht.get_evals(
         key=calldt_hash, 
         count=config.OPRF_EV_PARAM,
-        nodes=evals
     )
     
     masks = []
@@ -51,6 +49,7 @@ def create_evaluation_requests(call_details: str, gsk, gpk, evals=None) -> bytes
 
 def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
     xor = None
+    
     for i in range(len(responses)):
         cid_i = Oprf.unblind(
             Utils.from_base64(responses[i]['fx']), 
@@ -116,5 +115,8 @@ def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str, gpk):
         c_0, c_1 = res['ctx'].split(':')
         kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_id))
         msg: bytes = Ciphering.dec(kenc, Utils.from_base64(c_1))
-        if msg: return msg.decode('utf-8')
+        
+        if msg:
+            return msg.decode('utf-8')
+        
     return None

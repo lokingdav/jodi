@@ -18,19 +18,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 class EvaluateRequest(BaseModel):
-    idx: int
+    i_k: int
     x: str
     sig: str
     
 @app.post("/evaluate")
 async def evaluate(req: EvaluateRequest):
-    if not groupsig.verify(sig=req.sig, msg=str(req.idx) + str(req.x), gpk=gpk):
+    if not groupsig.verify(sig=req.sig, msg=str(req.i_k) + str(req.x), gpk=gpk):
         return JSONResponse(
             content={"message": "Invalid Signature"}, 
             status_code=status.HTTP_401_UNAUTHORIZED
         )
     
-    privk, publk = kr_instance.get_key(req.idx)
+    privk, publk = kr_instance.get_key(req.i_k)
     
     return JSONResponse(
         content=oprf.evaluate(privk=privk, publk=publk, x=req.x), 
@@ -39,4 +39,4 @@ async def evaluate(req: EvaluateRequest):
 
 @app.get("/health")
 async def health():
-    return { "message": "OK", "status": 200 }
+    return { "message": "OK", "type": "Evaluator", "status": 200 }

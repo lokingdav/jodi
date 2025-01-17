@@ -6,6 +6,12 @@ from multiprocessing import Pool
 from typing import Tuple
 from cpex.helpers import dht
 
+cache_client = None
+
+def set_cache_client(client):
+    global cache_client
+    cache_client = client
+
 def get_client():
     return docker.from_env()
 
@@ -62,20 +68,27 @@ def cache_repositories(mode: str):
             ev.append(noderec)
         else:
             ms.append(noderec)
-        
-    if cps: cache.save(config.CPS_KEY, json.dumps(cps))
-    if ms: cache.save(config.STORES_KEY, json.dumps(ms))
-    if ev: cache.save(config.EVALS_KEY, json.dumps(ev))
+            
+    # print('CPS', [c.get('name') for c in cps])
+    # print('MS', [m.get('name') for m in ms])
+    # print('EVALS', [e.get('name') for e in ev])
+    
+    if cps: cache.save(client=cache_client, key=config.CPS_KEY, value=json.dumps(cps))
+    if ms: cache.save(client=cache_client, key=config.STORES_KEY, value=json.dumps(ms))
+    if ev: cache.save(client=cache_client, key=config.EVALS_KEY, value=json.dumps(ev))
 
 def remove_repositories(mode: str):
     client = get_client()
     containers = client.containers.list()
+    prefix = config.get_container_prefix(mode)
     for container in containers:
-        if container.name.startswith(config.get_container_prefix(mode)):
+        if container.name.startswith(prefix):
             container.stop()
             container.remove()
             print(f"Removed container {container.name}")
-    cache.save('repositories', json.dumps([]))
+            
+    cache.save(config.EVALS_KEY, json.dumps([]))
+    cache.save(config.STORES_KEY, json.dumps([]))
     
 def add_nodes(count: int, mode: str, ntype: str = None):
     if not config.is_atis_mode(mode) and ntype not in ['ms', 'ev']:

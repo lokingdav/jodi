@@ -9,6 +9,7 @@ from typing import List, Union
 from cpex.crypto import libcpex
 from cpex.models import persistence, cache
 from cpex.prototype.stirshaken import stirsetup
+from pylibcpex import Utils
 
 def get_type(instance):
     return 'SIP Signal' if isinstance(instance, SIPSignal) else 'TDM Signal'
@@ -26,7 +27,7 @@ class SIPSignal(BaseModel):
     CallId: str = str(uuid4())
 
 class Provider:
-    def __init__(self, pid: str, impl: bool, mode: str, cps_url: str = None, log: bool = True):
+    def __init__(self, pid: str, impl: bool, mode: str, cps_url: str = None, log: bool = True, gsk=None, gpk = None):
         self.pid = pid
         self.impl = impl
         self.mode = mode
@@ -35,6 +36,8 @@ class Provider:
         self.load_auth_service()
         self.latencies: list = []
         self.log = log
+        self.gpk = gpk
+        self.gsk = gsk
 
         if self.cps_url:
             self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
@@ -151,12 +154,13 @@ class Provider:
         
     async def cpex_publish(self, signal: SIPSignal):
         # Call ID generation
-        call_id = self.cpex_call_id_generation(signal=signal)
-        
+        call_id = await self.cpex_call_id_generation(signal=signal)
         # Encrypt and MAC, then sign the requests
         reqs = libcpex.create_storage_requests(
             call_id=call_id, 
             msg=signal.Identity,
+            gsk=self.gsk,
+            gpk=self.gpk
         )
         
         await http.posts(reqs=reqs)
@@ -166,11 +170,11 @@ class Provider:
         try: 
             start_time = time.perf_counter()
             if self.is_atis_mode():
-                tokens = await self.atis_retrieve_token(signal=signal)
+                token = await self.atis_retrieve_token(signal=signal)
             else:
-                tokens = await self.cpex_retrieve_token(signal=signal)
+                token = await self.cpex_retrieve_token(signal=signal)
             self.latencies.append(time.perf_counter() - start_time)
-            token = tokens[0] if len(tokens) > 0 else ''
+            
             signal = self.convert_tdm_to_sip(signal=signal, token=token)
         except Exception as e:
             self.log_msg(f'Error while executing RETRIEVE: {e}')
@@ -194,17 +198,17 @@ class Provider:
     
     async def cpex_call_id_generation(self, signal: Union[SIPSignal, TDMSignal]) -> str:
         call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
-        requests, masks = libcpex.create_evaluation_requests(call_details)
+        requests, masks = libcpex.create_evaluation_requests(call_details, gsk=self.gsk, gpk=self.gpk)
         responses = await http.posts(reqs=requests)
         return libcpex.create_call_id(responses=responses, masks=masks)
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
-        call_id = self.cpex_call_id_generation(signal=signal)
-        reqs = libcpex.create_retrieve_requests(call_id=call_id, nodes=self.message_stores[:], count=config.REPLICATION)
+        call_id = await self.cpex_call_id_generation(signal=signal)
+        reqs = libcpex.create_retrieve_requests(call_id=call_id, gsk=self.gsk, gpk=self.gpk)
         responses = await http.posts(reqs)
         responses = [r for r in responses if '_error' not in r]
-        tokens = libcpex.decrypt(call_id=call_id, responses=responses, src=signal.From, dst=signal.To)
-        return tokens
+        token = libcpex.decrypt(call_id=call_id, responses=responses, src=signal.From, dst=signal.To, gpk=self.gpk)
+        return token
             
     def convert_sip_to_tdm(self, signal: SIPSignal):
         if not isinstance(signal, SIPSignal):

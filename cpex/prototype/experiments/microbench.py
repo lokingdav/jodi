@@ -157,6 +157,11 @@ def create_nodes():
             'fqdn': name,
             'url': f'http://{name}'
         })
+    cclient = cache.connect()
+    if stores:
+        cache.save(client=cclient, key=config.STORES_KEY, value=json.dumps(stores))
+    if evals:
+        cache.save(client=cclient, key=config.EVALS_KEY, value=json.dumps(evals))
 
 async def main():
     create_nodes()
