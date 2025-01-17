@@ -25,10 +25,14 @@ def get_index_from_call_details(call_details: str) -> int:
     digest: bytes = Utils.hash160(call_details.encode('utf-8'))
     return int(digest.hex(), 16) % config.OPRF_KEYLIST_SIZE
 
-def create_evaluation_requests(call_details: str, gsk, gpk) -> bytes:
+def create_evaluation_requests(call_details: str, gsk, gpk, evals=None) -> bytes:
     i_k: int = get_index_from_call_details(call_details)
     calldt_hash = Utils.hash256(bytes(call_details, 'utf-8'))
-    evaluators = dht.get_evals(key=calldt_hash, count=config.OPRF_EV_PARAM)
+    evaluators = dht.get_evals(
+        key=calldt_hash, 
+        count=config.OPRF_EV_PARAM,
+        nodes=evals
+    )
     
     masks = []
     requests = []
@@ -60,8 +64,8 @@ def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
         
     return Utils.hash256(xor)
 
-def create_storage_requests(call_id: bytes, msg: str, gsk, gpk) -> List[dict]:
-    stores = dht.get_stores(key=call_id, count=config.REPLICATION)
+def create_storage_requests(call_id: bytes, msg: str, gsk, gpk, stores = None) -> List[dict]:
+    stores = dht.get_stores(key=call_id, count=config.REPLICATION, nodes=stores)
     call_id_str = Utils.to_base64(call_id)
 
     requests = []
@@ -80,8 +84,8 @@ def create_storage_requests(call_id: bytes, msg: str, gsk, gpk) -> List[dict]:
 
     return requests
 
-def create_retrieve_requests(call_id: bytes, gsk, gpk) -> List[dict]:
-    stores = dht.get_stores(key=call_id, count=config.REPLICATION)
+def create_retrieve_requests(call_id: bytes, gsk, gpk, stores=None) -> List[dict]:
+    stores = dht.get_stores(key=call_id, count=config.REPLICATION, nodes=stores)
     call_id = Utils.to_base64(call_id)
     
     reqs = []

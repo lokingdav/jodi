@@ -11,8 +11,8 @@ def connect():
         decode_responses=True
     )
 
-def find(key: str, dtype = str):
-    data = connect().get(key) or None
+def find(client: Redis, key: str, dtype = str):
+    data = client.get(key) or None
 
     if data and dtype == int:
         return int(data)
@@ -22,18 +22,18 @@ def find(key: str, dtype = str):
     
     return data
 
-def save(key: str, value: str):
+def save(client: Redis, key: str, value: str):
     if type(value) != str:
         raise TypeError("Value must be a string")
     
-    return connect().set(key, value)
+    return client.set(key, value)
 
-def cache_for_seconds(key: str, value: str, seconds: int):
+def cache_for_seconds(client: Redis, key: str, value: str, seconds: int):
     if type(value) == dict or type(value) == list:
         value = json.dumps(value)
     if type(value) != str:
         raise TypeError("Value must be a string")
-    return connect().setex(key, seconds, value)
+    return client.setex(key, seconds, value)
 
 def get_other_cpses():
     repos = find(CPS_KEY, dict)

@@ -151,10 +151,7 @@ class Provider:
         
     async def cpex_publish(self, signal: SIPSignal):
         # Call ID generation
-        call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
-        requests, masks = libcpex.create_evaluation_requests(call_details)
-        responses = await http.posts(reqs=requests)
-        call_id = libcpex.create_call_id(responses=responses, masks=masks)
+        call_id = self.cpex_call_id_generation(signal=signal)
         
         # Encrypt and MAC, then sign the requests
         reqs = libcpex.create_storage_requests(
@@ -194,13 +191,15 @@ class Provider:
         url: str = self.cps_url + f'/retrieve/{signal.To}/{signal.From}'
         response = await http.get(url=url, params={}, headers=headers)
         return response
+    
+    async def cpex_call_id_generation(self, signal: Union[SIPSignal, TDMSignal]) -> str:
+        call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
+        requests, masks = libcpex.create_evaluation_requests(call_details)
+        responses = await http.posts(reqs=requests)
+        return libcpex.create_call_id(responses=responses, masks=masks)
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
-        call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
-        requests, scalars = libcpex.create_evaluation_requests(call_details)
-        res = await http.posts(reqs=requests)
-        call_id = libcpex.create_call_id(s1res=res[0], s2res=res[1], scalars=scalars)
-        
+        call_id = self.cpex_call_id_generation(signal=signal)
         reqs = libcpex.create_retrieve_requests(call_id=call_id, nodes=self.message_stores[:], count=config.REPLICATION)
         responses = await http.posts(reqs)
         responses = [r for r in responses if '_error' not in r]

@@ -7,9 +7,14 @@ from cpex.models import cache
 from multiprocessing import Pool
 
 
-numIters = 1
+numIters = 100
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
+
+evals = []
+stores = []
+
+cache_client = None
 
 # Sample src, dst and JWT token
 src = '16841333538'
@@ -19,10 +24,14 @@ token = "eyJhbGciOiJFUzI1NiIsInBwdCI6InNoYWtlbiIsInR5cCI6InBhc3Nwb3J0IiwieDV1Ijo
 def toMs(seconds):
     return round(seconds * 1000, 3)
 
+def init_worker():
+    global cache_client
+    cache_client = cache.connect()
+
 def cid_generation(Keypairs):
     start_client_part_1 = time.perf_counter()
     call_details = libcpex.normalize_call_details(src=src, dst=src)
-    requests, masks = libcpex.create_evaluation_requests(call_details, gsk=gsk, gpk=gpk)
+    requests, masks = libcpex.create_evaluation_requests(call_details, gsk=gsk, gpk=gpk, evals=evals)
     client_part_1_time = time.perf_counter() - start_client_part_1
 
     assert len(requests) == config.OPRF_EV_PARAM, f"Expected {config.OPRF_EV_PARAM} requests, got {len(requests)}"
@@ -54,6 +63,8 @@ def cid_generation(Keypairs):
     }
 
 def benchCpexProtocol(options):
+    global cache_client
+
     config.OPRF_EV_PARAM = options['num_ev']
     config.REPLICATION = options['num_ms']
 
@@ -63,7 +74,7 @@ def benchCpexProtocol(options):
     
     # Encrypt and MAC, then sign the requests
     provider_enc_sign_time = time.perf_counter()
-    storage_reqs = libcpex.create_storage_requests(call_id=cidgen1['call_id'], msg=token, gsk=gsk, gpk=gpk)
+    storage_reqs = libcpex.create_storage_requests(call_id=cidgen1['call_id'], msg=token, gsk=gsk, gpk=gpk, stores=stores)
     provider_enc_sign_time = time.perf_counter() - provider_enc_sign_time
     
     # Message Store operations 
@@ -72,13 +83,18 @@ def benchCpexProtocol(options):
         req = storage_req['data']
         assert groupsig.verify(sig=req['sig'], msg=req['idx'] + req['ctx'], gpk=gpk)
         value = req['idx'] + '.' + req['ctx'] + '.' + req['sig']
-        cache.cache_for_seconds(req['idx'], value, config.REC_TTL_SECONDS)
+        cache.cache_for_seconds(
+            client=cache_client, 
+            key=req['idx'], 
+            value=value, 
+            seconds=config.REC_TTL_SECONDS
+        )
     # Average time taken to store a message by a single store
     message_store_pub_time = (time.perf_counter() - message_store_pub_time) / len(storage_reqs)
     
     # Retrieval Protocol
     create_ret_reqs_and_sign = time.perf_counter()
-    ret_reqs = libcpex.create_retrieve_requests(call_id=cidgen1['call_id'], gsk=gsk, gpk=gpk)
+    ret_reqs = libcpex.create_retrieve_requests(call_id=cidgen1['call_id'], gsk=gsk, gpk=gpk, stores=stores)
     create_ret_reqs_and_sign = time.perf_counter() - create_ret_reqs_and_sign
     
     # Message Store operations for 1 store
@@ -86,7 +102,10 @@ def benchCpexProtocol(options):
     message_store_ret_time = time.perf_counter()
     for ret_req in ret_reqs:
         assert groupsig.verify(sig=ret_req['data']['sig'], msg=ret_req['data']['idx'], gpk=gpk)
-        value = cache.find(ret_req['data']['idx'])
+        value = cache.find(
+            client=cache_client, 
+            key=ret_req['data']['idx']
+        )
         (msidx, msctx, mssig) = value.split('.')
         responses.append({'idx': msidx, 'ctx': msctx, 'sig': mssig})
     # Average time taken to retrieve a message by a single store
@@ -117,8 +136,8 @@ def benchCpexProtocol(options):
     return results
     
 def create_nodes():
-    stores = []
-    evaluators = []
+    global evals, stores
+    evals, stores = [], []
 
     for i in range(30):
         name = f'cpex-node-ms-{i}'
@@ -129,15 +148,12 @@ def create_nodes():
             'url': f'http://{name}'
         })
         name = f'cpex-node-ev-{i}'
-        evaluators.append({
+        evals.append({
             'id': Utils.hash256(name.encode('utf-8')).hex(),
             'name': name,
             'fqdn': name,
             'url': f'http://{name}'
         })
-
-    cache.save(config.STORES_KEY, json.dumps(stores))
-    cache.save(config.EVALS_KEY, json.dumps(evaluators))
 
 async def main():
     create_nodes()
@@ -145,7 +161,7 @@ async def main():
     results_folder = os.path.dirname(os.path.abspath(__file__)) + '/results'
     files.create_dir_if_not_exists(results_folder)
     resutlsloc = f"{results_folder}/microbench.csv"
-    results = [[
+    files.write_csv(resutlsloc, [[
         'Num Evals',
         'Num Stores',
         'PUB:P', 
@@ -154,28 +170,25 @@ async def main():
         'RET:P',
         'RET:MS',
         'Latency'
-    ]]
-    files.write_csv(resutlsloc, results)
+    ]])
     
     print(f"Running {numIters} iterations of the CPEX protocol microbenchmark...")
     start = time.perf_counter()
-    results = []
     params = []
 
-    count = 1
+    count = 10
     for n_ev in range(1, count+1):
         for n_ms in range(1, count+1):
             params.append({'num_ms': n_ms, 'num_ev': n_ev})
-    print(params)
-    for i in range(numIters):
-        print(f"Iteration {i+1}/{numIters}")
-        with Pool(processes=os.cpu_count()) as pool:
-            results += pool.map(benchCpexProtocol, params)
 
-    files.append_csv(resutlsloc, results)
+    for _ in range(numIters):
+        print(f"Iteration {_+1}/{numIters}")
+        with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
+            results = pool.map(benchCpexProtocol, params)
+            files.append_csv(resutlsloc, results)
 
     end = round(time.perf_counter() - start, 2)
-    print(f"Results have been saved to {resutlsloc}. Total time taken: {end} seconds.")
+    print(f"Results have been saved to {resutlsloc}.\nTotal time taken: {end} seconds.")
 
 if __name__ == '__main__':
     asyncio.run(main())
