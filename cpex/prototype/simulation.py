@@ -1,4 +1,4 @@
-import random, asyncio, os
+import random, asyncio, os, time, math
 import numpy as np
 from multiprocessing import Pool
 from typing import Tuple
@@ -102,7 +102,7 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     print(f"> Generated phone network and with {num_providers} providers")
     
 def run(num_provs: int, node_grp: Tuple[int, int], mode: str):
-    with Pool(processes=5, initializer=init_worker) as pool:
+    with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
         batch_size = 100
         batch_num = 1
 
@@ -116,10 +116,17 @@ def run(num_provs: int, node_grp: Tuple[int, int], mode: str):
             raise Exception("No route to simulate. Please generate routes")
                 
         metrics, success, failed = np.array([]), 0, 0
+        
+        total_calls = 0
+        total_time = 0
 
         while len(routes) > 0:
             print(f"-> Simulating {len(routes)} routes in batch {batch_num}")
+            start_time = time.perf_counter()
             results = pool.map(simulate_call_sync, routes)
+            total_time += time.perf_counter() - start_time
+            total_calls += len(results)
+            
             ids = []
             for (rid, latency_ms, len_routes, is_correct) in results:
                 ids.append(rid)
@@ -155,6 +162,7 @@ def run(num_provs: int, node_grp: Tuple[int, int], mode: str):
             round(metrics.mean(), dp), 
             round(metrics.std(), dp), 
             success, 
-            failed
+            failed,
+            math.ceil(total_calls / total_time) if total_time > 0 else 0
         ]
             

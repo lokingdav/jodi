@@ -228,7 +228,7 @@ class Provider:
             'To': signal.To,
             'From': signal.From,
             'Pid': self.pid,
-            'Identity': token
+            'Identity': token if token else ''
         })
     
     def convert_sip_from_sip(self, signal: SIPSignal) -> SIPSignal:

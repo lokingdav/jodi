@@ -7,7 +7,7 @@ from cpex.helpers import files
 
 cache_client = None
 
-provider_groups = [10]
+provider_groups = [100]
 node_groups = [(10, 10)] # tuple of num ev and num ms
 deploy_rate = 14
 
@@ -55,7 +55,7 @@ def main(resutlsloc: str, mode: str):
 
 def prepare_results_file():
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/scalability.csv"
-    files.write_csv(resutlsloc, [['mode', 'num_provs', 'num_ev', 'num_ms', 'lat_min', 'lat_max', 'lat_mean', 'lat_std', 'success', 'failed']])
+    files.write_csv(resutlsloc, [['mode', 'num_provs', 'num_ev', 'num_ms', 'lat_min', 'lat_max', 'lat_mean', 'lat_std', 'success', 'failed', 'calls_per_sec']])
     return resutlsloc
 
 def reset_routes():
