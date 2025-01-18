@@ -1,2 +1,2 @@
 mode, num_provs, num_ev, num_ms, lat_min, lat_max, lat_mean, lat_std, success, failed, calls_per_sec
-cpex, 40, 10, 10, 33.4, 188.3, 77.34, 25.24, 760, 1, 35
+cpex, 40, 10, 10, 60.4, 222.2, 83.42, 27.3, 761, 0, 69

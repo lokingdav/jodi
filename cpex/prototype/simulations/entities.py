@@ -39,6 +39,9 @@ class MessageStore:
             key=self.get_content_key(request['idx'])
         )
         
+        if not value:
+            return {'_error': 'message not found'}
+        
         (msidx, msctx, mssig) = value.split('.')
 
         return {'idx': msidx, 'ctx': msctx, 'sig': mssig}

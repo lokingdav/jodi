@@ -252,6 +252,5 @@ class Provider:
         })
     
     async def make_request(self, req_type: str, requests: List[dict]):
-        print(f"Making {req_type} request")
         responses = await http.posts(reqs=requests)
         return responses
