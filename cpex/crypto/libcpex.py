@@ -41,6 +41,7 @@ def create_evaluation_requests(call_details: str, gsk, gpk, evals=None) -> bytes
         x = Utils.to_base64(x)
         sig: str = groupsig.sign(msg=str(i_k) + x, gsk=gsk, gpk=gpk)
         requests.append({
+            'nodeId': ev.get('id'),
             'url': ev.get('url') + '/evaluate', 
             'data': { 'i_k': i_k, 'x': x, 'sig': sig}
         })
@@ -73,6 +74,7 @@ def create_storage_requests(call_id: bytes, msg: str, gsk, gpk, stores = None) -
         idx = Utils.to_base64(Utils.hash256(bytes(call_id_str + store['id'], 'utf-8')))
         ctx = encrypt_and_mac(call_id=call_id, plaintext=msg)
         requests.append({
+            'nodeId': store['id'],
             'url': store['url'] + '/publish',
             'data': { 
                 'idx': idx, 
@@ -92,6 +94,7 @@ def create_retrieve_requests(call_id: bytes, gsk, gpk, stores=None) -> List[dict
     for store in stores:
         idx = Utils.to_base64(Utils.hash256(bytes(call_id + store['id'], 'utf-8')))
         reqs.append({
+            'nodeId': store['id'],
             'url': store['url'] + '/retrieve',
             'data': { 
                 'idx': idx, 
