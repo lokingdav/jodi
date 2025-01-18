@@ -3,7 +3,7 @@ FROM python:3.8-slim
 WORKDIR /app 
 
 RUN apt-get update && \
-    apt-get install -y cmake g++ git build-essential libsodium-dev libcurl4-openssl-dev && \
+    apt-get install -y cmake g++ git build-essential libsodium-dev libcurl4-openssl-dev gdb && \
     apt-get autoremove -y && apt-get clean
 
 RUN pip install --upgrade build setuptools wheel

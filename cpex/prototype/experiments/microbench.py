@@ -7,7 +7,7 @@ from cpex.models import cache
 from multiprocessing import Pool
 
 
-numIters = 100
+numIters = 10
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
 

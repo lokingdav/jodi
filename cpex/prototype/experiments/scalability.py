@@ -7,7 +7,7 @@ from cpex.helpers import files
 
 cache_client = None
 
-provider_groups = [100]
+provider_groups = [40]
 node_groups = [(10, 10)] # tuple of num ev and num ms
 deploy_rate = 14
 

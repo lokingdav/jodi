@@ -14,6 +14,7 @@ CMD=$1
 VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash' 'runexp')
 CPEX_NODE_PREFIX="cpex-node"
 CPS_PREFIX="atis-cps"
+CPEX_DOCKER_IMAGE="cpex"
 
 # Create configuration directory if it doesn't exist
 mkdir -p conf

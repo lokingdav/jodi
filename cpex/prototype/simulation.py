@@ -18,8 +18,9 @@ def init_worker():
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
 
 def simulate_call_sync(options: dict):
+    # print(f"[DEBUG] simulate_call_sync start: {options.get('_id')}")
     res = asyncio.run(simulate_call(options))
-    print(f'after simulate_call {options.get("_id")}')
+    # print(f"[DEBUG] simulate_call_sync end: {options.get('_id')}")
     return res
 
 async def simulate_call(options: dict):
@@ -102,15 +103,17 @@ def datagen(num_providers: int, deploy_rate: float = 14, force_clean: bool = Fal
     print(f"> Generated phone network and with {num_providers} providers")
     
 def run(num_provs: int, node_grp: Tuple[int, int], mode: str):
-    with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
+    with Pool(processes=5, initializer=init_worker) as pool:
         batch_size = 100
         batch_num = 1
 
         routes = persistence.retrieve_pending_routes(
             collection_id=num_provs,
-            limit=batch_size,
+            limit=100000,
             mode=mode
         )
+        
+        print(f"-> Retrieved {len(routes)} routes")
         
         if len(routes) == 0:
             raise Exception("No route to simulate. Please generate routes")
@@ -120,32 +123,32 @@ def run(num_provs: int, node_grp: Tuple[int, int], mode: str):
         total_calls = 0
         total_time = 0
 
-        while len(routes) > 0:
-            print(f"-> Simulating {len(routes)} routes in batch {batch_num}")
-            start_time = time.perf_counter()
-            results = pool.map(simulate_call_sync, routes)
-            total_time += time.perf_counter() - start_time
-            total_calls += len(results)
-            
-            ids = []
-            for (rid, latency_ms, len_routes, is_correct) in results:
-                ids.append(rid)
-                if latency_ms > 0:
-                    metrics = np.append(metrics, latency_ms)
-                    if is_correct:
-                        success += 1
-                    else:
-                        failed += 1
-            
-            print('-> Marking simulated routes')
-            persistence.mark_simulated(
-                collection_id=num_provs,
-                ids=ids
-            )
-            batch_num += 1
+        # while len(routes) > 0:
+        print(f"-> Simulating {len(routes)} routes in batch {batch_num}")
+        start_time = time.perf_counter()
+        results = pool.map(simulate_call_sync, routes)
+        total_time += time.perf_counter() - start_time
+        total_calls += len(results)
+        
+        ids = []
+        for (rid, latency_ms, len_routes, is_correct) in results:
+            ids.append(rid)
+            if latency_ms > 0:
+                metrics = np.append(metrics, latency_ms)
+                if is_correct:
+                    success += 1
+                else:
+                    failed += 1
+        
+        print('-> Marking simulated routes')
+        # persistence.mark_simulated(
+        #     collection_id=num_provs,
+        #     ids=ids
+        # )
+        # batch_num += 1
 
-            print('-> Retrieving pending routes')
-            routes = persistence.retrieve_pending_routes(
+        print('-> Retrieving pending routes')
+        routes = persistence.retrieve_pending_routes(
                 collection_id=num_provs,
                 mode=mode,
                 limit=batch_size
