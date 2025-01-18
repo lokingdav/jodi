@@ -162,8 +162,7 @@ class Provider:
             gsk=self.gsk,
             gpk=self.gpk
         )
-        
-        await http.posts(reqs=reqs)
+        await self.make_request('publish', requests=reqs)
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
         self.log_msg(f'--> Executes RETRIEVE')
@@ -199,13 +198,13 @@ class Provider:
     async def cpex_call_id_generation(self, signal: Union[SIPSignal, TDMSignal]) -> str:
         call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
         requests, masks = libcpex.create_evaluation_requests(call_details, gsk=self.gsk, gpk=self.gpk)
-        responses = await http.posts(reqs=requests)
+        responses = await self.make_request('evaluate', requests=requests)
         return libcpex.create_call_id(responses=responses, masks=masks)
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
         call_id = await self.cpex_call_id_generation(signal=signal)
         reqs = libcpex.create_retrieve_requests(call_id=call_id, gsk=self.gsk, gpk=self.gpk)
-        responses = await http.posts(reqs)
+        responses = await self.make_request('retrieve', requests=reqs)
         responses = [r for r in responses if '_error' not in r]
         token = libcpex.decrypt(call_id=call_id, responses=responses, src=signal.From, dst=signal.To, gpk=self.gpk)
         return token
@@ -251,3 +250,8 @@ class Provider:
             'From': signal.From,
             'Pid': self.pid
         })
+    
+    async def make_request(self, req_type: str, requests: List[dict]):
+        print(f"Making {req_type} request")
+        responses = await http.posts(reqs=requests)
+        return responses
