@@ -11,9 +11,6 @@ numIters = 10
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
 
-evals = []
-stores = []
-
 cache_client = None
 
 # Sample src, dst and JWT token
@@ -138,11 +135,11 @@ def benchCpexProtocol(options):
     
     return results
     
-def create_nodes():
-    global evals, stores
+def create_nodes(num_ev=30, num_ms=30):
     evals, stores = [], []
+    cclient = cache.connect()
 
-    for i in range(30):
+    for i in range(num_ms):
         name = f'cpex-node-ms-{i}'
         stores.append({
             'id': Utils.hash256(name.encode('utf-8')).hex(),
@@ -150,6 +147,10 @@ def create_nodes():
             'fqdn': name,
             'url': f'http://{name}'
         })
+    if stores:
+        cache.save(client=cclient, key=config.STORES_KEY, value=json.dumps(stores))
+
+    for i in range(num_ev):
         name = f'cpex-node-ev-{i}'
         evals.append({
             'id': Utils.hash256(name.encode('utf-8')).hex(),
@@ -157,11 +158,9 @@ def create_nodes():
             'fqdn': name,
             'url': f'http://{name}'
         })
-    cclient = cache.connect()
-    if stores:
-        cache.save(client=cclient, key=config.STORES_KEY, value=json.dumps(stores))
     if evals:
         cache.save(client=cclient, key=config.EVALS_KEY, value=json.dumps(evals))
+    
 
 async def main():
     create_nodes()
