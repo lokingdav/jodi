@@ -18,9 +18,7 @@ def init_worker():
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
 
 def simulate_call_sync(options: dict):
-    # print(f"[DEBUG] simulate_call_sync start: {options.get('_id')}")
     res = asyncio.run(simulate_call(options))
-    # print(f"[DEBUG] simulate_call_sync end: {options.get('_id')}")
     return res
 
 async def simulate_call(options: dict):

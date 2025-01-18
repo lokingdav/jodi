@@ -1,9 +1,11 @@
 import os, time
-from cpex.prototype import compose, simulation
+from cpex.prototype import compose
 from cpex import config, constants
 from multiprocessing import Pool
 from cpex.models import persistence, cache
 from cpex.helpers import files
+from cpex.prototype.simulations import local as simulation
+from cpex.prototype.experiments import microbench
 
 cache_client = None
 
@@ -37,9 +39,11 @@ def main(resutlsloc: str, mode: str):
     results = []
     
     for node_grp in node_groups:
-        setup_nodes(node_grp[0], mode, ntype='ev')
-        setup_nodes(node_grp[1], mode, ntype='ms')
-        compose.cache_repositories(mode=mode)
+        # setup_nodes(node_grp[0], mode, ntype='ev')
+        # setup_nodes(node_grp[1], mode, ntype='ms')
+        microbench.create_nodes(num_ev=node_grp[0], num_ms=node_grp[1])
+
+        # compose.cache_repositories(mode=mode)
         
         for num_provs in provider_groups:
             print(f"\nRunning simulation with {num_provs}({num_provs * (num_provs - 1) // 2}) call paths and {node_grp[0]} ms, {node_grp[1]} evs")
@@ -66,5 +70,7 @@ if __name__ == "__main__":
     run_datagen()
     resutlsloc = prepare_results_file()
     reset_routes()
+    start = time.perf_counter()
     main(resutlsloc=resutlsloc, mode=constants.MODE_CPEX)
+    print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
     

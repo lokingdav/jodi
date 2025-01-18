@@ -1,7 +1,7 @@
 import argparse
 import traceback
 import asyncio  # <-- Make sure to import asyncio
-from cpex.prototype import simulation
+from cpex.prototype.simulations import networked
 from cpex.models import persistence
 from cpex import constants
 
@@ -11,7 +11,7 @@ def handle_gen(args):
           f"Deploy rate = {args.deploy_rate}"
     )
     try:
-        simulation.datagen(
+        networked.datagen(
             num_providers=args.num_providers,
             deploy_rate=args.deploy_rate,
             force_clean=args.force_clean
@@ -22,13 +22,13 @@ def handle_gen(args):
 async def handle_run(args):
     try:
         if args.call_path:
-            await simulation.simulate_call({
+            await networked.simulate_call({
                 'mode': args.mode,
-                'route': simulation.get_route_from_bitstring(args.call_path)
+                'route': networked.get_route_from_bitstring(args.call_path)
             })
         else:
             print("Simulating pending routes...")
-            simulation.run()
+            networked.run()
         print("SIMULATION COMPLETED")
     except Exception as ex:
         print("An error occurred:", ex)
@@ -36,7 +36,7 @@ async def handle_run(args):
 
 def handle_cleanup(args):
     print("Cleaning up resources...", end='')
-    simulation.cleanup()
+    networked.cleanup()
     print("DONE")
 
 
