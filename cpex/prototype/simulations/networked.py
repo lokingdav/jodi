@@ -191,11 +191,6 @@ class NetworkedSimulator:
             num = compose.count_containers(prefix + 'ms')
             print(f"Adding {num_repos - num} nodes. Mode: {mode}, Type: ms")
             compose.add_nodes(count=num_repos - num, mode=mode, ntype='ms')
-    
-    def simulate_churn(self, params: dict):
-        prob: float = params.get('prob', 0.1)
-        max_downtime_secs: int = params.get('max_downtime_secs', 2)
-        pass
             
 class RunningStats:
     def __init__(self):
