@@ -27,7 +27,7 @@ class SIPSignal(BaseModel):
     CallId: str = str(uuid4())
 
 class Provider:
-    def __init__(self, pid: str, impl: bool, mode: str, cps_url: str = None, log: bool = True, gsk=None, gpk = None):
+    def __init__(self, pid: str, impl: bool, mode: str, n_ev: int, n_ms: int, cps_url: str = None, log: bool = True, gsk=None, gpk = None):
         self.pid = pid
         self.impl = impl
         self.mode = mode
@@ -38,6 +38,8 @@ class Provider:
         self.log = log
         self.gpk = gpk
         self.gsk = gsk
+        self.n_ev = n_ev
+        self.n_ms = n_ms
 
         if self.cps_url:
             self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
@@ -159,6 +161,7 @@ class Provider:
         reqs = libcpex.create_storage_requests(
             call_id=call_id, 
             msg=signal.Identity,
+            n_ms=self.n_ms,
             gsk=self.gsk,
             gpk=self.gpk
         )
@@ -197,7 +200,7 @@ class Provider:
     
     async def cpex_call_id_generation(self, signal: Union[SIPSignal, TDMSignal]) -> str:
         call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
-        requests, masks = libcpex.create_evaluation_requests(call_details, gsk=self.gsk, gpk=self.gpk)
+        requests, masks = libcpex.create_evaluation_requests(call_details, n_ev=self.n_ev, gsk=self.gsk, gpk=self.gpk)
         # print(f'EV IDs: {[r["nodeId"] for r in requests]}')
         responses = await self.make_request('evaluate', requests=requests)
         call_id = libcpex.create_call_id(responses=responses, masks=masks)
@@ -206,7 +209,7 @@ class Provider:
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
         call_id = await self.cpex_call_id_generation(signal=signal)
-        reqs = libcpex.create_retrieve_requests(call_id=call_id, gsk=self.gsk, gpk=self.gpk)
+        reqs = libcpex.create_retrieve_requests(call_id=call_id, n_ms=self.n_ms, gsk=self.gsk, gpk=self.gpk)
         responses = await self.make_request('retrieve', requests=reqs)
         responses = [r for r in responses if '_error' not in r]
         token = libcpex.decrypt(call_id=call_id, responses=responses, src=signal.From, dst=signal.To, gpk=self.gpk)

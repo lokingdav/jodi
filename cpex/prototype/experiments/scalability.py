@@ -8,9 +8,10 @@ from cpex.prototype.simulations import networked, local
 
 cache_client = None
 
-provider_groups = [40]
+provider_groups = [10]
 node_groups = [(10, 10)] # tuple of num ev and num ms
 deploy_rate = 14
+n_param = 10
 
 Simulator = None
 simulation_type = 'local'
@@ -23,7 +24,7 @@ def run_datagen():
             [(num_provs, deploy_rate, True) for num_provs in groups]
         )
 
-def simulate(resutlsloc: str, mode: str):
+def simulate(resutlsloc: str, mode: str, params: dict):
     global cache_client
     cache_client = cache.connect()
     compose.set_cache_client(cache_client)
@@ -40,11 +41,13 @@ def simulate(resutlsloc: str, mode: str):
         
         for num_provs in provider_groups:
             print(f"\nRunning simulation with {num_provs}({num_provs * (num_provs - 1) // 2}) call paths and {node_grp[0]} ms, {node_grp[1]} evs")
-            results.append(Simulator.run(
-                num_provs=num_provs,
-                node_grp=node_grp,
-                mode=mode
-            ))
+            results.append(Simulator.run({
+                'Num_Provs':num_provs,
+                'Num_EVs': node_grp[0],
+                'Num_MSs': node_grp[1],
+                'mode': mode,
+                **params
+            }))
             
     files.append_csv(resutlsloc, results)
     print("Results written to", resutlsloc)
@@ -53,9 +56,9 @@ def prepare_results_file():
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/scalability.csv"
     files.write_csv(resutlsloc, [[
         'mode', 
-        'N_provs', 
-        'N_ev', 
-        'N_ms', 
+        'Num_Provs', 
+        'Num_EVs', 
+        'Num_MSs', 
         'n_ev',
         'n_ms',
         'lat_min', 
@@ -80,7 +83,15 @@ def main(sim_type: str):
     reset_routes()
 
     start = time.perf_counter()
-    simulate(resutlsloc=resutlsloc, mode=constants.MODE_CPEX)
+    
+    for i in range(1, n_param+1):
+        for j in range(1, n_param+1):
+            simulate(
+                resutlsloc=resutlsloc, 
+                mode=constants.MODE_CPEX, 
+                params={'n_ev': i, 'n_ms': j}
+            )
+            
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
 

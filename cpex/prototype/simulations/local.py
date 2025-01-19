@@ -25,7 +25,9 @@ class LocalSimulator(NetworkedSimulator):
             log=options.get('log', True),
             gsk=gsk,
             gpk=gpk,
-            cache_client=cache_client
+            cache_client=cache_client,
+            n_ev= options.get('n_ev'),
+            n_ms= options.get('n_ms')
         )
     
     def create_nodes(self, mode: str, num_evs: int, num_repos: int):

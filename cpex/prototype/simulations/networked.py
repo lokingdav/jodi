@@ -30,7 +30,9 @@ class NetworkedSimulator:
             mode=mode,
             log=options.get('log', True),
             gsk=gsk,
-            gpk=gpk
+            gpk=gpk,
+            n_ev= options.get('n_ev'),
+            n_ms= options.get('n_ms'),
         )
 
     async def simulate_call(self, options: dict):
@@ -116,10 +118,13 @@ class NetworkedSimulator:
         limit = min(limit, data['total'])
         return [(i, i + limit) for i in range(1, data['total']+1, limit)]   
         
-    def run(self, num_provs: int, node_grp: Tuple[int, int], mode: str):
+    def run(self, params: dict):
         limit = 1000
         statistics = RunningStats()
         total_calls, total_time = 0, 0
+        
+        num_provs = params.get('Num_Provs')
+        mode = params.get('mode')
         
         with Pool(processes=os.cpu_count()*2, initializer=init_worker) as pool:
             pages = self.get_pages(num_provs=num_provs, limit=limit)
@@ -130,7 +135,7 @@ class NetworkedSimulator:
                     collection_id=num_provs,
                     start_id=start_id,
                     end_id=end_id,
-                    mode=mode
+                    params={**params, 'mode': mode, 'log': False}
                 )
             
                 if len(routes) == 0:
@@ -155,10 +160,10 @@ class NetworkedSimulator:
             return [
                 mode, 
                 num_provs, 
-                node_grp[0], # EV
-                node_grp[1], # MS 
-                config.OPRF_EV_PARAM,
-                config.REPLICATION,
+                params.get('Num_EVs'), # EV
+                params.get('Num_MSs'), # MS 
+                params.get('n_ev'),
+                params.get('n_ms'),
                 round(statistics.min, dp),
                 round(statistics.max, dp),
                 round(statistics.mean, dp),
@@ -186,6 +191,11 @@ class NetworkedSimulator:
             num = compose.count_containers(prefix + 'ms')
             print(f"Adding {num_repos - num} nodes. Mode: {mode}, Type: ms")
             compose.add_nodes(count=num_repos - num, mode=mode, ntype='ms')
+    
+    def simulate_churn(self, params: dict):
+        prob: float = params.get('prob', 0.1)
+        max_downtime_secs: int = params.get('max_downtime_secs', 2)
+        pass
             
 class RunningStats:
     def __init__(self):

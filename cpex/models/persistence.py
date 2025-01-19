@@ -66,11 +66,11 @@ def get_route(collection_id, route_id):
         route = conn[DB_NAME][collection].find_one({'_id': route_id})
     return route
 
-def retrieve_routes(collection_id: int, start_id: int, end_id: int, mode: str, log: bool = False):
+def retrieve_routes(collection_id: int, start_id: int, end_id: int, params: dict):
     collection = f'routes_{collection_id}'
     with open_db() as conn:
         routes = list(conn[DB_NAME][collection].find({'_id': {'$gte': start_id, '$lte': end_id}}))
-    return [{**r, 'mode': mode, 'log': log} for r in routes]
+    return [{**r, **params} for r in routes]
 
 
 def save_routes(collection_id: int, routes: list):
