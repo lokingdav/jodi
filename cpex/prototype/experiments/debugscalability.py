@@ -1,21 +1,29 @@
 from cpex.prototype import compose
 from cpex.helpers import dht
 from cpex.models import cache
-import traceback
+import traceback, time, datetime
+from cpex.crypto import libcpex
 
-from cpex.prototype.simulations import networked
+from cpex.prototype.simulations import local, networked
 
-route = {"_id": 19, "status": "pending", "route": [[0,0], [3,0],[33,0], [20,0]], "mode": "cpex", "log": False}
+route = {'_id': 140, 'status': 'pending', 'route': [[9, 0], [2, 1], [11, 0], [15, 0]], 'mode': 'cpex', 'log': False}
 
-def main():
-    compose.set_cache_client(cache.connect())
-    compose.cache_repositories(mode='cpex')
+def setup():
+    cache_client = cache.connect()
+    compose.set_cache_client(cache_client)
+    local.set_cache_client(cache_client)
+    dht.set_cache_client(cache_client)
     networked.init_worker()
-    runs = 1000
+    
+    
+def main():
+    setup()
+    runs = 1
+    Simulator = local.LocalSimulator()
     for i in range(1, runs+1):
         route['_id'] = i
         try:
-            networked.simulate_call_sync(route)
+            Simulator.simulate_call_sync(route)
         except Exception as e:
             print(f"Error on run {i}: {e}")
             traceback.print_exc()

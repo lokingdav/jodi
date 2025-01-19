@@ -5,7 +5,6 @@ from multiprocessing import Pool
 from cpex.models import persistence, cache
 from cpex.helpers import files
 from cpex.prototype.simulations import networked, local
-from cpex.prototype.experiments import microbench
 
 cache_client = None
 
@@ -30,7 +29,6 @@ def simulate(resutlsloc: str, mode: str):
     compose.set_cache_client(cache_client)
     local.set_cache_client(cache_client)
     
-    print(f"Running scalability experiment in {mode} mode")
     results = []
     
     for node_grp in node_groups:
@@ -50,7 +48,6 @@ def simulate(resutlsloc: str, mode: str):
             
     files.append_csv(resutlsloc, results)
     print("Results written to", resutlsloc)
-    # compose.remove_repositories(mode=mode)
 
 def prepare_results_file():
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/scalability.csv"
@@ -62,7 +59,6 @@ def reset_routes():
         persistence.reset_marked_routes(num_provs)
 
 def main(sim_type: str):
-    print('Running scalability experiment')
     global Simulator
     Simulator = networked.NetworkedSimulator() if sim_type == 'net' else local.LocalSimulator()
     
@@ -77,7 +73,7 @@ def main(sim_type: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--type', type=str, help='Simulation type. Either net or local. ', default='local')
+    parser.add_argument('--type', type=str, help='Simulation type. Either net or loc. Default=loc', default='loc')
     args = parser.parse_args()
 
     if not any(vars(args).values()):

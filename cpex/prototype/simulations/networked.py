@@ -71,6 +71,10 @@ class NetworkedSimulator:
         is_correct = start_token == final_token
         total = 0
         
+        if not is_correct:
+            print(f"\nCall path is incorrect. Start token: {start_token}, Final token: {final_token}")
+            print(f"Data: {options}\n")
+        
         for provider in providers.values():
             total += provider.get_latency_ms()
             

@@ -54,8 +54,8 @@ HOST_APP_PATH = env('HOST_APP_PATH')
 CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cert-repo')
 
 # General Parameters
-T_MAX_SECONDS = env('T_MAX_SECONDS', 5, dtype=int)
-REC_TTL_SECONDS = env('REC_TTL_SECONDS', 2 * T_MAX_SECONDS, dtype=int)
+T_MAX_SECONDS = env('T_MAX_SECONDS', 10, dtype=int)
+REC_TTL_SECONDS = env('REC_TTL_SECONDS',15, dtype=int)
 REPLICATION = env('REPLICATION', 3)
 
 # Group Signatures
@@ -66,6 +66,6 @@ TGS_GSK = env('TGS_GSK')
 
 # OPRF Parameters
 OPRF_KEYLIST_SIZE = env('OPRF_KEYLIST_SIZE', 10, dtype=int)
-OPRF_INTERVAL_SECONDS = env('OPRF_INTERVAL_SECONDS', 2 * T_MAX_SECONDS, dtype=int)
+OPRF_INTERVAL_SECONDS = env('OPRF_INTERVAL_SECONDS', 10, dtype=int)
 OPRF_EV_PARAM = env('OPRF_EV_PARAM', 2)
 

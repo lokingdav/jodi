@@ -1,24 +1,20 @@
-from typing import Tuple
 from pylibcpex import Oprf, Utils, Ciphering
 import cpex.config as config
-import cpex.constants as constants
 from cpex.crypto import groupsig
-from cpex.helpers import http, dht
-from cpex.models import cache
+from cpex.helpers import dht
 from typing import List
-import jwt, time, re
+import re
+from datetime import datetime
 
-def normalize_ts(timestamp: int) -> int:
-    seconds_in_minute = 60
-    return timestamp - (timestamp % seconds_in_minute)
+def normalize_ts() -> str:
+    return datetime.now().date()
 
 def normalize_tn(tn: str): 
     tn = re.sub(r"[^\d]", "", tn)
     return f"+{tn}"
     
 def normalize_call_details(src: str, dst: str):
-    ts = normalize_ts(int(time.time()))
-    return normalize_tn(src) + normalize_tn(dst) + str(ts)
+    return f'{normalize_tn(src)}.{normalize_tn(dst)}.{normalize_ts()}'
 
 def get_index_from_call_details(call_details: str) -> int:
     digest: bytes = Utils.hash160(call_details.encode('utf-8'))

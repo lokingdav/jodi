@@ -198,8 +198,11 @@ class Provider:
     async def cpex_call_id_generation(self, signal: Union[SIPSignal, TDMSignal]) -> str:
         call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
         requests, masks = libcpex.create_evaluation_requests(call_details, gsk=self.gsk, gpk=self.gpk)
+        # print(f'EV IDs: {[r["nodeId"] for r in requests]}')
         responses = await self.make_request('evaluate', requests=requests)
-        return libcpex.create_call_id(responses=responses, masks=masks)
+        call_id = libcpex.create_call_id(responses=responses, masks=masks)
+        # print(f"---> Call ID: {Utils.to_base64(call_id)}")
+        return call_id
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
         call_id = await self.cpex_call_id_generation(signal=signal)

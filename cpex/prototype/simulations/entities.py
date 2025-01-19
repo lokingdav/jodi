@@ -94,4 +94,5 @@ class Provider(BaseProvider):
             elif req_type == 'retrieve':
                 payload = MessageStore(nodeId=req['nodeId'], gpk=self.gpk, cache_client=self.cache_client).retrieve(req['data'])
             responses.append(payload)
+        # print(f"Responses: {responses}")
         return responses
