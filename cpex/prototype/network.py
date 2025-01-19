@@ -49,9 +49,12 @@ def create(num_providers:int, deploy_rate: float = 10.0) -> Tuple[list, dict]:
         if all([r[1] == 1 for r in _route]):
             continue
         data.append({
-            '_id': i,
+            '_id': i+1,
             'status': STATUS_PENDING,
             'route': _route
         })
+        
+    data = [{'_id': 0, 'total': len(data)}] + data
+    
     return data, stats
     

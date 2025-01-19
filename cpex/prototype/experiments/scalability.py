@@ -51,7 +51,20 @@ def simulate(resutlsloc: str, mode: str):
 
 def prepare_results_file():
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/scalability.csv"
-    files.write_csv(resutlsloc, [['mode', 'num_provs', 'num_ev', 'num_ms', 'lat_min', 'lat_max', 'lat_mean', 'lat_std', 'success', 'failed', 'calls_per_sec']])
+    files.write_csv(resutlsloc, [[
+        'mode', 
+        'N_provs', 
+        'N_ev', 
+        'N_ms', 
+        'n_ev',
+        'n_ms',
+        'lat_min', 
+        'lat_max', 
+        'lat_mean', 
+        'lat_std', 
+        'success_rate', 
+        'calls_per_sec'
+    ]])
     return resutlsloc
 
 def reset_routes():

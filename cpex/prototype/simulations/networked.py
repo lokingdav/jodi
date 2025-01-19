@@ -69,17 +69,17 @@ class NetworkedSimulator:
                 signal = await provider.receive(signal)
         
         is_correct = start_token == final_token
-        total = 0
+        latency = 0
         
         if not is_correct:
             print(f"\nCall path is incorrect. Start token: {start_token}, Final token: {final_token}")
             print(f"Data: {options}\n")
-        
+
         for provider in providers.values():
-            total += provider.get_latency_ms()
+            latency += provider.get_latency_ms()
             
-        print(f"Simulated call path of length {len(route)} and latency {total} ms")
-        return (options.get('_id'), total, len(route), is_correct)
+        print(f"Simulated call path of length {len(route)} and latency {latency} ms")
+        return (latency, len(route), is_correct)
 
     def get_route_from_bitstring(self, path: str):
         if not path.isdigit() or set(path) > {'0', '1'}:
@@ -108,71 +108,62 @@ class NetworkedSimulator:
         
         persistence.save_routes(collection_id=num_providers, routes=routes)
         print(f"> Generated phone network and with {num_providers} providers")
+     
+    def get_pages(self, num_provs: str, limit: int = 1000):
+        data = persistence.get_route(collection_id=num_provs, route_id=0)
+        if not data:
+            raise Exception("Routes needs to be generated first")
+        limit = min(limit, data['total'])
+        return [(i, i + limit) for i in range(1, data['total']+1, limit)]   
         
     def run(self, num_provs: int, node_grp: Tuple[int, int], mode: str):
-        with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
-            batch_size = 100
-            batch_num = 1
-
-            routes = persistence.retrieve_pending_routes(
-                collection_id=num_provs,
-                limit=100000,
-                mode=mode
-            )
+        limit = 1000
+        statistics = RunningStats()
+        total_calls, total_time = 0, 0
+        
+        with Pool(processes=os.cpu_count()*2, initializer=init_worker) as pool:
+            pages = self.get_pages(num_provs=num_provs, limit=limit)
             
-            print(f"-> Retrieved {len(routes)} routes")
-            
-            if len(routes) == 0:
-                raise Exception("No route to simulate. Please generate routes")
-                    
-            metrics, success, failed = np.array([]), 0, 0
-            
-            total_calls = 0
-            total_time = 0
-
-            # while len(routes) > 0:
-            print(f"-> Simulating {len(routes)} routes in batch {batch_num}")
-            start_time = time.perf_counter()
-            results = pool.map(self.simulate_call_sync, routes)
-            total_time += time.perf_counter() - start_time
-            total_calls += len(results)
-            
-            ids = []
-            for (rid, latency_ms, len_routes, is_correct) in results:
-                ids.append(rid)
-                if latency_ms > 0:
-                    metrics = np.append(metrics, latency_ms)
-                    if is_correct:
-                        success += 1
-                    else:
-                        failed += 1
-            
-            print('-> Marking simulated routes')
-            # persistence.mark_simulated(
-            #     collection_id=num_provs,
-            #     ids=ids
-            # )
-            # batch_num += 1
-
-            print('-> Retrieving pending routes')
-            routes = persistence.retrieve_pending_routes(
+                
+            for (start_id, end_id) in pages:
+                routes = persistence.retrieve_routes(
                     collection_id=num_provs,
-                    mode=mode,
-                    limit=batch_size
+                    start_id=start_id,
+                    end_id=end_id,
+                    mode=mode
                 )
-            print('-> Simulation completed')
+            
+                if len(routes) == 0:
+                    raise Exception("No route to simulate. Please generate routes")
+                
+                print(f"-> Simulating Call From: {start_id}, To:{end_id}, Length: {len(routes)} calls")
+
+                start_time = time.perf_counter()
+                results = pool.map(self.simulate_call_sync, routes)
+                total_time += time.perf_counter() - start_time
+                total_calls += len(results)
+                
+                for (latency_ms, len_routes, is_correct) in results:
+                    if latency_ms < 1: # filter out routes that do not involve oob
+                        continue
+                    statistics.update_x(latency_ms)
+                    if is_correct:
+                        statistics.update_correct()
+                
             dp = 2
+            
             return [
                 mode, 
                 num_provs, 
                 node_grp[0], # EV
                 node_grp[1], # MS 
-                round(metrics.min(), dp), 
-                round(metrics.max(), dp), 
-                round(metrics.mean(), dp), 
-                round(metrics.std(), dp), 
-                success, 
-                failed,
+                config.OPRF_EV_PARAM,
+                config.REPLICATION,
+                round(statistics.min, dp),
+                round(statistics.max, dp),
+                round(statistics.mean, dp),
+                round(statistics.population_stddev, dp),
+                statistics.success_rate, 
                 math.ceil(total_calls / total_time) if total_time > 0 else 0
             ]
 
@@ -196,3 +187,67 @@ class NetworkedSimulator:
             print(f"Adding {num_repos - num} nodes. Mode: {mode}, Type: ms")
             compose.add_nodes(count=num_repos - num, mode=mode, ntype='ms')
             
+class RunningStats:
+    def __init__(self):
+        self.count = 0
+        self._mean = 0.0
+        self._M2 = 0.0
+        self._min = float('inf')
+        self._max = float('-inf')
+        self.correct = 0
+        
+    def update_correct(self):
+        self.correct += 1
+            
+    def update_x(self, x):
+        self.count += 1
+
+        # Update min and max
+        if x < self._min:
+            self._min = x
+        if x > self._max:
+            self._max = x
+
+        # Update mean and M2 using Welford's algorithm
+        delta = x - self._mean
+        self._mean += delta / self.count
+        delta2 = x - self._mean
+        self._M2 += delta * delta2
+        
+    @property
+    def success_rate(self):
+        if self.count == 0:
+            return 0
+        return (self.correct / self.count) * 100
+
+    @property
+    def mean(self):
+        return self._mean
+
+    @property
+    def min(self):
+        return self._min if self.count > 0 else None
+
+    @property
+    def max(self):
+        return self._max if self.count > 0 else None
+
+    @property
+    def sample_variance(self):
+        if self.count < 2:
+            return 0.0
+        return self._M2 / (self.count - 1)
+
+    @property
+    def sample_stddev(self):
+        return self.sample_variance ** 0.5
+
+    @property
+    def population_variance(self):
+        if self.count == 0:
+            return 0.0
+        return self._M2 / self.count
+
+    @property
+    def population_stddev(self):
+        return self.population_variance ** 0.5
