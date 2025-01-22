@@ -7,15 +7,19 @@ from pylibcpex import Oprf, Utils
 from cpex.prototype.provider import Provider as BaseProvider
 
 class MessageStore:
-    def __init__(self, nodeId: str, gpk, cache_client):
+    def __init__(self, nodeId: str, gpk, available: bool, cache_client):
         self.gpk = gpk
         self.name = f'sim.ms.{nodeId}'
         self.cache_client = cache_client
+        self.available = available
 
     def get_content_key(self, idx: str):
         return f'{self.name}.{idx}'
     
     def publish(self, request: dict):
+        if not self.available:
+            return {'_error': 'node not available'}
+        
         if not groupsig.verify(sig=request['sig'], msg=request['idx'] + request['ctx'], gpk=self.gpk):
             return {'_error': 'invalid signature'}
          
@@ -28,9 +32,12 @@ class MessageStore:
             seconds=config.REC_TTL_SECONDS
         )
 
-        return {'success': 'message stored'}
+        return {'_success': 'message stored'}
     
     def retrieve(self, request: dict):
+        if not self.available:
+            return {'_error': 'node not available'}
+        
         if not groupsig.verify(sig=request['sig'], msg=request['idx'], gpk=self.gpk):
             return {'_error': 'invalid signature'}
 
@@ -47,10 +54,11 @@ class MessageStore:
         return {'idx': msidx, 'ctx': msctx, 'sig': mssig}
 
 class Evaluator:
-    def __init__(self, nodeId: str, gpk, cache_client):
+    def __init__(self, nodeId: str, gpk, available: bool, cache_client):
         self.gpk = gpk
         self.name = f'sim.ev.{nodeId}'
         self.cache_client = cache_client
+        self.available = available
         self.set_keys()
 
     def set_keys(self):
@@ -71,6 +79,9 @@ class Evaluator:
         cache.save(client=self.cache_client, key=self.name, value=keys)
 
     def evaluate(self, request: dict):
+        if not self.available:
+            return {'_error': 'node not available'}
+        
         if not groupsig.verify(sig=request['sig'], msg=str(request['i_k']) + request['x'], gpk=self.gpk):
             return {'_error': 'invalid signature'}
         
@@ -87,12 +98,31 @@ class Provider(BaseProvider):
     async def make_request(self, req_type, requests):
         responses = []
         for req in requests:
+            available = req.get('avail')
+            available = available['up'] if available is not None else True
+            
             if req_type == 'evaluate':
-                payload = Evaluator(nodeId=req['nodeId'], gpk=self.gpk, cache_client=self.cache_client).evaluate(req['data'])
+                payload = Evaluator(
+                    nodeId=req['nodeId'], 
+                    gpk=self.gpk, 
+                    available=available,
+                    cache_client=self.cache_client
+                ).evaluate(req['data'])
             elif req_type == 'publish':
-                payload = MessageStore(nodeId=req['nodeId'], gpk=self.gpk, cache_client=self.cache_client).publish(req['data'])
+                payload = MessageStore(
+                    nodeId=req['nodeId'], 
+                    gpk=self.gpk, 
+                    available=available,
+                    cache_client=self.cache_client
+                ).publish(req['data'])
             elif req_type == 'retrieve':
-                payload = MessageStore(nodeId=req['nodeId'], gpk=self.gpk, cache_client=self.cache_client).retrieve(req['data'])
+                payload = MessageStore(
+                    nodeId=req['nodeId'], 
+                    gpk=self.gpk, 
+                    available=available,
+                    cache_client=self.cache_client
+                ).retrieve(req['data'])
+                
             responses.append(payload)
         # print(f"Responses: {responses}")
         return responses

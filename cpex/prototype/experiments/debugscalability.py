@@ -16,7 +16,7 @@ def setup():
     networked.init_worker()
     
     
-def main():
+def simulate():
     setup()
     runs = 1
     Simulator = local.LocalSimulator()
@@ -29,5 +29,15 @@ def main():
             traceback.print_exc()
         print(f"Completed {i}/{runs} runs")
 
+def trychurn():
+    nodes = [
+        {'id': '1', 'name': 'node1', 'fqdn': 'node1', 'url': 'http://node1'},
+        {'id': '2', 'name': 'node2', 'fqdn': 'node2', 'url': 'http://node2'},
+    ]
+    for i in range(100):
+        time.sleep(1)
+        print("time: ", datetime.datetime.now())
+        nodes = local.simulate_churn(nodes)
+        
 if __name__ == "__main__":
-    main()
+    trychurn()

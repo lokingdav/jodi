@@ -157,6 +157,10 @@ class Provider:
     async def cpex_publish(self, signal: SIPSignal):
         # Call ID generation
         call_id = await self.cpex_call_id_generation(signal=signal)
+        
+        if not call_id:
+            return
+        
         # Encrypt and MAC, then sign the requests
         reqs = libcpex.create_storage_requests(
             call_id=call_id, 
@@ -165,6 +169,7 @@ class Provider:
             gsk=self.gsk,
             gpk=self.gpk
         )
+        
         await self.make_request('publish', requests=reqs)
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
@@ -207,8 +212,12 @@ class Provider:
         # print(f"---> Call ID: {Utils.to_base64(call_id)}")
         return call_id
 
-    async def cpex_retrieve_token(self, signal: TDMSignal) -> List[str]:
+    async def cpex_retrieve_token(self, signal: TDMSignal) -> str:
         call_id = await self.cpex_call_id_generation(signal=signal)
+        
+        if not call_id:
+            return None
+        
         reqs = libcpex.create_retrieve_requests(call_id=call_id, n_ms=self.n_ms, gsk=self.gsk, gpk=self.gpk)
         responses = await self.make_request('retrieve', requests=reqs)
         responses = [r for r in responses if '_error' not in r]

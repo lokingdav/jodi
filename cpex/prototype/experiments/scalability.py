@@ -1,4 +1,4 @@
-import os, time, argparse
+import os, time, argparse, threading
 from cpex.prototype import compose
 from cpex import config, constants
 from multiprocessing import Pool
@@ -8,10 +8,10 @@ from cpex.prototype.simulations import networked, local
 
 cache_client = None
 
-provider_groups = [10]
-node_groups = [(10, 10)] # tuple of num ev and num ms
+provider_groups = [50]
+node_groups = [(100, 100)] # tuple of num ev and num ms
 deploy_rate = 14
-n_param = 10
+n_param = 1
 
 Simulator = None
 simulation_type = 'local'
@@ -39,6 +39,11 @@ def simulate(resutlsloc: str, mode: str, params: dict):
             num_repos=node_grp[1]
         )
         
+        # Handle network churn simulation
+        stop_churning = threading.Event()
+        network_churning = threading.Thread(target=local.network_churn, args=(stop_churning,))
+        network_churning.start()
+        
         for num_provs in provider_groups:
             print(f"\nRunning simulation with {num_provs}({num_provs * (num_provs - 1) // 2}) call paths and {node_grp[0]} ms, {node_grp[1]} evs")
             results.append(Simulator.run({
@@ -48,6 +53,9 @@ def simulate(resutlsloc: str, mode: str, params: dict):
                 'mode': mode,
                 **params
             }))
+        
+        stop_churning.set()
+        network_churning.join()
             
     files.append_csv(resutlsloc, results)
     print("Results written to", resutlsloc)

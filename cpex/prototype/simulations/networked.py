@@ -73,14 +73,14 @@ class NetworkedSimulator:
         is_correct = start_token == final_token
         latency = 0
         
-        if not is_correct:
-            print(f"\nCall path is incorrect. Start token: {start_token}, Final token: {final_token}")
-            print(f"Data: {options}\n")
+        # if not is_correct:
+        #     print(f"\nCall path is incorrect. Start token: {start_token}, Final token: {final_token}")
+        #     print(f"Data: {options}\n")
 
         for provider in providers.values():
             latency += provider.get_latency_ms()
             
-        print(f"Simulated call path of length {len(route)} and latency {latency} ms")
+        # print(f"Simulated call path of length {len(route)} and latency {latency} ms")
         return (latency, len(route), is_correct)
 
     def get_route_from_bitstring(self, path: str):

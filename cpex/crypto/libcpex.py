@@ -38,6 +38,7 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
         sig: str = groupsig.sign(msg=str(i_k) + x, gsk=gsk, gpk=gpk)
         requests.append({
             'nodeId': ev.get('id'),
+            'avail': ev.get('avail', None),
             'url': ev.get('url') + '/evaluate', 
             'data': { 'i_k': i_k, 'x': x, 'sig': sig}
         })
@@ -48,6 +49,9 @@ def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
     xor = None
     
     for i in range(len(responses)):
+        if '_error' in responses[i]:
+            continue
+        
         cid_i = Oprf.unblind(
             Utils.from_base64(responses[i]['fx']), 
             Utils.from_base64(responses[i]['vk']), 
@@ -58,7 +62,7 @@ def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
         else:
             xor = Utils.xor(xor, cid_i)
         
-    return Utils.hash256(xor)
+    return Utils.hash256(xor) if xor else None
 
 def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, stores = None) -> List[dict]:
     stores = dht.get_stores(key=call_id, count=n_ms, nodes=stores)
@@ -71,6 +75,7 @@ def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, store
         ctx = encrypt_and_mac(call_id=call_id, plaintext=msg)
         requests.append({
             'nodeId': store['id'],
+            'avail': store.get('avail', None),
             'url': store['url'] + '/publish',
             'data': { 
                 'idx': idx, 
@@ -91,6 +96,7 @@ def create_retrieve_requests(call_id: bytes, n_ms: int, gsk, gpk, stores=None) -
         idx = Utils.to_base64(Utils.hash256(bytes(call_id + store['id'], 'utf-8')))
         reqs.append({
             'nodeId': store['id'],
+            'avail': store.get('avail', None),
             'url': store['url'] + '/retrieve',
             'data': { 
                 'idx': idx, 
@@ -107,10 +113,13 @@ def encrypt_and_mac(call_id: bytes, plaintext: str) -> str:
     return Utils.to_base64(c_0) + ':' + Utils.to_base64(c_1)
 
 def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str, gpk):
-    src, dst, tokens = str(src), str(dst), []
+    if not (call_id and responses):
+        return None
+    
     for res in responses:
-        if not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=gpk):
+        if '_error' in res or not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=gpk):
             continue
+        
         c_0, c_1 = res['ctx'].split(':')
         kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_id))
         msg: bytes = Ciphering.dec(kenc, Utils.from_base64(c_1))
