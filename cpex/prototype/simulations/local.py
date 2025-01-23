@@ -19,17 +19,16 @@ class LocalSimulator(NetworkedSimulator):
         super().__init__()
 
     def create_provider_instance(self, pid, impl, mode, options):
-        return Provider(
-            pid=pid, 
-            impl=bool(int(impl)),
-            mode=mode,
-            log=options.get('log', True),
-            gsk=gsk,
-            gpk=gpk,
-            cache_client=cache_client,
-            n_ev= options.get('n_ev'),
-            n_ms= options.get('n_ms')
-        )
+        return Provider(params={
+            'pid': pid,
+            'impl': bool(int(impl)),
+            'mode': mode,
+            'log': options.get('log', True),
+            'gsk': gsk,
+            'gpk': gpk,
+            'n_ev': options.get('n_ev'),
+            'n_ms': options.get('n_ms')
+        }, cache_client=cache_client)
     
     def create_nodes(self, mode: str, num_evs: int, num_repos: int):
         evals, stores = [], []
@@ -94,20 +93,21 @@ def simulate_churn(nodes):
             down_count += 1
     return nodes, {'up_count': up_count, 'down_count': down_count}
 
-def network_churn(stop_churn: threading.Event):
+def wait_a_while(stop_churn: threading.Event):
     for _ in range(config.MAX_UPTIME_SECONDS):
         time.sleep(1)
         if stop_churn.is_set():
             return
-                
+
+def network_churn(stop_churn: threading.Event):            
     evals = cache.find(client=cache_client, key=config.EVALS_KEY, dtype=dict)
     stores = cache.find(client=cache_client, key=config.STORES_KEY, dtype=dict)
         
     while not stop_churn.is_set():
+        time.sleep(1)
         evals, status = simulate_churn(evals)
-        print(f"EVs - Up: {status['up_count']}, Down: {status['down_count']}")
+        # print(f"EVs - Up: {status['up_count']}, Down: {status['down_count']}")
         cache.save(client=cache_client, key=config.EVALS_KEY, value=json.dumps(evals))
         stores, status = simulate_churn(stores)
-        print(f"MSs - Up: {status['up_count']}, Down: {status['down_count']}\n")
+        # print(f"MSs - Up: {status['up_count']}, Down: {status['down_count']}\n")
         cache.save(client=cache_client, key=config.STORES_KEY, value=json.dumps(stores))
-        time.sleep(1)

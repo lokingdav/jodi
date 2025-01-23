@@ -1,4 +1,4 @@
-import json
+import json, os
 from typing import List
 from cpex.crypto import libcpex, groupsig
 from cpex.models import cache
@@ -91,9 +91,9 @@ class Evaluator:
     
 
 class Provider(BaseProvider):
-    def __init__(self, pid: str, impl: bool, mode: str, cache_client, n_ev: int, n_ms: int, cps_url: str = None, log: bool = True, gsk=None, gpk = None):
+    def __init__(self, params: dict, cache_client):
         self.cache_client = cache_client
-        super().__init__(pid=pid, impl=impl, mode=mode, n_ev=n_ev, n_ms=n_ms, log=log, gsk=gsk, gpk=gpk)
+        super().__init__(params=params)
     
     async def make_request(self, req_type, requests):
         responses = []
@@ -124,5 +124,4 @@ class Provider(BaseProvider):
                 ).retrieve(req['data'])
                 
             responses.append(payload)
-        # print(f"Responses: {responses}")
         return responses

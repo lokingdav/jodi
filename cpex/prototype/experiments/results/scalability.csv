@@ -1,2 +1,2 @@
 mode, Num_Provs, Num_EVs, Num_MSs, n_ev, n_ms, lat_min, lat_max, lat_mean, lat_std, success_rate, calls_per_sec
-cpex, 50, 100, 100, 1, 1, 8.4, 269.6, 81.61, 39.05, 84.1534612176814, 82
+cpex, 40, 100, 100, 2, 2, 54.2, 353.6, 137.97, 52.5, 99.73474801061008, 77

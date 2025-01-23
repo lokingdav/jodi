@@ -1,4 +1,4 @@
-import random, traceback, time
+import random, traceback, time, os
 from uuid import uuid4
 from pydantic import BaseModel
 import cpex.config as config
@@ -27,22 +27,22 @@ class SIPSignal(BaseModel):
     CallId: str = str(uuid4())
 
 class Provider:
-    def __init__(self, pid: str, impl: bool, mode: str, n_ev: int, n_ms: int, cps_url: str = None, log: bool = True, gsk=None, gpk = None):
-        self.pid = pid
-        self.impl = impl
-        self.mode = mode
-        self.cps_fqdn = None
-        self.cps_url = cps_url
+    def __init__(self, params: dict):
+        self.latencies = []
+        self.pid = params['pid']
+        self.impl = params['impl']
+        self.mode = params['mode']
+        self.cps_url = params.get('cps_url')
+        self.cps_fqdn = params.get('cps_fqdn')
+        self.log = params.get('log', True)
+        self.gpk = params['gpk']
+        self.gsk = params['gsk']
+        self.n_ev = params['n_ev']
+        self.n_ms = params['n_ms']
         self.load_auth_service()
-        self.latencies: list = []
-        self.log = log
-        self.gpk = gpk
-        self.gsk = gsk
-        self.n_ev = n_ev
-        self.n_ms = n_ms
 
-        if self.cps_url:
-            self.cps_fqdn = cps_url.replace('http://', '').replace('https://', '').split(':')[0]
+        if not self.cps_fqdn and self.cps_url:
+            self.cps_fqdn = self.cps_url.replace('http://', '').replace('https://', '').split(':')[0]
 
     def log_msg(self, msg):
         if self.log:
@@ -156,7 +156,7 @@ class Provider:
         
     async def cpex_publish(self, signal: SIPSignal):
         # Call ID generation
-        call_id = await self.cpex_call_id_generation(signal=signal)
+        call_id = await self.cpex_call_id_generation(signal=signal, req_type=f'Publish by {self.pid}')
         
         if not call_id:
             return
@@ -203,17 +203,18 @@ class Provider:
         response = await http.get(url=url, params={}, headers=headers)
         return response
     
-    async def cpex_call_id_generation(self, signal: Union[SIPSignal, TDMSignal]) -> str:
+    async def cpex_call_id_generation(self, signal: Union[SIPSignal, TDMSignal], req_type: str) -> str:
         call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
         requests, masks = libcpex.create_evaluation_requests(call_details, n_ev=self.n_ev, gsk=self.gsk, gpk=self.gpk)
-        # print(f'EV IDs: {[r["nodeId"] for r in requests]}')
         responses = await self.make_request('evaluate', requests=requests)
         call_id = libcpex.create_call_id(responses=responses, masks=masks)
-        # print(f"---> Call ID: {Utils.to_base64(call_id)}")
+        print(f"---> {os.getpid()}, Req={req_type}, src={signal.From}, dst={signal.To}, Call-Details={call_details}, Call ID: {Utils.to_base64(call_id)}")
+        print(f'EV IDs: {[r["nodeId"] for r in requests]}')
+        # print(responses, "\n")
         return call_id
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> str:
-        call_id = await self.cpex_call_id_generation(signal=signal)
+        call_id = await self.cpex_call_id_generation(signal=signal, req_type=f'Retrieve by {self.pid}')
         
         if not call_id:
             return None

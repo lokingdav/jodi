@@ -31,16 +31,16 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
     masks = []
     requests = []
     
+    x, mask = Oprf.blind(call_details)
     for ev in evaluators:
-        x, mask = Oprf.blind(call_details)
         masks.append(mask)
-        x = Utils.to_base64(x)
-        sig: str = groupsig.sign(msg=str(i_k) + x, gsk=gsk, gpk=gpk)
+        x_str = Utils.to_base64(x)
+        sig: str = groupsig.sign(msg=str(i_k) + x_str, gsk=gsk, gpk=gpk)
         requests.append({
             'nodeId': ev.get('id'),
             'avail': ev.get('avail', None),
             'url': ev.get('url') + '/evaluate', 
-            'data': { 'i_k': i_k, 'x': x, 'sig': sig}
+            'data': { 'i_k': i_k, 'x': x_str, 'sig': sig}
         })
     
     return requests, masks

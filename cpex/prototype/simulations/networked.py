@@ -24,16 +24,16 @@ class NetworkedSimulator:
         return res
     
     def create_provider_instance(self, pid, impl, mode, options):
-        return Provider(
-            pid=pid, 
-            impl=bool(int(impl)),
-            mode=mode,
-            log=options.get('log', True),
-            gsk=gsk,
-            gpk=gpk,
-            n_ev= options.get('n_ev'),
-            n_ms= options.get('n_ms'),
-        )
+        return Provider({
+            'pid': pid,
+            'impl': bool(int(impl)),
+            'mode': mode,
+            'log': options.get('log', True),
+            'gsk': gsk,
+            'gpk': gpk,
+            'n_ev': options.get('n_ev'),
+            'n_ms': options.get('n_ms')
+        })
 
     async def simulate_call(self, options: dict):
         mode: str = options.get('mode')
@@ -73,9 +73,9 @@ class NetworkedSimulator:
         is_correct = start_token == final_token
         latency = 0
         
-        # if not is_correct:
-        #     print(f"\nCall path is incorrect. Start token: {start_token}, Final token: {final_token}")
-        #     print(f"Data: {options}\n")
+        if not is_correct:
+            print(f"\nProcID: {os.getpid()}, Call path is incorrect. src={signal.From}, dst={signal.To}")
+            print(f"Data: {options}\n")
 
         for provider in providers.values():
             latency += provider.get_latency_ms()
@@ -116,7 +116,7 @@ class NetworkedSimulator:
         if not data:
             raise Exception("Routes needs to be generated first")
         limit = min(limit, data['total'])
-        return [(i, i + limit) for i in range(1, data['total']+1, limit)]   
+        return [(i, i + limit) for i in range(1, data['total']+1, limit)], data['total']   
         
     def run(self, params: dict):
         limit = 1000
@@ -127,7 +127,7 @@ class NetworkedSimulator:
         mode = params.get('mode')
         
         with Pool(processes=os.cpu_count()*2, initializer=init_worker) as pool:
-            pages = self.get_pages(num_provs=num_provs, limit=limit)
+            pages, total_items = self.get_pages(num_provs=num_provs, limit=limit)
             
                 
             for (start_id, end_id) in pages:
@@ -141,7 +141,7 @@ class NetworkedSimulator:
                 if len(routes) == 0:
                     raise Exception("No route to simulate. Please generate routes")
                 
-                print(f"-> Simulating Call From: {start_id}, To:{end_id}, Length: {len(routes)} calls")
+                print(f"-> Simulating Call From: {start_id}, To:{end_id}, Length: {len(routes)} calls, Total: {total_items}")
 
                 start_time = time.perf_counter()
                 results = pool.map(self.simulate_call_sync, routes)

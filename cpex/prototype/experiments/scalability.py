@@ -8,7 +8,7 @@ from cpex.prototype.simulations import networked, local
 
 cache_client = None
 
-provider_groups = [50]
+provider_groups = [40]
 node_groups = [(100, 100)] # tuple of num ev and num ms
 deploy_rate = 14
 n_param = 1
@@ -92,14 +92,14 @@ def main(sim_type: str):
 
     start = time.perf_counter()
     
-    for i in range(1, n_param+1):
-        for j in range(1, n_param+1):
-            simulate(
-                resutlsloc=resutlsloc, 
-                mode=constants.MODE_CPEX, 
-                params={'n_ev': i, 'n_ms': j}
-            )
-            
+    # for i in range(1, n_param+1):
+    #     for j in range(1, n_param+1):
+    simulate(
+        resutlsloc=resutlsloc,
+        mode=constants.MODE_CPEX,
+        params={'n_ev': 2, 'n_ms': 2}
+    )
+
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
 
