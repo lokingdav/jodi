@@ -9,6 +9,7 @@ RUN apt-get update && \
     software-properties-common \
     curl \
     unzip \
+    groff \
     ansible && \
     apt-get clean
 
