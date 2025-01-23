@@ -7,20 +7,28 @@ from pylibcpex import Oprf, Utils
 from cpex.prototype.provider import Provider as BaseProvider
 
 class MessageStore:
-    def __init__(self, nodeId: str, gpk, available: bool, cache_client):
+    def __init__(self, nodeId: str, gpk, available: bool, cache_client, logger):
         self.gpk = gpk
+        self.nodeId = nodeId
         self.name = f'sim.ms.{nodeId}'
         self.cache_client = cache_client
         self.available = available
+        self.logger = logger
+
+    def log_msg(self, msg):
+        if config.DEBUG:
+            self.logger.debug(f"--> {self.nodeId}: {msg}")
 
     def get_content_key(self, idx: str):
         return f'{self.name}.{idx}'
     
     def publish(self, request: dict):
         if not self.available:
+            self.log_msg("Error -- node not available")
             return {'_error': 'node not available'}
         
         if not groupsig.verify(sig=request['sig'], msg=request['idx'] + request['ctx'], gpk=self.gpk):
+            self.log_msg("Error -- invalid signature")
             return {'_error': 'invalid signature'}
          
         value = request['idx'] + '.' + request['ctx'] + '.' + request['sig']
@@ -36,9 +44,11 @@ class MessageStore:
     
     def retrieve(self, request: dict):
         if not self.available:
+            self.log_msg("Error -- node not available")
             return {'_error': 'node not available'}
         
         if not groupsig.verify(sig=request['sig'], msg=request['idx'], gpk=self.gpk):
+            self.log_msg("Error -- invalid signature")
             return {'_error': 'invalid signature'}
 
         value = cache.find(
@@ -54,12 +64,14 @@ class MessageStore:
         return {'idx': msidx, 'ctx': msctx, 'sig': mssig}
 
 class Evaluator:
-    def __init__(self, nodeId: str, gpk, available: bool, cache_client):
+    def __init__(self, nodeId: str, gpk, available: bool, cache_client, logger):
         self.gpk = gpk
+        self.nodeId = nodeId
         self.name = f'sim.ev.{nodeId}'
         self.cache_client = cache_client
         self.available = available
         self.set_keys()
+        self.logger = logger
 
     def set_keys(self):
         keys = cache.find(client=self.cache_client, key=self.name, dtype=dict)
@@ -78,12 +90,21 @@ class Evaluator:
         keys = json.dumps([Utils.to_base64(sk) + '.' + Utils.to_base64(vk) for (sk, vk) in self.keys])
         cache.save(client=self.cache_client, key=self.name, value=keys)
 
+    def log_msg(self, msg):
+        if config.DEBUG:
+            self.logger.debug(f"--> {self.nodeId}: {msg}")
+
     def evaluate(self, request: dict):
         if not self.available:
+            self.log_msg("Error -- node not available")
             return {'_error': 'node not available'}
         
         if not groupsig.verify(sig=request['sig'], msg=str(request['i_k']) + request['x'], gpk=self.gpk):
+            self.log_msg("Error -- invalid signature")
             return {'_error': 'invalid signature'}
+        
+        self.log_msg(f"Receives i_k={request['i_k']}, x={request['x']}")
+        self.log_msg(f"Uses sk={Utils.to_base64(self.keys[request['i_k']][0])}, pk={Utils.to_base64(self.keys[request['i_k']][1])}")
         
         (fx, vk) = Oprf.evaluate(self.keys[request['i_k']][0], self.keys[request['i_k']][1], Utils.from_base64(request['x']))
 
@@ -106,21 +127,24 @@ class Provider(BaseProvider):
                     nodeId=req['nodeId'], 
                     gpk=self.gpk, 
                     available=available,
-                    cache_client=self.cache_client
+                    cache_client=self.cache_client,
+                    logger=self.logger
                 ).evaluate(req['data'])
             elif req_type == 'publish':
                 payload = MessageStore(
                     nodeId=req['nodeId'], 
                     gpk=self.gpk, 
                     available=available,
-                    cache_client=self.cache_client
+                    cache_client=self.cache_client,
+                    logger=self.logger
                 ).publish(req['data'])
             elif req_type == 'retrieve':
                 payload = MessageStore(
                     nodeId=req['nodeId'], 
                     gpk=self.gpk, 
                     available=available,
-                    cache_client=self.cache_client
+                    cache_client=self.cache_client,
+                    logger=self.logger
                 ).retrieve(req['data'])
                 
             responses.append(payload)

@@ -6,7 +6,7 @@ from typing import Tuple
 from cpex.crypto import groupsig
 from cpex.prototype import network
 from cpex.models import cache, persistence
-from cpex.helpers import errors, files, dht
+from cpex.helpers import errors, files, dht, logging
 from cpex.prototype.stirshaken import certs
 from cpex import config, constants
 from cpex.prototype.provider import Provider
@@ -28,7 +28,6 @@ class NetworkedSimulator:
             'pid': pid,
             'impl': bool(int(impl)),
             'mode': mode,
-            'log': options.get('log', True),
             'gsk': gsk,
             'gpk': gpk,
             'n_ev': options.get('n_ev'),
@@ -52,6 +51,8 @@ class NetworkedSimulator:
         if len(set([p for (p, _) in route])) == 1:
             return options.get('_id')
         
+        logger = logging.create_logger('simulator')
+        
         providers, signal, start_token, final_token = {}, None, None, None
         
         for i, (idx, impl) in enumerate(route):
@@ -60,7 +61,7 @@ class NetworkedSimulator:
             
             if not provider:
                 provider = self.create_provider_instance(pid, impl, mode, options)
-                
+                provider.logger = logger
                 providers[pid] = provider
                 
             if i == 0: # Originating provider
@@ -74,13 +75,14 @@ class NetworkedSimulator:
         latency = 0
         
         if not is_correct:
-            print(f"\nProcID: {os.getpid()}, Call path is incorrect. src={signal.From}, dst={signal.To}")
-            print(f"Data: {options}\n")
+            logging.print_logs(logger)
 
         for provider in providers.values():
             latency += provider.get_latency_ms()
             
         # print(f"Simulated call path of length {len(route)} and latency {latency} ms")
+        logging.close_logger(logger)
+
         return (latency, len(route), is_correct)
 
     def get_route_from_bitstring(self, path: str):
@@ -135,7 +137,7 @@ class NetworkedSimulator:
                     collection_id=num_provs,
                     start_id=start_id,
                     end_id=end_id,
-                    params={**params, 'mode': mode, 'log': False}
+                    params={**params, 'mode': mode}
                 )
             
                 if len(routes) == 0:
@@ -168,7 +170,7 @@ class NetworkedSimulator:
                 round(statistics.max, dp),
                 round(statistics.mean, dp),
                 round(statistics.population_stddev, dp),
-                statistics.success_rate, 
+                round(statistics.success_rate, dp), 
                 math.ceil(total_calls / total_time) if total_time > 0 else 0
             ]
 
@@ -223,6 +225,7 @@ class RunningStats:
     def success_rate(self):
         if self.count == 0:
             return 0
+        print(f"Correct: {self.correct}, Count: {self.count}")
         return (self.correct / self.count) * 100
 
     @property

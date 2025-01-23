@@ -34,19 +34,19 @@ class Provider:
         self.mode = params['mode']
         self.cps_url = params.get('cps_url')
         self.cps_fqdn = params.get('cps_fqdn')
-        self.log = params.get('log', True)
         self.gpk = params['gpk']
         self.gsk = params['gsk']
         self.n_ev = params['n_ev']
         self.n_ms = params['n_ms']
+        self.logger = params.get('logger')
         self.load_auth_service()
 
         if not self.cps_fqdn and self.cps_url:
             self.cps_fqdn = self.cps_url.replace('http://', '').replace('https://', '').split(':')[0]
 
     def log_msg(self, msg):
-        if self.log:
-            print(msg)
+        if config.DEBUG and self.logger:
+            self.logger.debug(msg)
     
     def is_atis_mode(self):
         return config.is_atis_mode(self.mode)
@@ -169,8 +169,11 @@ class Provider:
             gsk=self.gsk,
             gpk=self.gpk
         )
+
+        self.log_msg(f'--> Created Requests for the Following MSs: {[r["nodeId"] for r in reqs]}')
         
-        await self.make_request('publish', requests=reqs)
+        responses = await self.make_request('publish', requests=reqs)
+        self.log_msg(f'--> Responses: {responses}')
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
         self.log_msg(f'--> Executes RETRIEVE')
@@ -205,12 +208,14 @@ class Provider:
     
     async def cpex_call_id_generation(self, signal: Union[SIPSignal, TDMSignal], req_type: str) -> str:
         call_details: str = libcpex.normalize_call_details(src=signal.From, dst=signal.To)
+        self.log_msg(f'--> Generates Call Details: {call_details}')
         requests, masks = libcpex.create_evaluation_requests(call_details, n_ev=self.n_ev, gsk=self.gsk, gpk=self.gpk)
+        self.log_msg(f'--> Created Requests for the Following EVs: {[r["nodeId"] for r in requests]}')
+        
         responses = await self.make_request('evaluate', requests=requests)
         call_id = libcpex.create_call_id(responses=responses, masks=masks)
-        print(f"---> {os.getpid()}, Req={req_type}, src={signal.From}, dst={signal.To}, Call-Details={call_details}, Call ID: {Utils.to_base64(call_id)}")
-        print(f'EV IDs: {[r["nodeId"] for r in requests]}')
-        # print(responses, "\n")
+        if call_id and type(call_id) == bytes:
+            self.log_msg(f"---> Call ID: {Utils.to_base64(call_id)}")
         return call_id
 
     async def cpex_retrieve_token(self, signal: TDMSignal) -> str:

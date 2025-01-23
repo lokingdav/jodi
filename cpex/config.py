@@ -8,9 +8,15 @@ load_dotenv(override=True)
 def env(envname, default="", dtype=None):
     value = getenv(envname)
     value = value if value else default
+    if dtype == bool:
+        return value.lower() in ['true', '1', 't', 'y', 'yes']
     if dtype == int:
         return int(value)
+    if dtype == float:
+        return float(value)
     return value
+
+DEBUG = env('APP_DEBUG', 'false', dtype=bool)
 
 CPEX_VERSION = env('CPEX_VERSION', '1.0.0')
 BASE_REPO_PORT = env('BASE_REPO_PORT', 10000)
@@ -71,7 +77,11 @@ OPRF_EV_PARAM = env('OPRF_EV_PARAM', 2)
 
 
 # Network Churn
-CHURN_INTERVAL_SECONDS = env('CHURN_INTERVAL_SECONDS', 1, dtype=int)
-MAX_UPTIME_SECONDS = env('MAX_UPTIME_SECONDS', 5, dtype=int)
-MAX_DOWNTIME_SECONDS = env('MAX_DOWNTIME_SECONDS', 2, dtype=int)
-NODE_AVAILABILITY = env('NODE_AVAILABILITY', 99, dtype=float)
+EV_AVAILABILITY = env('EV_AVAILABILITY', 0.99, dtype=float)
+MS_AVAILABILITY = env('MS_AVAILABILITY', 0.99, dtype=float)
+
+UP_TIME_DURATION = env('UP_TIME_DURATION', 1, dtype=float)
+EV_DOWN_TIME = (UP_TIME_DURATION * (1 - EV_AVAILABILITY)) / EV_AVAILABILITY
+MS_DOWN_TIME = (UP_TIME_DURATION * (1 - MS_AVAILABILITY)) / MS_AVAILABILITY
+
+CHURN_INTERVAL_SECONDS = env('CHURN_INTERVAL_SECONDS', min(EV_DOWN_TIME, MS_DOWN_TIME), dtype=float)

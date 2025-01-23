@@ -6,7 +6,7 @@ from cpex.crypto import libcpex
 
 from cpex.prototype.simulations import local, networked
 
-route = {'_id': 140, 'status': 'pending', 'route': [[9, 0], [2, 1], [11, 0], [15, 0]], 'mode': 'cpex', 'log': False}
+route = {'_id': 140, 'status': 'pending', 'route': [[9, 0], [2, 1], [11, 0], [15, 0]], 'mode': 'cpex'}
 
 def setup():
     cache_client = cache.connect()

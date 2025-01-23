@@ -23,7 +23,6 @@ class LocalSimulator(NetworkedSimulator):
             'pid': pid,
             'impl': bool(int(impl)),
             'mode': mode,
-            'log': options.get('log', True),
             'gsk': gsk,
             'gpk': gpk,
             'n_ev': options.get('n_ev'),
@@ -56,23 +55,22 @@ class LocalSimulator(NetworkedSimulator):
         if evals:
             cache.save(client=cclient, key=config.EVALS_KEY, value=json.dumps(evals))
 
-def random_status():
-    p = config.NODE_AVAILABILITY / 100
+def get_status(ntype: str):
+    p = config.EV_AVAILABILITY if ntype == 'ev' else config.MS_AVAILABILITY
     weights = [p, 1 - p]
     return bool(np.random.choice([True, False], p=weights))
 
-def random_uptime():
-    now = time.time()
-    return now + random.random() * config.MAX_UPTIME_SECONDS
+def get_uptime():
+    return time.time() + config.UP_TIME_DURATION
 
-def random_downtime():
-    now = time.time()
-    return now + random.random() * config.MAX_DOWNTIME_SECONDS
+def get_downtime(ntype: str):
+    secs = config.EV_DOWN_TIME if ntype == 'ev' else config.UP_TIME_DURATION
+    return time.time() + secs
 
 def format_time(seconds):
     return time.strftime("%H:%M:%S", time.gmtime(seconds))
 
-def simulate_churn(nodes):
+def simulate_churn(ntype, nodes):
     down_count, up_count = 0, 0
     for i in range(len(nodes)):
         avail = nodes[i].get('avail')
@@ -82,10 +80,10 @@ def simulate_churn(nodes):
             else:
                 down_count += 1
             continue
-        is_up = random_status()
+        is_up = get_status(ntype)
         nodes[i]['avail'] = {
             'up': is_up,
-            'until': random_uptime() if is_up else random_downtime()
+            'until': get_uptime() if is_up else get_downtime(ntype=ntype)
         }
         if is_up:
             up_count += 1
@@ -99,15 +97,18 @@ def wait_a_while(stop_churn: threading.Event):
         if stop_churn.is_set():
             return
 
-def network_churn(stop_churn: threading.Event):            
+def network_churn(stop_churn: threading.Event):   
     evals = cache.find(client=cache_client, key=config.EVALS_KEY, dtype=dict)
     stores = cache.find(client=cache_client, key=config.STORES_KEY, dtype=dict)
         
     while not stop_churn.is_set():
-        time.sleep(1)
-        evals, status = simulate_churn(evals)
-        # print(f"EVs - Up: {status['up_count']}, Down: {status['down_count']}")
-        cache.save(client=cache_client, key=config.EVALS_KEY, value=json.dumps(evals))
-        stores, status = simulate_churn(stores)
-        # print(f"MSs - Up: {status['up_count']}, Down: {status['down_count']}\n")
-        cache.save(client=cache_client, key=config.STORES_KEY, value=json.dumps(stores))
+        time.sleep(config.CHURN_INTERVAL_SECONDS)
+        if 0 < config.EV_AVAILABILITY < 1:
+            evals, status = simulate_churn('ev', evals)
+            # print(f"EVs - Up: {status['up_count']}, Down: {status['down_count']}")
+            cache.save(client=cache_client, key=config.EVALS_KEY, value=json.dumps(evals))
+        
+        if 0 < config.MS_AVAILABILITY < 1:
+            stores, status = simulate_churn('ms', stores)
+            # print(f"MSs - Up: {status['up_count']}, Down: {status['down_count']}\n")
+            cache.save(client=cache_client, key=config.STORES_KEY, value=json.dumps(stores))
