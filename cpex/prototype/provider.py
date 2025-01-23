@@ -39,6 +39,7 @@ class Provider:
         self.n_ev = params['n_ev']
         self.n_ms = params['n_ms']
         self.logger = params.get('logger')
+        self.next_prov = params.get('next_prov')
         self.load_auth_service()
 
         if not self.cps_fqdn and self.cps_url:
@@ -56,6 +57,9 @@ class Provider:
     
     def get_latency_ms(self):
         return round(self.get_latency() * 1000, 2)
+    
+    def next_prov_is_capable(self):
+        return self.next_prov and self.next_prov[1] == 1
 
     def load_auth_service(self):
         name = f'sp_{self.pid}'
@@ -67,6 +71,14 @@ class Provider:
             private_key_pem=credential[constants.PRIV_KEY],
             x5u=config.CERT_REPO_BASE_URL + f'/certs/sp_{self.pid}'
         )
+        
+    async def forward_call(self, signal: Union[SIPSignal, TDMSignal]):
+        if not self.impl or not self.next_prov_is_capable():
+            signal: TDMSignal = await self.publish(sip_signal=signal)
+        
+        self.log_msg(f'--> FORWARDS {get_type(signal)} to {self.next_prov}')
+        
+        return signal
     
     async def originate(self, src: str = None, dst: str = None) -> Union[SIPSignal, TDMSignal]:
         src = misc.fake_number(1) if src is None else src
@@ -77,45 +89,37 @@ class Provider:
         token = self.auth_service.create_passport(orig=src, dest=dst, attest=attest)
         signal = {'To': dst, 'From': src, 'Pid': self.pid}
         signal = SIPSignal(**signal, Identity=token)
-        
-        if not self.impl:
-            signal: TDMSignal = await self.publish(sip_signal=signal)
-            
-        self.log_msg(f'--> Forwards {get_type(signal)}')
+        signal = await self.forward_call(signal)
             
         return signal, token
     
     async def receive(self, incoming_signal: Union[SIPSignal, TDMSignal]) -> Union[SIPSignal, TDMSignal]:
         self.log_msg(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) RECEIVES {get_type(incoming_signal)}')
-
-        outgoing_signal = None
-
-        # If incoming signal is SIP then it must contain a token
-        if isinstance(incoming_signal, SIPSignal):
-            if not self.impl: # If converting to TDM then publish the token first
-                outgoing_signal: TDMSignal = await self.publish(incoming_signal)
-            else:
-                # if no need to convert to TDM, then just forward the signal
-                outgoing_signal = self.convert_sip_from_sip(incoming_signal)
         
-        # If incoming signal is TDM then it must not contain a token
         if isinstance(incoming_signal, TDMSignal):
-            if self.impl: # If converting to SIP then retrieve the token and convert
-                outgoing_signal: SIPSignal = await self.retrieve(incoming_signal)
+            if not self.impl or not self.next_prov_is_capable():
+                return self.convert_tdm_to_tdm(incoming_signal)
+            
+            return await self.retrieve(incoming_signal)
+
+        if isinstance(incoming_signal, SIPSignal):
+            if incoming_signal.Identity:
+                if self.next_prov_is_capable():
+                    return self.convert_sip_to_sip(incoming_signal)
+                else:
+                    return await self.publish(incoming_signal)
             else:
-                # if no need to convert to SIP, then just forward the signal
-                outgoing_signal = self.convert_tdm_from_tdm(incoming_signal)
-        
-        self.log_msg(f'--> Forwards {get_type(outgoing_signal)}')
-        return outgoing_signal
+                if self.next_prov_is_capable():
+                    return await self.retrieve(incoming_signal)
+                else:
+                    return self.convert_sip_to_tdm(incoming_signal)
     
     async def terminate(self, incoming_signal: Union[SIPSignal, TDMSignal]):
         self.log_msg(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) TERMINATES {get_type(incoming_signal)}')
 
-        if isinstance(incoming_signal, SIPSignal):
+        if isinstance(incoming_signal, SIPSignal) and incoming_signal.Identity:
             return incoming_signal.Identity
         
-        # Incoming signal is TDM so let's retrieve
         terminated_signal: SIPSignal = await self.retrieve(signal=incoming_signal)
 
         self.log_msg('--> Call Terminated')
@@ -251,7 +255,7 @@ class Provider:
             'Identity': token if token else ''
         })
     
-    def convert_sip_from_sip(self, signal: SIPSignal) -> SIPSignal:
+    def convert_sip_to_sip(self, signal: SIPSignal) -> SIPSignal:
         if not isinstance(signal, SIPSignal):
             raise Exception('Signal must be an instance of SIPSignal class')
         
@@ -262,7 +266,7 @@ class Provider:
             'Identity': signal.Identity
         })
     
-    def convert_tdm_from_tdm(self, signal: TDMSignal) -> TDMSignal:
+    def convert_tdm_to_tdm(self, signal: TDMSignal) -> TDMSignal:
         if not isinstance(signal, TDMSignal):
             raise Exception('Signal must be an instance of TDMSignal class')
         

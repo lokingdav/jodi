@@ -16,7 +16,7 @@ def env(envname, default="", dtype=None):
         return float(value)
     return value
 
-DEBUG = env('APP_DEBUG', 'false', dtype=bool)
+DEBUG = env('APP_DEBUG', 'true', dtype=bool)
 
 CPEX_VERSION = env('CPEX_VERSION', '1.0.0')
 BASE_REPO_PORT = env('BASE_REPO_PORT', 10000)

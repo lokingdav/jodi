@@ -23,16 +23,26 @@ class NetworkedSimulator:
         res = asyncio.run(self.simulate_call(options))
         return res
     
-    def create_provider_instance(self, pid, impl, mode, options):
-        return Provider({
+    def create_prov_params(self, pid, impl, mode, options, next_prov):
+        return {
             'pid': pid,
             'impl': bool(int(impl)),
             'mode': mode,
             'gsk': gsk,
             'gpk': gpk,
             'n_ev': options.get('n_ev'),
-            'n_ms': options.get('n_ms')
-        })
+            'n_ms': options.get('n_ms'),
+            'next_prov': next_prov,
+        }
+        
+    def create_provider_instance(self, pid, impl, mode, options, next_prov):
+        return Provider(self.create_prov_params(
+            pid=pid, 
+            impl=impl, 
+            mode=mode, 
+            options=options, 
+            next_prov=next_prov
+        ))
 
     async def simulate_call(self, options: dict):
         mode: str = options.get('mode')
@@ -44,6 +54,7 @@ class NetworkedSimulator:
         
         if len(route) == 0:
             raise Exception('Invalid simulation parameter')
+        # print(route)
         
         if not isinstance(route, list):
             raise Exception("Route parameter must be an instance of a list")
@@ -52,6 +63,7 @@ class NetworkedSimulator:
             return options.get('_id')
         
         logger = logging.create_logger('simulator')
+        logger.debug(f"Simulating call with route: {route}")
         
         providers, signal, start_token, final_token = {}, None, None, None
         
@@ -60,7 +72,14 @@ class NetworkedSimulator:
             provider: Provider = providers.get(pid)
             
             if not provider:
-                provider = self.create_provider_instance(pid, impl, mode, options)
+                next_prov = route[i + 1] if i + 1 < len(route) else None
+                provider = self.create_provider_instance(
+                    pid=pid, 
+                    impl=impl, 
+                    mode=mode, 
+                    options=options, 
+                    next_prov=next_prov
+                )
                 provider.logger = logger
                 providers[pid] = provider
                 
@@ -74,13 +93,13 @@ class NetworkedSimulator:
         is_correct = start_token == final_token
         latency = 0
         
-        if not is_correct:
-            logging.print_logs(logger)
-
         for provider in providers.values():
             latency += provider.get_latency_ms()
+        logger.debug(f"Total latency for call = {latency} ms")
+
+        if not is_correct:
+            logging.print_logs(logger)
             
-        # print(f"Simulated call path of length {len(route)} and latency {latency} ms")
         logging.close_logger(logger)
 
         return (latency, len(route), is_correct)

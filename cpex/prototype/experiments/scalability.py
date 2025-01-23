@@ -6,6 +6,7 @@ from cpex.models import persistence, cache
 from cpex.helpers import files
 from cpex.prototype.simulations import networked, local
 
+numIters = 5
 cache_client = None
 
 provider_groups = [40]
@@ -94,6 +95,7 @@ def main(sim_type: str):
     
     # for i in range(1, n_param+1):
     #     for j in range(1, n_param+1):
+    #         for _ in range(numIters):
     simulate(
         resutlsloc=resutlsloc,
         mode=constants.MODE_CPEX,

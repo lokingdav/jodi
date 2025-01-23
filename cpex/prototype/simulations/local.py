@@ -18,16 +18,14 @@ class LocalSimulator(NetworkedSimulator):
     def __init__(self):
         super().__init__()
 
-    def create_provider_instance(self, pid, impl, mode, options):
-        return Provider(params={
-            'pid': pid,
-            'impl': bool(int(impl)),
-            'mode': mode,
-            'gsk': gsk,
-            'gpk': gpk,
-            'n_ev': options.get('n_ev'),
-            'n_ms': options.get('n_ms')
-        }, cache_client=cache_client)
+    def create_provider_instance(self, pid, impl, mode, options, next_prov):
+        return Provider(params=self.create_prov_params(
+            pid=pid, 
+            impl=impl, 
+            mode=mode, 
+            options=options, 
+            next_prov=next_prov
+        ), cache_client=cache_client)
     
     def create_nodes(self, mode: str, num_evs: int, num_repos: int):
         evals, stores = [], []
