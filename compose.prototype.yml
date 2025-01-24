@@ -29,6 +29,15 @@ services:
       - '.:/app'
       - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
 
+  automation:
+    image: cpex-automation
+    container_name: cpex-automation
+    command: tail -f /dev/null
+    volumes:
+      - './automation:/manager'
+      - './docker/data/automation/.aws:/root/.aws'
+      - '${HOME}/.ssh:/root/.ssh'
+
 # Cache and Database
   cache:
     container_name: cpex-cache

@@ -68,6 +68,20 @@ resource "aws_security_group" "cpex_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 10432
+    to_port     = 10432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 11432
+    to_port     = 11432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -90,11 +104,11 @@ resource "aws_instance" "cpex_nodes" {
   }
 }
 
-output "ec2_public_ips" {
+output "public_ips" {
   value = aws_instance.cpex_nodes[*].public_ip
 }
 
-output "ec2_private_ips" {
+output "private_ips" {
   value = aws_instance.cpex_nodes[*].private_ip
 }
 

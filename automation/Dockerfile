@@ -3,14 +3,15 @@ FROM cpex
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ANSIBLE_VERSION=2.10
 
+WORKDIR /manager 
+
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y \
     software-properties-common \
     curl \
     unzip \
-    groff \
-    ansible && \
+    groff && \
     apt-get clean
 
 # Install Terraform
@@ -35,4 +36,3 @@ RUN terraform --version && \
     ansible --version && \
     aws --version
 
-ENTRYPOINT ["/bin/bash"]

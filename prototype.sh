@@ -41,9 +41,14 @@ build_image() {
 }
 
 compose_up() {
+    local service=$1
     echo "Starting Docker Compose services..."
-    docker compose -f $COMPOSE_FILE up -d
-    docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
+    if [[ -z "$service" ]]; then
+        docker compose -f $COMPOSE_FILE up -d
+        docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
+    else
+        docker compose -f $COMPOSE_FILE up -d "$service"
+    fi
 }
 
 compose_down() {
@@ -60,7 +65,10 @@ dockerps() {
 }
 
 open_bash() {
-    docker exec -it cpex-exp /bin/bash
+    local container_name=$1
+    [[ -z "$container_name" ]] && container_name="exp"
+    container_name="cpex-$container_name"
+    docker exec -it $container_name /bin/bash
 }
 
 run_experiments() {
@@ -92,7 +100,7 @@ case "$CMD" in
         build_image
         ;;
     up)
-        compose_up
+        compose_up $2
         ;;
     down)
         compose_down
@@ -105,7 +113,7 @@ case "$CMD" in
         dockerps
         ;;
     bash)
-        open_bash
+        open_bash $2
         ;;
     runexp)
         run_experiments $2
