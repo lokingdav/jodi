@@ -165,4 +165,4 @@ cython_debug/
 libcpex/
 *.lock
 
-infras/hosts.yml
+automation/hosts.yml
