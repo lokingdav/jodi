@@ -11,8 +11,8 @@ configure() {
 
 create() {
     terraform apply
-    # echo "Pinging all instances..."
-    # ansible all -i hosts.yml -m ping
+    echo "Pinging all instances..."
+    ansible all -i hosts.yml -m ping
 }
 
 destroy() {

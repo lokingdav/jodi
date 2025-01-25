@@ -1,0 +1,49 @@
+---
+- name: Install and configure Cpex
+  hosts: all
+  become: yes
+  vars_files:
+    - vars.yml
+    
+  tasks:
+    - name: Wait for user data to complete
+      tags: 
+        - user_data_done
+      wait_for:
+        path: "{{ user_data_done_file }}"
+        state: present
+        delay: 5
+        timeout: 300
+      register: user_data_status
+
+    - name: Debug user data status
+      debug:
+        var: user_data_status
+      tags: 
+        - user_data_done
+
+    - name: Clone the repository
+      tags:
+        - clone_repo
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_branch }}"
+        force: yes
+
+    - name: Ensure correct branch is checked out and pull latest changes
+      tags:
+        - checkout_branch
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: "{{ repo_branch }}"
+        force: yes
+        update: yes
+
+    - name: Build Docker Images
+      tags:
+        - build_images
+      command: "./prototype.sh build"
+      args:
+        chdir: "{{ repo_dest }}"

@@ -1,0 +1,50 @@
+---
+- name: Setup and deploy prototype
+  hosts: all
+  become: yes
+  vars_files:
+    - playbooks/vars.yml
+
+  tasks:
+    - name: Start Cpex Prototype
+      tags:
+        - start_cpex
+      command: "./prototype.sh cpex up"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: Stop Cpex Prototype
+      tags:
+        - stop_cpex
+      command: "./prototype.sh cpex down"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: Restart Cpex Prototype
+      tags:
+        - restart_cpex
+      command: "./prototype.sh cpex restart"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: Start ATIS OOB
+      tags:
+        - start_atis
+      command: "./prototype.sh atis up"
+      args:
+        chdir: "{{ repo_dest }}"
+    
+    - name: Stop ATIS OOB
+      tags:
+        - stop_atis
+      command: "./prototype.sh atis down"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: Restart ATIS OOB
+      tags:
+        - restart_atis
+      command: "./prototype.sh atis restart"
+      args:
+        chdir: "{{ repo_dest }}"
+

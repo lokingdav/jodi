@@ -11,7 +11,11 @@ sudo apt-get install -y \
   curl \
   gnupg \
   lsb-release \
-  git
+  git \
+  python3 \
+  python3-six \
+  python3-pip \
+  python3-dev 
 
 # 3. Add Docker's official GPG key:
 sudo install -m 0755 -d /etc/apt/keyrings
