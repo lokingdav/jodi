@@ -28,15 +28,8 @@ echo \
 sudo apt-get update -y
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# 6. (Optional) Add 'ubuntu' user to 'docker' group
-sudo groupadd docker
+# 6. Add 'ubuntu' user to 'docker' group
+sudo groupadd docker || true  # Ignore error if group already exists
 sudo usermod -aG docker ubuntu
-newgrp docker
 
-# 7. Clone a specific Git repository as the 'ubuntu' user
-#    (replace the URL and target directory as needed)
-REPO_URL="https://github.com/lokingdav/cpex.git"
-CLONE_DIR="/home/ubuntu/cpex"
-
-# Run git clone as 'ubuntu' user
-sudo -u ubuntu git clone "$REPO_URL" "$CLONE_DIR"
+echo "Setup complete." > /home/ubuntu/done.txt
