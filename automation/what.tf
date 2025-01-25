@@ -8,20 +8,14 @@ terraform {
   required_version = ">= 1.2.0"
 }
 
-data "aws_ami" "ubuntu" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server*"]
+variable "ubuntu_ami_map" {
+  type = map(string)
+  default = {
+    "us-east-1" = "ami-04b4f1a9cf54c11d0"
+    "us-east-2" = "ami-0cb91c7de36eed2cb"
+    "us-west-1" = "ami-07d2649d67dbe8900"
+    "us-west-2" = "ami-00c257e12d6828491"
   }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["099720109477"] # Canonical
 }
 
 provider "aws" {
@@ -78,8 +72,9 @@ resource "aws_key_pair" "cpex_keypair" {
 }
 
 resource "aws_security_group" "cpex_sg_use1" {
-  provider   = aws.us-east-1
+  provider    = aws.us-east-1
   name_prefix = "cpex-sg-use1-"
+
   ingress {
     from_port   = 22
     to_port     = 22
@@ -107,8 +102,9 @@ resource "aws_security_group" "cpex_sg_use1" {
 }
 
 resource "aws_security_group" "cpex_sg_use2" {
-  provider   = aws.us-east-2
+  provider    = aws.us-east-2
   name_prefix = "cpex-sg-use2-"
+
   ingress {
     from_port   = 22
     to_port     = 22
@@ -136,8 +132,9 @@ resource "aws_security_group" "cpex_sg_use2" {
 }
 
 resource "aws_security_group" "cpex_sg_usw1" {
-  provider   = aws.us-west-1
+  provider    = aws.us-west-1
   name_prefix = "cpex-sg-usw1-"
+
   ingress {
     from_port   = 22
     to_port     = 22
@@ -165,8 +162,9 @@ resource "aws_security_group" "cpex_sg_usw1" {
 }
 
 resource "aws_security_group" "cpex_sg_usw2" {
-  provider   = aws.us-west-2
+  provider    = aws.us-west-2
   name_prefix = "cpex-sg-usw2-"
+
   ingress {
     from_port   = 22
     to_port     = 22
@@ -196,10 +194,11 @@ resource "aws_security_group" "cpex_sg_usw2" {
 resource "aws_instance" "cpex_nodes_use1" {
   provider        = aws.us-east-1
   count           = var.us_east_1_count
-  ami             = data.aws_ami.ubuntu.id
+  ami             = var.ubuntu_ami_map["us-east-1"]
   instance_type   = var.instance_type
   key_name        = aws_key_pair.cpex_keypair.key_name
   security_groups = [aws_security_group.cpex_sg_use1.name]
+
   tags = {
     Name = "cpex-node-use1-${count.index}"
   }
@@ -208,10 +207,11 @@ resource "aws_instance" "cpex_nodes_use1" {
 resource "aws_instance" "cpex_nodes_use2" {
   provider        = aws.us-east-2
   count           = var.us_east_2_count
-  ami             = data.aws_ami.ubuntu.id
+  ami             = var.ubuntu_ami_map["us-east-2"]
   instance_type   = var.instance_type
   key_name        = aws_key_pair.cpex_keypair.key_name
   security_groups = [aws_security_group.cpex_sg_use2.name]
+
   tags = {
     Name = "cpex-node-use2-${count.index}"
   }
@@ -220,10 +220,11 @@ resource "aws_instance" "cpex_nodes_use2" {
 resource "aws_instance" "cpex_nodes_usw1" {
   provider        = aws.us-west-1
   count           = var.us_west_1_count
-  ami             = data.aws_ami.ubuntu.id
+  ami             = var.ubuntu_ami_map["us-west-1"]
   instance_type   = var.instance_type
   key_name        = aws_key_pair.cpex_keypair.key_name
   security_groups = [aws_security_group.cpex_sg_usw1.name]
+
   tags = {
     Name = "cpex-node-usw1-${count.index}"
   }
@@ -232,10 +233,11 @@ resource "aws_instance" "cpex_nodes_usw1" {
 resource "aws_instance" "cpex_nodes_usw2" {
   provider        = aws.us-west-2
   count           = var.us_west_2_count
-  ami             = data.aws_ami.ubuntu.id
+  ami             = var.ubuntu_ami_map["us-west-2"]
   instance_type   = var.instance_type
   key_name        = aws_key_pair.cpex_keypair.key_name
   security_groups = [aws_security_group.cpex_sg_usw2.name]
+
   tags = {
     Name = "cpex-node-usw2-${count.index}"
   }
