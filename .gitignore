@@ -166,3 +166,5 @@ libcpex/
 *.lock
 
 automation/hosts.yml
+.terra*
+terra*
