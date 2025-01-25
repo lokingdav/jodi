@@ -3,18 +3,32 @@
 cmd=$1
 cmds=('configure' 'create' 'destroy')
 
+configure() {
+    ./scripts/generate-ssh-keys.sh
+    ./scripts/configure-aws-cli.sh
+    terraform init
+}
+
+create() {
+    terraform apply
+    # echo "Pinging all instances..."
+    # ansible all -i hosts.yml -m ping
+}
+
+destroy() {
+    terraform destroy
+    rm -rf hosts.yml
+}
+
 case "$cmd" in
     configure)
-        ./scripts/generate-ssh-keys.sh
-        ./scripts/configure-aws-cli.sh
-        terraform init
+        configure
         ;;
     create)
-        terraform apply -auto-approve
+        create
         ;;
     destroy)
-        terraform destroy -auto-approve
-        rm -rf hosts.yml
+        destroy
         ;;
     *)
         echo "Usage: $0 {${cmds[*]}}"

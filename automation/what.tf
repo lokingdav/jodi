@@ -90,7 +90,6 @@ resource "aws_key_pair" "usw2" {
   public_key  = file("~/.ssh/id_ed25519.pub")
 }
 
-
 resource "aws_security_group" "sg_use1" {
   provider    = aws.us-east-1
   name_prefix = "cpex-sg-use1-"
@@ -219,6 +218,8 @@ resource "aws_instance" "cpex_nodes_use1" {
   key_name        = aws_key_pair.use1.key_name
   security_groups = [aws_security_group.sg_use1.name]
 
+  user_data       = file("${path.module}/scripts/setup-instance.sh")
+
   tags = {
     Name = "cpex-node-use1-${count.index}"
   }
@@ -231,6 +232,8 @@ resource "aws_instance" "cpex_nodes_use2" {
   instance_type   = var.instance_type
   key_name        = aws_key_pair.use2.key_name
   security_groups = [aws_security_group.sg_use2.name]
+
+  user_data       = file("${path.module}/scripts/setup-instance.sh")
 
   tags = {
     Name = "cpex-node-use2-${count.index}"
@@ -245,6 +248,8 @@ resource "aws_instance" "cpex_nodes_usw1" {
   key_name        = aws_key_pair.usw1.key_name
   security_groups = [aws_security_group.sg_usw1.name]
 
+  user_data       = file("${path.module}/scripts/setup-instance.sh")
+
   tags = {
     Name = "cpex-node-usw1-${count.index}"
   }
@@ -257,6 +262,8 @@ resource "aws_instance" "cpex_nodes_usw2" {
   instance_type   = var.instance_type
   key_name        = aws_key_pair.usw2.key_name
   security_groups = [aws_security_group.sg_usw2.name]
+
+  user_data       = file("${path.module}/scripts/setup-instance.sh")
 
   tags = {
     Name = "cpex-node-usw2-${count.index}"
@@ -295,7 +302,6 @@ output "hosts_file" {
   )
 }
 
-
 resource "local_file" "ansible_hosts" {
   content = <<EOT
 all:
@@ -308,11 +314,10 @@ ${join(
       aws_instance.cpex_nodes_use2,
       aws_instance.cpex_nodes_usw1,
       aws_instance.cpex_nodes_usw2
-    ) : "    ${instance.tags.Name} ansible_host=${instance.public_ip} ansible_user=ubuntu"
+    ) : "    ${instance.tags.Name}:\n      ansible_host: ${instance.public_ip}\n      ansible_user: ubuntu"
   ]
 )}
 EOT
 
   filename = "./hosts.yml"
 }
-
