@@ -66,12 +66,32 @@ provider "aws" {
   region = "us-west-2"
 }
 
-resource "aws_key_pair" "cpex_keypair" {
-  key_name   = var.key_name
-  public_key = file("~/.ssh/id_ed25519.pub")
+resource "aws_key_pair" "use1" {
+  provider    = aws.us-east-1
+  key_name    = var.key_name
+  public_key  = file("~/.ssh/id_ed25519.pub")
 }
 
-resource "aws_security_group" "cpex_sg_use1" {
+resource "aws_key_pair" "use2" {
+  provider    = aws.us-east-2
+  key_name    = var.key_name
+  public_key  = file("~/.ssh/id_ed25519.pub")
+}
+
+resource "aws_key_pair" "usw1" {
+  provider    = aws.us-west-1
+  key_name    = var.key_name
+  public_key  = file("~/.ssh/id_ed25519.pub")
+}
+
+resource "aws_key_pair" "usw2" {
+  provider    = aws.us-west-2
+  key_name    = var.key_name
+  public_key  = file("~/.ssh/id_ed25519.pub")
+}
+
+
+resource "aws_security_group" "sg_use1" {
   provider    = aws.us-east-1
   name_prefix = "cpex-sg-use1-"
 
@@ -101,7 +121,7 @@ resource "aws_security_group" "cpex_sg_use1" {
   }
 }
 
-resource "aws_security_group" "cpex_sg_use2" {
+resource "aws_security_group" "sg_use2" {
   provider    = aws.us-east-2
   name_prefix = "cpex-sg-use2-"
 
@@ -131,7 +151,7 @@ resource "aws_security_group" "cpex_sg_use2" {
   }
 }
 
-resource "aws_security_group" "cpex_sg_usw1" {
+resource "aws_security_group" "sg_usw1" {
   provider    = aws.us-west-1
   name_prefix = "cpex-sg-usw1-"
 
@@ -161,7 +181,7 @@ resource "aws_security_group" "cpex_sg_usw1" {
   }
 }
 
-resource "aws_security_group" "cpex_sg_usw2" {
+resource "aws_security_group" "sg_usw2" {
   provider    = aws.us-west-2
   name_prefix = "cpex-sg-usw2-"
 
@@ -196,8 +216,8 @@ resource "aws_instance" "cpex_nodes_use1" {
   count           = var.us_east_1_count
   ami             = var.ubuntu_ami_map["us-east-1"]
   instance_type   = var.instance_type
-  key_name        = aws_key_pair.cpex_keypair.key_name
-  security_groups = [aws_security_group.cpex_sg_use1.name]
+  key_name        = aws_key_pair.use1.key_name
+  security_groups = [aws_security_group.sg_use1.name]
 
   tags = {
     Name = "cpex-node-use1-${count.index}"
@@ -209,8 +229,8 @@ resource "aws_instance" "cpex_nodes_use2" {
   count           = var.us_east_2_count
   ami             = var.ubuntu_ami_map["us-east-2"]
   instance_type   = var.instance_type
-  key_name        = aws_key_pair.cpex_keypair.key_name
-  security_groups = [aws_security_group.cpex_sg_use2.name]
+  key_name        = aws_key_pair.use2.key_name
+  security_groups = [aws_security_group.sg_use2.name]
 
   tags = {
     Name = "cpex-node-use2-${count.index}"
@@ -222,8 +242,8 @@ resource "aws_instance" "cpex_nodes_usw1" {
   count           = var.us_west_1_count
   ami             = var.ubuntu_ami_map["us-west-1"]
   instance_type   = var.instance_type
-  key_name        = aws_key_pair.cpex_keypair.key_name
-  security_groups = [aws_security_group.cpex_sg_usw1.name]
+  key_name        = aws_key_pair.usw1.key_name
+  security_groups = [aws_security_group.sg_usw1.name]
 
   tags = {
     Name = "cpex-node-usw1-${count.index}"
@@ -235,8 +255,8 @@ resource "aws_instance" "cpex_nodes_usw2" {
   count           = var.us_west_2_count
   ami             = var.ubuntu_ami_map["us-west-2"]
   instance_type   = var.instance_type
-  key_name        = aws_key_pair.cpex_keypair.key_name
-  security_groups = [aws_security_group.cpex_sg_usw2.name]
+  key_name        = aws_key_pair.usw2.key_name
+  security_groups = [aws_security_group.sg_usw2.name]
 
   tags = {
     Name = "cpex-node-usw2-${count.index}"
@@ -270,10 +290,11 @@ output "hosts_file" {
         aws_instance.cpex_nodes_use2,
         aws_instance.cpex_nodes_usw1,
         aws_instance.cpex_nodes_usw2
-      ) : "${instance.public_ip} ansible_user=ec2-user"
+      ) : "${instance.tags.Name} ansible_host=${instance.public_ip} ansible_user=ubuntu"
     ]
   )
 }
+
 
 resource "local_file" "ansible_hosts" {
   content = <<EOT
@@ -287,10 +308,11 @@ ${join(
       aws_instance.cpex_nodes_use2,
       aws_instance.cpex_nodes_usw1,
       aws_instance.cpex_nodes_usw2
-    ) : "    ${instance.public_ip}:"
+    ) : "    ${instance.tags.Name} ansible_host=${instance.public_ip} ansible_user=ubuntu"
   ]
 )}
 EOT
 
   filename = "./hosts.yml"
 }
+
