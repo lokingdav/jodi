@@ -1,21 +1,17 @@
-services:
-# Atis OOB Services
-  cert-repo:
-    image: cpex
-    platform: linux/x86_64
-    container_name: cert-repo
-    command: uvicorn cpex.prototype.stirshaken.cert_repo:app --host 0.0.0.0 --port 80 --reload
-    ports:
-      - 8888:80
-    volumes:
-      - '.:/app'
-    depends_on:
-      - cache
-    networks:
-      - net
+x-cpex-service: &cpex-service
+  image: cpex
+  platform: linux/x86_64
+  volumes:
+    - '.:/app'
+  networks:
+    - net
+  depends_on:
+    - mongo
+    - cache
 
+services:
   mongo:
-    container_name: cpex-mongo
+    container_name: sti-mongo
     image: mongo
     platform: linux/x86_64
     environment:
@@ -24,9 +20,32 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - ./docker/data/mongo:/data/db
+      - ./docker/data/sti-mongo:/data/db
     networks:
       - net
+
+  cache:
+    container_name: sti-cache
+    image: redis
+    platform: linux/x86_64
+    ports:
+      - 6379:6379
+    networks:
+      - net
+    
+  sti-cr:
+    <<: *cpex-service
+    container_name: sti-cr
+    command: uvicorn cpex.prototype.stirshaken.cert_repo:app --host 0.0.0.0 --port 80 --reload
+    ports:
+      - 10321:80
+
+  sti-cps:
+    <<: *cpex-service
+    container_name: sti-cps
+    command: uvicorn cpex.prototype.stirshaken.cps_server:app --host 0.0.0.0 --port 80 --reload
+    ports:
+      - 11321:80
 
 networks:
   net:

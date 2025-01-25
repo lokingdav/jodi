@@ -1,15 +1,6 @@
 from fastapi import FastAPI, HTTPException
-import random
-from cryptography import x509
-from cryptography.x509.oid import NameOID
-
-import cpex.prototype.stirshaken.certs as sti_certs
-import cpex.config as config
-from cpex.helpers import errors
-from cpex import constants
 from cpex.models import persistence
 from cpex.prototype.stirshaken import stirsetup
-import cpex.helpers.files as files
 from contextlib import asynccontextmanager
 
 @asynccontextmanager

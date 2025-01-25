@@ -2,19 +2,27 @@ from fastapi import FastAPI, status, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
+import json
 
 import cpex.config as config
 import cpex.constants as constants
 from cpex.models import persistence, cache
 from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service
+from cpex.prototype.scripts import setup
 from cpex.helpers import misc, files, http
 
 tmax = 15
 credential = None
+cache_client = None
 
 def init_server():
-    global credential
+    global credential, cache_client
+    cache_client = cache.connect()
 
+    nodes = setup.get_node_hosts()
+    if nodes and nodes.get('sti-cps'):
+        cache.save(client=cache_client, key=config.CPS_KEY, value=json.dumps(nodes.get('sti-cps')))
+        
     credential = persistence.get_credential(name=f'cps_{config.NODE_ID}')
     if not credential:
         credential = stirsetup.issue_cert(name=f'cps_{config.NODE_ID}')
@@ -59,9 +67,14 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
         return unauthorized_response()
     
     # 2. Store passports in cache for 15 seconds
-    cache.cache_for_seconds(key=get_record_key(dest=dest, orig=orig), value=request.passports, seconds=tmax)
+    cache.cache_for_seconds(
+        client=cache_client,
+        key=get_record_key(dest=dest, orig=orig), 
+        value=request.passports, 
+        seconds=tmax
+    )
 
-    repositories = cache.get_other_cpses()
+    repositories = cache.get_other_cpses(client=cache_client)
 
     if not repositories:
         return success_response()
@@ -107,7 +120,12 @@ async def republish(dest: str, orig: str, request: RepublishRequest, authorizati
         return unauthorized_response()
     
     # 2. Store passports in cache for 15 seconds
-    cache.cache_for_seconds(key=get_record_key(dest=dest, orig=orig), value=request.passports, seconds=tmax)
+    cache.cache_for_seconds(
+        client=cache_client,
+        key=get_record_key(dest=dest, orig=orig), 
+        value=request.passports, 
+        seconds=tmax
+    )
 
     return success_response()
 
@@ -119,7 +137,11 @@ async def republish(dest: str, orig: str, authorization: str = Header(None)):
         return unauthorized_response()
     
     # 2. Retrieve passports from cache
-    passports = cache.find(key=get_record_key(dest=dest, orig=orig), dtype=dict)
+    passports = cache.find(
+        client=cache_client,
+        key=get_record_key(dest=dest, orig=orig), 
+        dtype=dict
+    )
 
     if not passports:
         return not_found_response()

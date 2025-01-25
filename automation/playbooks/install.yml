@@ -44,6 +44,13 @@
     - name: Build Docker Images
       tags:
         - build_images
-      command: "./prototype.sh build"
+      command: "./prototype.sh build cpex"
       args:
         chdir: "{{ repo_dest }}"
+
+    - name: Copy hosts.yml to inventory
+      tags:
+        - copy_hosts
+      copy:
+        src: "{{ repo_dest }}/inventory/hosts.yml"
+        dest: "/etc/ansible/hosts"

@@ -13,13 +13,11 @@ fi
 # Configuration Variables
 ###############################################################################
 COMPOSE_FILE="compose.prototype.yml"
-COMPOSE_CPEX_FILE="compose.cpex.yml"
-COMPOSE_ATIS_FILE="compose.atis.yml"
 
 CMD="$1"
 SUBCMD="$2"
 
-VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash' 'runexp')
+VALID_CMDS=(build up down restart ps bash runexp cpex atis)
 
 # Docker images (adjust names as needed)
 CPEX_DOCKER_IMAGE="cpex"
@@ -135,6 +133,38 @@ run_experiments() {
   esac
 }
 
+manage_prod_app() {
+  local app="$1"
+  local action="$2"
+  local allowed=(up down restart)
+
+  comp_file="compose.$app.yml"
+
+  echo "Running '$app' app with action '$action'..."
+
+  case "$action" in
+    up)
+      docker compose -f "$comp_file" up -d
+      ;;
+    down)
+      docker compose -f "$comp_file" down
+      ;;
+    restart)
+      docker compose -f "$comp_file" restart
+      ;;
+    *)
+      echo "Invalid action '$action'. Allowed values: ${allowed[*]}"
+      exit 1
+      ;;
+  esac
+}
+
+compose_down_all_apps() {
+  compose_down
+  manage_prod_app cpex down
+  manage_prod_app atis down
+}
+
 ###############################################################################
 # Main Script
 ###############################################################################
@@ -148,10 +178,10 @@ case "$CMD" in
     compose_up "$SUBCMD"
     ;;
   down)
-    compose_down
+    compose_down_all_apps
     ;;
   restart)
-    compose_down
+    compose_down_all_apps
     compose_up
     ;;
   ps)
@@ -162,6 +192,12 @@ case "$CMD" in
     ;;
   runexp)
     run_experiments "$SUBCMD"
+    ;;
+  cpex)
+    manage_prod_app cpex "$SUBCMD"
+    ;;
+  atis)
+    manage_prod_app atis "$SUBCMD"
     ;;
   *)
     echo "Unknown command: $CMD"

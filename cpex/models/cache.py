@@ -35,6 +35,6 @@ def cache_for_seconds(client: Redis, key: str, value: str, seconds: int):
         raise TypeError("Value must be a string")
     return client.setex(key, seconds, value)
 
-def get_other_cpses():
-    repos = find(CPS_KEY, dict)
+def get_other_cpses(client: Redis):
+    repos = find(client=client, key=CPS_KEY, dtype=dict)
     return [repo for repo in repos if repo.get('id') != NODE_ID]
