@@ -1,125 +1,170 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Exit immediately if a command exits with a non-zero status
 set -e
 
 # Load environment variables from .env file if it exists
 if [[ -f .env ]]; then
-    export $(grep -v '^#' .env | xargs)
+  # shellcheck disable=SC2046
+  export $(grep -v '^#' .env | xargs)
 fi
 
-COMPOSE_FILE=compose.prototype.yml
+###############################################################################
+# Configuration Variables
+###############################################################################
+COMPOSE_FILE="compose.prototype.yml"
+COMPOSE_CPEX_FILE="compose.cpex.yml"
+COMPOSE_ATIS_FILE="compose.atis.yml"
 
-CMD=$1
+CMD="$1"
+SUBCMD="$2"
+
 VALID_CMDS=('build' 'up' 'down' 'restart' 'ps' 'bash' 'runexp')
+
+# Docker images (adjust names as needed)
+CPEX_DOCKER_IMAGE="cpex"
+CPEX_AUTOMATION_DOCKER_IMAGE="cpex-automation"
+
+# Optional container naming conventions
 CPEX_NODE_PREFIX="cpex-node"
 CPS_PREFIX="atis-cps"
-CPEX_DOCKER_IMAGE="cpex"
 
 # Create configuration directory if it doesn't exist
 mkdir -p conf
 
+###############################################################################
+# Helper Functions
+###############################################################################
 validate_cmds() {
-    if [[ -z "$CMD" ]]; then
-        echo "Please provide a command to run: ${VALID_CMDS[*]}"
-        exit 1
-    fi
-
-    for valid_cmd in "${VALID_CMDS[@]}"; do
-        if [[ "$CMD" == "$valid_cmd" ]]; then
-            return 0
-        fi
-    done
-
-    echo "Error: Invalid command '$CMD'. Valid commands are: ${VALID_CMDS[*]}"
+  if [[ -z "$CMD" ]]; then
+    echo "No command provided. Valid commands are: ${VALID_CMDS[*]}"
     exit 1
+  fi
+
+  for valid_cmd in "${VALID_CMDS[@]}"; do
+    if [[ "$CMD" == "$valid_cmd" ]]; then
+      return 0
+    fi
+  done
+
+  echo "Error: Invalid command '$CMD'."
+  echo "Valid commands are: ${VALID_CMDS[*]}"
+  exit 1
 }
 
 build_image() {
-    echo "Building Docker image '$CPEX_DOCKER_IMAGE'..."
-    docker build -f Dockerfile -t "$CPEX_DOCKER_IMAGE" .
+  local image="$1"
+
+  case "$image" in
+    cpex)
+      echo "Building '$CPEX_DOCKER_IMAGE' Docker image..."
+      docker build -f Dockerfile -t "$CPEX_DOCKER_IMAGE" .
+      ;;
+    automation)
+      echo "Building '$CPEX_AUTOMATION_DOCKER_IMAGE' Docker image..."
+      docker build -f automation/Dockerfile -t "$CPEX_AUTOMATION_DOCKER_IMAGE" .
+      ;;
+    *)
+      echo "Building both '$CPEX_DOCKER_IMAGE' and '$CPEX_AUTOMATION_DOCKER_IMAGE' Docker images..."
+      docker build -f Dockerfile -t "$CPEX_DOCKER_IMAGE" .
+      docker build -f automation/Dockerfile -t "$CPEX_AUTOMATION_DOCKER_IMAGE" .
+      ;;
+  esac
 }
 
 compose_up() {
-    local service=$1
-    echo "Starting Docker Compose services..."
-    if [[ -z "$service" ]]; then
-        docker compose -f $COMPOSE_FILE up -d
-        docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
-    else
-        docker compose -f $COMPOSE_FILE up -d "$service"
-    fi
+  local service="$1"
+  echo "Starting Docker Compose services..."
+
+  if [[ -z "$service" ]]; then
+    docker compose -f "$COMPOSE_FILE" up -d
+    # Example: run a setup script inside one of the containers
+    docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
+  else
+    docker compose -f "$COMPOSE_FILE" up -d "$service"
+  fi
 }
 
 compose_down() {
-    docker ps -aq --filter "name=^${CPEX_NODE_PREFIX}" --filter "name=^${CPS_PREFIX}" | grep -q . && \
-    echo "Removing Dynamically Added Containers..." && \
+  echo "Stopping and removing any dynamically added containers..."
+  # Removes containers that match our naming prefixes
+  if docker ps -aq --filter "name=^${CPEX_NODE_PREFIX}" --filter "name=^${CPS_PREFIX}" | grep -q .; then
     docker ps -aq --filter "name=^${CPEX_NODE_PREFIX}" --filter "name=^${CPS_PREFIX}" | xargs docker rm -f
+  fi
 
-    echo "Stopping Docker Compose services..."
-    docker compose -f $COMPOSE_FILE down
+  echo "Stopping Docker Compose services..."
+  docker compose -f "$COMPOSE_FILE" down
 }
 
 dockerps() {
-    docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
+  docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}"
 }
 
 open_bash() {
-    local container_name=$1
-    [[ -z "$container_name" ]] && container_name="exp"
-    container_name="cpex-$container_name"
-    docker exec -it $container_name /bin/bash
+  local container="$1"
+  # Default container if none specified
+  [[ -z "$container" ]] && container="exp"
+  local container_name="cpex-$container"
+
+  echo "Opening bash in container: $container_name"
+  docker exec -it "$container_name" /bin/bash
 }
 
 run_experiments() {
-    local exp=$1
-    local allowed=(1 2)
+  local exp="$1"
+  local allowed=(1 2)
 
-    echo "Running experiment '$exp'..."
-    cmd_prefix="docker exec -it cpex-exp python cpex/prototype/experiments"
+  echo "Running experiment '$exp'..."
 
-    case "$exp" in
-        1)
-            $cmd_prefix"/microbench.py"
-            ;;
-        2)
-            $cmd_prefix"/scalability.py"
-            ;;
-        *)
-            echo "Invalid experiment number. Allowed: ${allowed[*]}"
-            exit 1
-            ;;
-    esac
-    
+  # We'll store the base command in an array for safer invocation
+  local cmd_base=(docker exec -it cpex-exp python cpex/prototype/experiments)
+
+  case "$exp" in
+    1)
+      # microbench.py
+      "${cmd_base[@]}" microbench.py
+      ;;
+    2)
+      # scalability.py
+      "${cmd_base[@]}" scalability.py
+      ;;
+    *)
+      echo "Invalid experiment number '$exp'. Allowed values: ${allowed[*]}"
+      exit 1
+      ;;
+  esac
 }
 
+###############################################################################
+# Main Script
+###############################################################################
 validate_cmds
 
 case "$CMD" in
-    build)
-        build_image
-        ;;
-    up)
-        compose_up $2
-        ;;
-    down)
-        compose_down
-        ;;
-    restart)
-        compose_down
-        compose_up
-        ;;
-    ps)
-        dockerps
-        ;;
-    bash)
-        open_bash $2
-        ;;
-    runexp)
-        run_experiments $2
-        ;;
-    *)
-        echo "Unknown command: $CMD"
-        exit 1
-        ;;
+  build)
+    build_image "$SUBCMD"
+    ;;
+  up)
+    compose_up "$SUBCMD"
+    ;;
+  down)
+    compose_down
+    ;;
+  restart)
+    compose_down
+    compose_up
+    ;;
+  ps)
+    dockerps
+    ;;
+  bash)
+    open_bash "$SUBCMD"
+    ;;
+  runexp)
+    run_experiments "$SUBCMD"
+    ;;
+  *)
+    echo "Unknown command: $CMD"
+    exit 1
+    ;;
 esac
