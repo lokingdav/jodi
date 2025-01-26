@@ -27,11 +27,9 @@ def update_vars_file(gpk):
         # 1. Read existing data
         with open('automation/playbooks/vars.yml', 'r') as varsFile:
             data = yaml.safe_load(varsFile)
-            print(data)
             if data is None:
                 data = {}  # Handle empty file gracefully
                 
-
         # 2. Update data
         data['tgs_gpk_value'] = gpk
 

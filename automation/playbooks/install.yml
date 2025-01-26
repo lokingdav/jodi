@@ -64,8 +64,18 @@
 
     - name: Update TGS_GPK key in .env
       tags:
-        - update_gpk
+        - update_env
       lineinfile:
         path: "{{ repo_dest }}/.env"
         regexp: '^TGS_GPK='
         line: "TGS_GPK={{ tgs_gpk_value }}"
+    
+    - name: Add or update NODE_IP in .env
+      lineinfile:
+        path: "{{ repo_dest }}/.env"
+        regexp: '^NODE_IP='
+        line: "NODE_IP={{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+        create: yes
+      tags:
+        - update_env
+
