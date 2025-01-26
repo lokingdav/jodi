@@ -8,7 +8,7 @@ from collections import defaultdict
 
 def groupsig_setup():
     if config.TGS_GPK and config.TGS_GSK and config.TGS_GML and config.TGS_MSK:
-        return
+        return update_vars_file(config.TGS_GPK)
     
     msk, gpk, gml, gsk = groupsig.setup()
     files.update_env_file('.env', {
@@ -17,8 +17,31 @@ def groupsig_setup():
         'TGS_GML': gml,
         'TGS_GSK': gsk
     })
+
+    update_vars_file(gpk)
     
     print("Group signature setup completed")
+
+def update_vars_file(gpk):
+    try:
+        # 1. Read existing data
+        with open('automation/playbooks/vars.yml', 'r') as varsFile:
+            data = yaml.safe_load(varsFile)
+            print(data)
+            if data is None:
+                data = {}  # Handle empty file gracefully
+                
+
+        # 2. Update data
+        data['tgs_gpk_value'] = gpk
+
+        # 3. Write updated data
+        with open('automation/playbooks/vars.yml', 'w') as varsFile:
+            yaml.dump(data, varsFile)
+
+    except Exception as e:
+        raise Exception("Failed to update vars.yml") from e
+
 
 def get_node_hosts():
     hosts_file = 'automation/hosts.yml'

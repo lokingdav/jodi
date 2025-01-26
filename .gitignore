@@ -168,3 +168,5 @@ libcpex/
 hosts.yml
 .terra*
 terra*
+
+vars.yml
