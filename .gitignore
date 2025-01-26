@@ -169,4 +169,4 @@ hosts.yml
 .terra*
 terra*
 
-vars.yml
+automation/playbooks/vars.yml
