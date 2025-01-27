@@ -12,11 +12,18 @@ from cpex import config, constants
 from cpex.prototype.provider import Provider
 
 gsk, gpk = None, None
+call_placement_services = []
 
 def init_worker():
-    global gsk, gpk
-    dht.set_cache_client(cache.connect())
+    global gsk, gpk, call_placement_services
+    cache_client = cache.connect()
+    dht.set_cache_client(cache_client)
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
+    call_placement_services = cache.find(
+        client=cache_client, 
+        key=config.CPS_KEY, 
+        dtype=dict
+    )
 
 class NetworkedSimulator:
     def simulate_call_sync(self, options: dict):
@@ -33,6 +40,8 @@ class NetworkedSimulator:
             'n_ev': options.get('n_ev'),
             'n_ms': options.get('n_ms'),
             'next_prov': next_prov,
+            'cps_fqdn': 'cps.example.com',
+            'cr_fqdn': 'cr.example.com',
         }
         
     def create_provider_instance(self, pid, impl, mode, options, next_prov):

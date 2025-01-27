@@ -30,20 +30,28 @@ class Provider:
     def __init__(self, params: dict):
         self.latencies = []
         self.pid = params['pid']
+        self.SPC = f'sp_{self.pid}'
         self.impl = params['impl']
         self.mode = params['mode']
-        self.cps_url = params.get('cps_url')
-        self.cps_fqdn = params.get('cps_fqdn')
         self.gpk = params['gpk']
         self.gsk = params['gsk']
         self.n_ev = params['n_ev']
         self.n_ms = params['n_ms']
         self.logger = params.get('logger')
         self.next_prov = params.get('next_prov')
-        self.load_auth_service()
+        self.cps_fqdn = params.get('cps_fqdn')
+        self.cr_fqdn = params.get('cr_fqdn')
 
-        if not self.cps_fqdn and self.cps_url:
-            self.cps_fqdn = self.cps_url.replace('http://', '').replace('https://', '').split(':')[0]
+        if self.mode not in ['atis', 'cpex']:
+            raise Exception('Mode must be specified as either atis or cpex')
+        
+        if config.is_atis_mode(self.mode):
+            if not self.cps_fqdn:
+                raise Exception('CPS FQDN must be specified')
+            if not self.cr_fqdn:
+                raise Exception('CR FQDN must be specified')
+            
+        self.load_auth_service()
 
     def log_msg(self, msg):
         if config.DEBUG and self.logger:
@@ -62,14 +70,13 @@ class Provider:
         return self.next_prov and self.next_prov[1] == 1
 
     def load_auth_service(self):
-        name = f'sp_{self.pid}'
-        credential = persistence.get_credential(name=name)
+        credential = persistence.get_credential(name=self.SPC)
         if not credential:
-            credential = stirsetup.issue_cert(name=name, ctype='sp')
+            credential = stirsetup.issue_cert(name=self.SPC, ctype='sp')
         self.auth_service = AuthService(
             ownerId=self.pid,
             private_key_pem=credential[constants.PRIV_KEY],
-            x5u=config.CERT_REPO_BASE_URL + f'/certs/sp_{self.pid}'
+            x5u=f'http://{self.cr_fqdn}/certs/{self.SPC}'
         )
         
     async def forward_call(self, signal: Union[SIPSignal, TDMSignal]):
@@ -155,7 +162,7 @@ class Provider:
         )
         headers: dict = {'Authorization': 'Bearer ' + authorization }
         payload: dict = {'passports': [ signal.Identity ]}
-        url: str = self.cps_url + f'/publish/{signal.To}/{signal.From}'
+        url: str = f'http://{self.cps_fqdn}/publish/{signal.To}/{signal.From}'
         await http.posts(reqs=[{'url': url, 'data': payload, 'headers': headers}])
         
     async def cpex_publish(self, signal: SIPSignal):
@@ -206,7 +213,7 @@ class Provider:
             aud=self.cps_fqdn
         )
         headers: dict = {'Authorization': 'Bearer ' + authorization }
-        url: str = self.cps_url + f'/retrieve/{signal.To}/{signal.From}'
+        url: str = f'http://{self.cps_fqdn}/retrieve/{signal.To}/{signal.From}'
         response = await http.get(url=url, params={}, headers=headers)
         return response
     
