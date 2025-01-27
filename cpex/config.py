@@ -16,10 +16,10 @@ def env(envname, default="", dtype=None):
         return float(value)
     return value
 
+APP_ENV = env('APP_ENV', 'dev')
+APP_ENV_PROD = APP_ENV == 'prod'
 DEBUG = env('APP_DEBUG', 'true', dtype=bool)
 
-CPEX_VERSION = env('CPEX_VERSION', '1.0.0')
-BASE_REPO_PORT = env('BASE_REPO_PORT', 10000)
 COMPOSE_NETWORK_ID = "cpex_net"
 CPEX_DOCKER_IMAGE = "cpex"
 
@@ -41,13 +41,13 @@ CACHE_PORT = env("CACHE_PORT", "6379")
 CACHE_PASS = env("CACHE_PASS")
 CACHE_DB = env("CACHE_DB", "0")
 
-# CPS Information. Should be different for each CPS node
 NODE_ID = env('NODE_ID')
-REPO_PORT = env('REPO_PORT')
-REPO_FQDN = env('REPO_FQDN')
+NODE_FQDN = env('NODE_FQDN')
 
-REPOSITORIES_COUNT = env("REPOSITORIES_COUNT", 1, dtype=int)
-CPS_BASE_URL = env("CPS_BASE_URL", "http://cpex-cps")
+EV_PORT = env('EV_PORT', '10430')
+MS_PORT = env('MS_PORT', '10431')
+CR_PORT = env('CR_PORT', '10432')
+CPS_PORT = env('CPS_PORT', '10433')
 
 def get_container_prefix(mode: str):
     return "atis-cps-" if mode == MODE_ATIS else "cpex-node-"
@@ -56,8 +56,6 @@ def is_atis_mode(mode: str):
     return mode == MODE_ATIS
 
 HOST_APP_PATH = env('HOST_APP_PATH')
-
-CERT_REPO_BASE_URL = env('CERT_REPO_URL', 'http://cert-repo')
 
 # General Parameters
 T_MAX_SECONDS = env('T_MAX_SECONDS', 10, dtype=int)
@@ -74,7 +72,6 @@ TGS_GSK = env('TGS_GSK')
 OPRF_KEYLIST_SIZE = env('OPRF_KEYLIST_SIZE', 10, dtype=int)
 OPRF_INTERVAL_SECONDS = env('OPRF_INTERVAL_SECONDS', 10, dtype=int)
 OPRF_EV_PARAM = env('OPRF_EV_PARAM', 2)
-
 
 # Network Churn
 EV_AVAILABILITY = env('EV_AVAILABILITY', 0.99, dtype=float)

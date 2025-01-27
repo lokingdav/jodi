@@ -26,7 +26,7 @@ def add_node(name: str):
     node_id = Utils.hash256(name.encode()).hex()
     
     volumes = { config.HOST_APP_PATH: { 'bind': '/app', 'mode': 'rw' }}
-    environment = { 'NODE_ID': node_id, 'REPO_FQDN': name }
+    environment = { 'NODE_ID': node_id, 'NODE_FQDN': name }
     command = 'uvicorn [app] --host 0.0.0.0 --port 80 --reload'
     
     if 'atis-' in name:

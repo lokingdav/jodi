@@ -3,3 +3,4 @@ repo_dest: /opt/cpex
 repo_url: https://github.com/lokingdav/cpex.git
 tgs_gpk_value: ""
 user_data_done_file: /home/ubuntu/done.txt
+cps_port: 10433

@@ -21,7 +21,7 @@ def verify_token(token: str) -> dict:
     if not public_key:
         return None
     try:
-        return jwt.decode(token, public_key, algorithms=[header['alg']], audience=config.REPO_FQDN)
+        return jwt.decode(token, public_key, algorithms=[header['alg']], audience=config.NODE_FQDN)
     except Exception as e:
         print(f'Error verifying token: {e}')
         return None

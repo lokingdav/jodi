@@ -14,14 +14,14 @@ services:
     container_name: message-store
     command: uvicorn cpex.servers.evaluator:app --host 0.0.0.0 --port 80 --reload
     ports:
-      - 10432:80
+      - 10430:80
 
   message-store:
     <<: *cpex-service
     container_name: message-store
     command: uvicorn cpex.servers.message_store:app --host 0.0.0.0 --port 80 --reload
     ports:
-      - 11432:80
+      - 10431:80
 
   cache:
     container_name: cpex-cache

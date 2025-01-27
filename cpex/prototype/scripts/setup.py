@@ -57,27 +57,27 @@ def get_node_hosts():
             nodes['cpex-ev'].append({
                 'id': Utils.hash256(ev_name.encode()).hex(), 
                 'name': ev_name, 
-                'fqdn': f'{ip_addr}:10431',
+                'fqdn': f'{ip_addr}:{config.EV_PORT}',
                 'ip': ip_addr,
-                'url': f'http://{ip_addr}:10431'
+                'url': f'http://{ip_addr}:{config.EV_PORT}',
             })
 
             ms_name = config.get_container_prefix('cpex') + f'ms-{i}'
             nodes['cpex-ms'].append({
                 'id': Utils.hash256(ms_name.encode()).hex(), 
                 'name': ms_name, 
-                'fqdn': f'{ip_addr}:10432', 
+                'fqdn': f'{ip_addr}:{config.MS_PORT}',
                 'ip': ip_addr,
-                'url': f'http://{ip_addr}:10432'
+                'url': f'http://{ip_addr}:{config.MS_PORT}',
             })
 
             cps_name = config.get_container_prefix('atis') + f'cps-{i}'
             nodes['sti-cps'].append({
-                'id': Utils.hash256(cps_name.encode()).hex(), 
-                'name': cps_name, 
-                'fqdn': f'{ip_addr}:11432', 
+                'id': ip_addr,
+                'name': cps_name,
+                'fqdn': f'{ip_addr}:{config.CPS_PORT}',
                 'ip': ip_addr,
-                'url': f'http://{ip_addr}:11432'
+                'url': f'http://{ip_addr}:{config.CPS_PORT}',
             })
 
     return nodes

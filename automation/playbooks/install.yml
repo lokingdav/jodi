@@ -62,6 +62,14 @@
       tags:
         - copy_env
 
+    - name: Update APP_ENV key in .env
+      tags:
+        - update_env
+      lineinfile:
+        path: "{{ repo_dest }}/.env"
+        regexp: '^APP_ENV='
+        line: "APP_ENV=prod"
+
     - name: Update TGS_GPK key in .env
       tags:
         - update_env
@@ -70,11 +78,20 @@
         regexp: '^TGS_GPK='
         line: "TGS_GPK={{ tgs_gpk_value }}"
     
-    - name: Add or update NODE_IP in .env
+    - name: Add or update NODE_ID in .env
       lineinfile:
         path: "{{ repo_dest }}/.env"
-        regexp: '^NODE_IP='
-        line: "NODE_IP={{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+        regexp: '^NODE_ID='
+        line: "NODE_ID={{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+        create: yes
+      tags:
+        - update_env
+
+    - name: Add or update NODE_FQDN in .env
+      lineinfile:
+        path: "{{ repo_dest }}/.env"
+        regexp: '^NODE_FQDN='
+        line: "NODE_FQDN={{ hostvars[inventory_hostname].ansible_default_ipv4.address }}:{{ cps_port }}"
         create: yes
       tags:
         - update_env

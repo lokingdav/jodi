@@ -14,6 +14,7 @@ from cpex.helpers import misc, files, http
 tmax = 15
 credential = None
 cache_client = None
+REPO_NAME = f'cps_{config.NODE_ID}'
 
 def init_server():
     global credential, cache_client
@@ -23,9 +24,9 @@ def init_server():
     if nodes and nodes.get('sti-cps'):
         cache.save(client=cache_client, key=config.CPS_KEY, value=json.dumps(nodes.get('sti-cps')))
         
-    credential = persistence.get_credential(name=f'cps_{config.NODE_ID}')
+    credential = persistence.get_credential(name=REPO_NAME)
     if not credential:
-        credential = stirsetup.issue_cert(name=f'cps_{config.NODE_ID}')
+        credential = stirsetup.issue_cert(name=REPO_NAME)
 
     return FastAPI()
         
@@ -46,7 +47,7 @@ def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     return decoded
 
 def get_record_key(dest: str, orig: str):
-    return f'cps.{config.NODE_ID}.{dest}.{orig}'
+    return f'{REPO_NAME}.{dest}.{orig}'
 
 def success_response(content={"message": "OK"}):
     return JSONResponse(content=content, status_code=status.HTTP_200_OK)
@@ -80,10 +81,11 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
         return success_response()
 
     # 4. create new requests with payload: orig, dest, passports, token. Token is the authorization header bearer token
+    MY_FQDN = config.NODE_FQDN.replace(f':{config.CPS_PORT}', f':{config.CR_PORT}')
     auth = auth_service.AuthService(
         ownerId=config.NODE_ID,
         private_key_pem=credential[constants.PRIV_KEY],
-        x5u=config.CERT_REPO_BASE_URL + f'/certs/cps_{config.NODE_ID}'
+        x5u=f'http://{MY_FQDN}/certs/{REPO_NAME}'
     )
 
     reqs = []
@@ -152,6 +154,7 @@ async def republish(dest: str, orig: str, authorization: str = Header(None)):
 async def health():
     return {
         "CPS ID": config.NODE_ID,
+        "CPS FQDN": config.NODE_FQDN,
         "message": "OK", 
         "status": 200
     }
