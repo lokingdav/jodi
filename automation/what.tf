@@ -101,14 +101,8 @@ resource "aws_security_group" "sg_use1" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 10432
-    to_port     = 10432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 11432
-    to_port     = 11432
+    from_port   = 10430
+    to_port     = 10433
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -131,14 +125,8 @@ resource "aws_security_group" "sg_use2" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 10432
-    to_port     = 10432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 11432
-    to_port     = 11432
+    from_port   = 10430
+    to_port     = 10433
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -161,14 +149,8 @@ resource "aws_security_group" "sg_usw1" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 10432
-    to_port     = 10432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 11432
-    to_port     = 11432
+    from_port   = 10430
+    to_port     = 10433
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -191,14 +173,8 @@ resource "aws_security_group" "sg_usw2" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 10432
-    to_port     = 10432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 11432
-    to_port     = 11432
+    from_port   = 10430
+    to_port     = 10433
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
