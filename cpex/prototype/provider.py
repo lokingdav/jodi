@@ -1,15 +1,21 @@
-import random, traceback, time, os
+import random, traceback, time, os, json
 from uuid import uuid4
 from pydantic import BaseModel
 import cpex.config as config
 import cpex.constants as constants
-from cpex.helpers import misc, http, files
+from cpex.helpers import misc, http, files, logging
 from cpex.prototype.stirshaken.auth_service import AuthService
 from typing import List, Union
 from cpex.crypto import libcpex
 from cpex.models import persistence, cache
 from cpex.prototype.stirshaken import stirsetup
 from pylibcpex import Utils
+
+cache_client = None
+
+def set_cache_client(client):
+    global cache_client
+    cache_client = client
 
 def get_type(instance):
     return 'SIP Signal' if isinstance(instance, SIPSignal) else 'TDM Signal'
@@ -70,9 +76,17 @@ class Provider:
         return self.next_prov and self.next_prov[1] == 1
 
     def load_auth_service(self):
-        credential = persistence.get_credential(name=self.SPC)
+        credKey = f'creds.{self.SPC}'
+        credential = cache.find(client=cache_client, key=credKey, dtype=dict)
+        
         if not credential:
             credential = stirsetup.issue_cert(name=self.SPC, ctype='sp')
+            cache.save(
+                client=cache_client, 
+                key=credKey, 
+                value=json.dumps(credential)
+            )
+            
         self.auth_service = AuthService(
             ownerId=self.pid,
             private_key_pem=credential[constants.PRIV_KEY],
@@ -259,7 +273,7 @@ class Provider:
             'To': signal.To,
             'From': signal.From,
             'Pid': self.pid,
-            'Identity': token if token else ''
+            'Identity': token if token else config.EMPTY_TOKEN
         })
     
     def convert_sip_to_sip(self, signal: SIPSignal) -> SIPSignal:
