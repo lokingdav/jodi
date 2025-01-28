@@ -6,23 +6,38 @@ from cpex.models import persistence, cache
 from cpex.helpers import files
 from cpex.prototype.simulations import networked, local
 
-numIters = 5
+numIters = 10
 cache_client = None
 
-provider_groups = [40]
-node_groups = [(100, 100)] # tuple of num ev and num ms
-deploy_rate = 14
-n_param = 1
+deployRate = 14.00
+maxRepTrustParams = 10
+EXPERIMENT_NUM = 2
+EXPERIMENT_PARAMS = {
+    2: {
+        'node_groups': [(100, 100)],
+        'provider_groups': [40],
+    },
+    3: {
+        'node_groups': [(10, 10)],
+        'provider_groups': [40],
+    }
+}
 
 Simulator = None
-simulation_type = 'local'
+
+def get_provider_groups():
+    return EXPERIMENT_PARAMS[EXPERIMENT_NUM]['provider_groups']
+
+def get_node_groups():
+    return EXPERIMENT_PARAMS[EXPERIMENT_NUM]['node_groups']
 
 def run_datagen():
+    provider_groups = get_provider_groups()
     groups = persistence.filter_route_collection_ids(provider_groups)
     with Pool(processes=os.cpu_count()) as pool:
         pool.starmap(
             Simulator.datagen, 
-            [(num_provs, deploy_rate, True) for num_provs in groups]
+            [(num_provs, deployRate, True) for num_provs in groups]
         )
 
 def simulate(resutlsloc: str, mode: str, params: dict):
@@ -32,6 +47,9 @@ def simulate(resutlsloc: str, mode: str, params: dict):
     local.set_cache_client(cache_client)
     
     results = []
+
+    node_groups = get_node_groups()
+    provider_groups = get_provider_groups()
     
     for node_grp in node_groups:
         Simulator.create_nodes(
@@ -62,7 +80,7 @@ def simulate(resutlsloc: str, mode: str, params: dict):
     print("Results written to", resutlsloc)
 
 def prepare_results_file():
-    resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/scalability.csv"
+    resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{EXPERIMENT_NUM}.csv"
     files.write_csv(resutlsloc, [[
         'mode', 
         'Num_Provs', 
@@ -80,38 +98,49 @@ def prepare_results_file():
     return resutlsloc
 
 def reset_routes():
+    provider_groups = get_provider_groups()
     for num_provs in provider_groups:
         persistence.reset_marked_routes(num_provs)
 
-def main(sim_type: str):
-    global Simulator
-    Simulator = networked.NetworkedSimulator() if sim_type == 'net' else local.LocalSimulator()
-    
+def set_simulator(args):
+    global Simulator, EXPERIMENT_NUM
+    if args.experiment == 2:
+        EXPERIMENT_NUM = 2
+        Simulator = local.LocalSimulator()
+    else:
+        EXPERIMENT_NUM = 3
+        Simulator = networked.NetworkedSimulator()
+
+def main(args):
+    set_simulator(args)
+
     run_datagen()
     resutlsloc = prepare_results_file()
     reset_routes()
 
     start = time.perf_counter()
     
-    # for i in range(1, n_param+1):
-    #     for j in range(1, n_param+1):
-    #         for _ in range(numIters):
-    simulate(
-        resutlsloc=resutlsloc,
-        mode=constants.MODE_CPEX,
-        params={'n_ev': 2, 'n_ms': 2}
-    )
+    for i in range(1, maxRepTrustParams + 1):
+        for j in range(1, maxRepTrustParams + 1):
+            for _ in range(numIters):
+                params = {'n_ev': i, 'n_ms': j}
+                print(f"\nIteration {_+1}/{numIters}, {params}")
+                simulate(
+                    resutlsloc=resutlsloc,
+                    mode=constants.MODE_CPEX,
+                    params=params
+                )
 
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--type', type=str, help='Simulation type. Either net or loc. Default=loc', default='loc')
+    parser.add_argument('--experiment', type=int, choices=[2, 3], help='Experiment to run. Either 2 or 3. Default=2', default='2')
     args = parser.parse_args()
 
     if not any(vars(args).values()):
         parser.print_help()
     else:
-        main(args.type)
+        main(args)
     

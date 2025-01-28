@@ -9,7 +9,7 @@ from cpex.models import cache, persistence
 from cpex.helpers import errors, files, dht, logging
 from cpex.prototype.stirshaken import certs
 from cpex import config, constants
-from cpex.prototype.provider import Provider
+from cpex.prototype import provider as providerModule
 
 gsk, gpk = None, None
 call_placement_services = []
@@ -18,6 +18,7 @@ def init_worker():
     global gsk, gpk, call_placement_services
     cache_client = cache.connect()
     dht.set_cache_client(cache_client)
+    providerModule.set_cache_client(cache_client)
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
     call_placement_services = cache.find(
         client=cache_client, 
@@ -45,7 +46,7 @@ class NetworkedSimulator:
         }
         
     def create_provider_instance(self, pid, impl, mode, options, next_prov):
-        return Provider(self.create_prov_params(
+        return providerModule.Provider(self.create_prov_params(
             pid=pid, 
             impl=impl, 
             mode=mode, 
@@ -78,7 +79,7 @@ class NetworkedSimulator:
         
         for i, (idx, impl) in enumerate(route):
             pid = 'P' + str(idx)
-            provider: Provider = providers.get(pid)
+            provider: providerModule.Provider = providers.get(pid)
             
             if not provider:
                 next_prov = route[i + 1] if i + 1 < len(route) else None
@@ -106,8 +107,8 @@ class NetworkedSimulator:
             latency += provider.get_latency_ms()
         logger.debug(f"Total latency for call = {latency} ms")
 
-        if not is_correct:
-            logging.print_logs(logger)
+        # if not is_correct:
+        #     logging.print_logs(logger)
             
         logging.close_logger(logger)
 

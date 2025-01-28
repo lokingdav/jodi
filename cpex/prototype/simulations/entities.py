@@ -6,6 +6,12 @@ from cpex import config
 from pylibcpex import Oprf, Utils
 from cpex.prototype.provider import Provider as BaseProvider
 
+# cache_client = None
+
+# def set_cache_client(client):
+#     global cache_client
+#     cache_client = client
+
 class MessageStore:
     def __init__(self, nodeId: str, gpk, available: bool, cache_client, logger):
         self.gpk = gpk

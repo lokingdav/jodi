@@ -102,5 +102,5 @@ def issue_cert(name: str, ctype: str = 'cps'):
     ica = get_random_intermediate_ca()
     cred = create_credential(name, ica[constants.PRIV_KEY], ica[constants.CERT_KEY])
     cred['type'] = ctype
-    persistence.store_credential(name, cred)
+    # persistence.store_credential(name, cred)
     return cred
