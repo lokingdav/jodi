@@ -24,9 +24,10 @@ def append_csv(fileloc: str, data: List[List[str]]):
             file.write(", ".join([str(x) for x in row]) + "\n")
     return True
 
-def read_json(fileloc: str):
+def read_json(fileloc: str, default: dict = None):
+    print('Reading from', fileloc)
     if is_empty(fileloc):
-        return False
+        return False if default is None else default
     data: dict = {}
     with open(fileloc) as file:
         data = json.loads(file.read())
@@ -47,3 +48,9 @@ def create_dir_if_not_exists(path):
         os.makedirs(path, exist_ok=True)
     except Exception as e:
         print(f"Error creating directory '{path}': {e}")
+
+def delete_file(fileloc: str):
+    try:
+        os.remove(fileloc)
+    except Exception as e:
+        print(f"Error deleting file '{fileloc}': {e}")
