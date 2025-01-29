@@ -24,9 +24,9 @@ Some important fields in the CSV are explained.
 ## Latest Stats
 ```
 Total providers = 7346
-Full S/S implementation = 4111
-Partial S/S implementation = 1453
-No S/S implementation = 1782
+Full S/S implementation = 4111 (55.96%)
+Partial S/S implementation = 1453 (19.78%)
+No S/S implementation = 1782 (24.26%)
 Count of voice providers = 420
 Count of gateway providers = 6720
 Count of intermediate providers = 681
