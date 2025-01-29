@@ -25,7 +25,6 @@ def append_csv(fileloc: str, data: List[List[str]]):
     return True
 
 def read_json(fileloc: str, default: dict = None):
-    print('Reading from', fileloc)
     if is_empty(fileloc):
         return False if default is None else default
     data: dict = {}
