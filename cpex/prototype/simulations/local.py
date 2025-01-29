@@ -4,8 +4,9 @@ from cpex.models import cache
 from cpex.crypto import groupsig
 from pylibcpex import Utils
 from cpex import config
-import json, threading, time, random
+import json, threading, time
 import numpy as np
+from cpex.prototype.simulations.entities import Evaluator
 
 gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
 
@@ -38,12 +39,14 @@ class LocalSimulator(NetworkedSimulator):
 
         for i in range(num_evs):
             name = f'cpex-node-ev-{i}'
+            nodeId = Utils.hash256(name.encode('utf-8')).hex()
             evals.append({
-                'id': Utils.hash256(name.encode('utf-8')).hex(),
+                'id': nodeId,
                 'name': name,
                 'fqdn': name,
                 'url': f'http://{name}'
             })
+            Evaluator.set_keys(nodeId=nodeId)
         if evals:
             cache.save(key=config.EVALS_KEY, value=json.dumps(evals))
 

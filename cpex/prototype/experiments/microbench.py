@@ -1,24 +1,20 @@
 import time, os, asyncio, json
-from cpex.helpers import misc, http, files, dht
+from cpex.helpers import misc, http, files, dht, logging
 from cpex.crypto import libcpex, groupsig
 from pylibcpex import Oprf, Utils
 from cpex import config, constants
 from cpex.models import cache
 from multiprocessing import Pool
 from cpex.prototype import provider as providerMod
-from cpex.prototype.simulations import entities
+from cpex.prototype.simulations import entities, local
 
 
-numIters = 1
+numIters = 1000
 cache_client = None
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
 n_evs = [2]#, 3, 4, 5]
 n_mss = [2]#, 3, 4, 5]
-
-# Sample src, dst and JWT token
-src = '16841333538'
-dst = '16847000540'
 
 def init_worker():
     cache.set_client(cache_client)
@@ -38,11 +34,13 @@ async def bench_async(options):
         'n_ev': n_ev,
         'n_ms': n_ms
     }
+
+    logger = logging.create_logger('microbench')
     
-    originating_provider = entities.Provider({'pid': 'P0', **params})
-    terminating_provider = entities.Provider({'pid': 'P5', **params})
+    originating_provider = entities.Provider({'pid': 'P0', 'logger': logger, 'next_prov': (5, 0), **params})
+    terminating_provider = entities.Provider({'pid': 'P5', 'logger': logger, **params})
     
-    signal, initial_token = await originating_provider.originate(src=src, dst=dst)
+    signal, initial_token = await originating_provider.originate() # will originate with random src and dst
     final_token = await terminating_provider.terminate(signal)
     assert final_token == initial_token, "Tokens do not match"
     pub_compute = originating_provider.get_publish_compute_times()
@@ -59,47 +57,27 @@ async def bench_async(options):
     ]
     
     return results
-    
-def create_nodes(num_ev=30, num_ms=30):
-    evals, stores = [], []
-
-    for i in range(num_ms):
-        name = f'cpex-node-ms-{i}'
-        stores.append({
-            'id': Utils.hash256(name.encode('utf-8')).hex(),
-            'name': name,
-            'fqdn': name,
-            'url': f'http://{name}'
-        })
-    if stores:
-        cache.save(key=config.STORES_KEY, value=json.dumps(stores))
-
-    for i in range(num_ev):
-        name = f'cpex-node-ev-{i}'
-        evals.append({
-            'id': Utils.hash256(name.encode('utf-8')).hex(),
-            'name': name,
-            'fqdn': name,
-            'url': f'http://{name}'
-        })
-    if evals:
-        cache.save(key=config.EVALS_KEY, value=json.dumps(evals))
-    
 
 def main():
     global cache_client
     cache_client = cache.connect()
     cache.set_client(cache_client)
     
-    create_nodes()
-    resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/microbench.csv"
+    simulator = local.LocalSimulator()
+    simulator.create_nodes(
+        mode=constants.MODE_CPEX, 
+        num_evs=30, 
+        num_repos=30
+    )
+
+    resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-2.csv"
     files.write_csv(resutlsloc, [['Num Evals', 'Num Stores', 'PUB:P', 'PUB:EV', 'PUB:MS', 'RET:P', 'RET:MS']])
     
     print(f"Running {numIters} iterations of the CPEX protocol microbenchmark...")
     start = time.perf_counter()
     params = []
 
-    with Pool(processes=os.cpu_count()*2, initializer=init_worker) as pool:
+    with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
         for _ in range(numIters):
             for n_ev in n_evs:
                 for n_ms in n_mss:

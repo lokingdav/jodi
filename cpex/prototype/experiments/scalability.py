@@ -106,6 +106,8 @@ def simulate(resutlsloc: str, mode: str, params: dict):
     save_checkpoint({'NN_idx': -1}) # Reset NN_idx
 
 def prepare_results_file():
+    if EXPERIMENT_NUM not in [1, 3]:
+        raise ValueError('Invalid experiment number')
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{EXPERIMENT_NUM}.csv"
     prevState = load_checkpoint()
     if prevState: return resutlsloc

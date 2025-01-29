@@ -1,4 +1,4 @@
-import json, os
+import json, os, time
 from typing import List
 from cpex.crypto import libcpex, groupsig
 from cpex.models import cache
@@ -59,36 +59,43 @@ class MessageStore:
         return {'idx': msidx, 'ctx': msctx, 'sig': mssig}
 
 class Evaluator:
+    @staticmethod
+    def get_name(nodeId: str):
+        return f'sim.ev.{nodeId}'
+    
     def __init__(self, nodeId: str, gpk, available: bool, logger):
         self.gpk = gpk
         self.nodeId = nodeId
-        self.name = f'sim.ev.{nodeId}'
+        self.name = Evaluator.get_name(nodeId)
         self.available = available
-        self.set_keys()
         self.logger = logger
+        self.keys = Evaluator.get_keys(nodeId)
+    
+    @staticmethod
+    def set_keys(nodeId):
+        name = Evaluator.get_name(nodeId)
+        keys = cache.find(key=name, dtype=dict)
+        if not keys or len(keys) < config.OPRF_KEYLIST_SIZE:
+            keys = [Oprf.keygen() for _ in range(config.OPRF_KEYLIST_SIZE)]
+            cache.save(key=name, value=json.dumps([Utils.to_base64(sk) + '.' + Utils.to_base64(vk) for (sk, vk) in keys]))
 
-    def set_keys(self):
-        keys = cache.find(key=self.name, dtype=dict)
-        if keys:
-            self.keys = []
-            for item in keys:
-                sk, vk = item.split('.')
-                self.keys.append((Utils.from_base64(sk), Utils.from_base64(vk)))
-            if len(self.keys) != config.OPRF_KEYLIST_SIZE:
-                self.init_keys()
-        else:
-            self.init_keys()
-
-    def init_keys(self):
-        self.keys = [Oprf.keygen() for _ in range(config.OPRF_KEYLIST_SIZE)]
-        keys = json.dumps([Utils.to_base64(sk) + '.' + Utils.to_base64(vk) for (sk, vk) in self.keys])
-        cache.save(key=self.name, value=keys)
+    @staticmethod
+    def get_keys(nodeId):
+        name = Evaluator.get_name(nodeId)
+        keys = cache.find(key=name, dtype=dict)
+        if not keys:
+            raise Exception("Keys not found")
+        for i in range(len(keys)):
+            sk, vk = keys[i].split('.')
+            keys[i] = (Utils.from_base64(sk), Utils.from_base64(vk))
+        return keys
 
     def log_msg(self, msg):
         if config.DEBUG and self.logger:
             self.logger.debug(f"--> {self.nodeId}: {msg}")
 
     def evaluate(self, request: dict):
+        start_time = time.perf_counter()
         if not self.available:
             self.log_msg("Error -- node not available")
             return {'_error': 'node not available'}
