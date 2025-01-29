@@ -98,10 +98,7 @@ class Provider:
         
         if not credential:
             credential = stirsetup.issue_cert(name=self.SPC, ctype='sp')
-            cache.save(
-                key=credKey, 
-                value=json.dumps(credential)
-            )
+            cache.save(key=credKey, value=json.dumps(credential))
             
         self.auth_service = AuthService(
             ownerId=self.pid,

@@ -4,7 +4,6 @@ from cpex.helpers import dht
 from cpex.models import cache
 from cpex.crypto import groupsig
 
-dht.set_cache_client(cache.connect())
 gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
 
 async def main(mode: str):

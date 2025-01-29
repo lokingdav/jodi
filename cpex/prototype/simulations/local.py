@@ -7,12 +7,7 @@ from cpex import config
 import json, threading, time, random
 import numpy as np
 
-cache_client = None
 gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
-
-def set_cache_client(client):
-    global cache_client
-    cache_client = client
 
 class LocalSimulator(NetworkedSimulator):
     def __init__(self):
@@ -25,11 +20,10 @@ class LocalSimulator(NetworkedSimulator):
             mode=mode, 
             options=options, 
             next_prov=next_prov
-        ), cache_client=cache_client)
+        ))
     
     def create_nodes(self, mode: str, num_evs: int, num_repos: int):
         evals, stores = [], []
-        cclient = cache.connect()
 
         for i in range(num_repos):
             name = f'cpex-node-ms-{i}'
@@ -40,7 +34,7 @@ class LocalSimulator(NetworkedSimulator):
                 'url': f'http://{name}'
             })
         if stores:
-            cache.save(client=cclient, key=config.STORES_KEY, value=json.dumps(stores))
+            cache.save(key=config.STORES_KEY, value=json.dumps(stores))
 
         for i in range(num_evs):
             name = f'cpex-node-ev-{i}'
@@ -51,7 +45,7 @@ class LocalSimulator(NetworkedSimulator):
                 'url': f'http://{name}'
             })
         if evals:
-            cache.save(client=cclient, key=config.EVALS_KEY, value=json.dumps(evals))
+            cache.save(key=config.EVALS_KEY, value=json.dumps(evals))
 
 def get_status(ntype: str):
     p = config.EV_AVAILABILITY if ntype == 'ev' else config.MS_AVAILABILITY
@@ -96,17 +90,17 @@ def wait_a_while(stop_churn: threading.Event):
             return
 
 def network_churn(stop_churn: threading.Event):   
-    evals = cache.find(client=cache_client, key=config.EVALS_KEY, dtype=dict)
-    stores = cache.find(client=cache_client, key=config.STORES_KEY, dtype=dict)
+    evals = cache.find(key=config.EVALS_KEY, dtype=dict)
+    stores = cache.find(key=config.STORES_KEY, dtype=dict)
         
     while not stop_churn.is_set():
         time.sleep(config.CHURN_INTERVAL_SECONDS)
         if 0 < config.EV_AVAILABILITY < 1:
             evals, status = simulate_churn('ev', evals)
             # print(f"EVs - Up: {status['up_count']}, Down: {status['down_count']}")
-            cache.save(client=cache_client, key=config.EVALS_KEY, value=json.dumps(evals))
+            cache.save(key=config.EVALS_KEY, value=json.dumps(evals))
         
         if 0 < config.MS_AVAILABILITY < 1:
             stores, status = simulate_churn('ms', stores)
             # print(f"MSs - Up: {status['up_count']}, Down: {status['down_count']}\n")
-            cache.save(client=cache_client, key=config.STORES_KEY, value=json.dumps(stores))
+            cache.save(key=config.STORES_KEY, value=json.dumps(stores))

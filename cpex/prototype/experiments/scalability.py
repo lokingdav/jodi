@@ -41,11 +41,6 @@ def run_datagen():
         )
 
 def simulate(resutlsloc: str, mode: str, params: dict):
-    global cache_client
-    cache_client = cache.connect()
-    compose.set_cache_client(cache_client)
-    local.set_cache_client(cache_client)
-    
     results = []
 
     node_groups = get_node_groups()
@@ -104,6 +99,7 @@ def reset_routes():
 
 def set_simulator(args):
     global Simulator, EXPERIMENT_NUM
+    
     if args.experiment == 1:
         EXPERIMENT_NUM = 1
         Simulator = local.LocalSimulator()
@@ -112,11 +108,17 @@ def set_simulator(args):
         Simulator = networked.NetworkedSimulator()
 
 def main(args):
+    global cache_client
+    
     set_simulator(args)
 
     run_datagen()
     resutlsloc = prepare_results_file()
     reset_routes()
+    
+    cache_client = cache.connect()
+    cache.set_client(cache_client)
+    networked.set_cache_client(cache_client)
 
     start = time.perf_counter()
     

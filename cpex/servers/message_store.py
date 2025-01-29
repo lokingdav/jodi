@@ -8,7 +8,6 @@ from cpex.models import cache
 
 app = FastAPI()
 gpk = groupsig.get_gpk()
-cache_client = cache.connect()
 
 class PublishRequest(BaseModel):
     idx: str
@@ -41,7 +40,6 @@ async def publish(req: PublishRequest):
     
     value = req.idx + '.' + req.ctx + '.' + req.sig
     cache.cache_for_seconds(
-        client=cache_client,
         key=get_record_key(req.idx), 
         value=value, 
         seconds=config.REC_TTL_SECONDS
@@ -54,10 +52,7 @@ async def retrieve(req: RetrieveRequest):
     if not groupsig.verify(sig=req.sig, msg=req.idx, gpk=gpk):
         return unauthorized_response()
     
-    value = cache.find(
-        client=cache_client,
-        key=get_record_key(req.idx),
-    )
+    value = cache.find(key=get_record_key(req.idx))
     
     if value is None:
         return JSONResponse(

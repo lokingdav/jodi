@@ -14,14 +14,17 @@ from cpex.prototype import provider as providerModule
 gsk, gpk = None, None
 call_placement_services = []
 
+cache_client = None
+
+def set_cache_client(client):
+    global cache_client
+    cache_client = client
+
 def init_worker():
     global gsk, gpk, call_placement_services
-    cache_client = cache.connect()
-    dht.set_cache_client(cache_client)
-    providerModule.set_cache_client(cache_client)
+    cache.set_client(cache_client)
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
     call_placement_services = cache.find(
-        client=cache_client, 
         key=config.CPS_KEY, 
         dtype=dict
     )

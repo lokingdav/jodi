@@ -6,12 +6,6 @@ from multiprocessing import Pool
 from typing import Tuple
 from cpex.helpers import dht
 
-cache_client = None
-
-def set_cache_client(client):
-    global cache_client
-    cache_client = client
-
 def get_client():
     return docker.from_env()
 
@@ -73,9 +67,9 @@ def cache_repositories(mode: str):
     # print('MS', [m.get('name') for m in ms])
     # print('EVALS', [e.get('name') for e in ev])
     
-    if cps: cache.save(client=cache_client, key=config.CPS_KEY, value=json.dumps(cps))
-    if ms: cache.save(client=cache_client, key=config.STORES_KEY, value=json.dumps(ms))
-    if ev: cache.save(client=cache_client, key=config.EVALS_KEY, value=json.dumps(ev))
+    if cps: cache.save(key=config.CPS_KEY, value=json.dumps(cps))
+    if ms: cache.save(key=config.STORES_KEY, value=json.dumps(ms))
+    if ev: cache.save(key=config.EVALS_KEY, value=json.dumps(ev))
 
 def remove_repositories(mode: str):
     client = get_client()

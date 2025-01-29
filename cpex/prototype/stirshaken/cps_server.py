@@ -13,16 +13,15 @@ from cpex.helpers import misc, files, http
 
 tmax = 15
 credential = None
-cache_client = None
 REPO_NAME = f'cps_{config.NODE_ID}'
 
 def init_server():
-    global credential, cache_client
+    global credential
     cache_client = cache.connect()
-
+    cache.set_client(cache_client)
     nodes = setup.get_node_hosts()
     if nodes and nodes.get('sti-cps'):
-        cache.save(client=cache_client, key=config.CPS_KEY, value=json.dumps(nodes.get('sti-cps')))
+        cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get('sti-cps')))
         
     credential = persistence.get_credential(name=REPO_NAME)
     if not credential:
@@ -69,13 +68,12 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     
     # 2. Store passports in cache for 15 seconds
     cache.cache_for_seconds(
-        client=cache_client,
         key=get_record_key(dest=dest, orig=orig), 
         value=request.passports, 
         seconds=tmax
     )
 
-    repositories = cache.get_other_cpses(client=cache_client)
+    repositories = cache.get_other_cpses()
 
     if not repositories:
         return success_response()
@@ -123,7 +121,6 @@ async def republish(dest: str, orig: str, request: RepublishRequest, authorizati
     
     # 2. Store passports in cache for 15 seconds
     cache.cache_for_seconds(
-        client=cache_client,
         key=get_record_key(dest=dest, orig=orig), 
         value=request.passports, 
         seconds=tmax
@@ -140,7 +137,6 @@ async def republish(dest: str, orig: str, authorization: str = Header(None)):
     
     # 2. Retrieve passports from cache
     passports = cache.find(
-        client=cache_client,
         key=get_record_key(dest=dest, orig=orig), 
         dtype=dict
     )
