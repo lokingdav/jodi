@@ -6,6 +6,7 @@
 
 ## How to deduplicate entries
 - A conveinient Jupyter notebook is provided which contains functions to organize, deduplicate and report statistics of the given RMD CSV file
+- Only US providers who have provided all the necessary information have been considered for the analysis
 - Deduplication is done through the following steps
     - remove rows where
         1. business_name and business_address are same
@@ -19,3 +20,14 @@ Some important fields in the CSV are explained.
 3. voice_service_provider_choice - Does the provider provide voice services?
 4. gateway_provider_choice - Does the provider operate a gateway?
 5. intermediate_provider_choice - Does the provider act as an intermediary for call routing?
+
+## Latest Stats
+```
+Total providers = 7346
+Full S/S implementation = 4111
+Partial S/S implementation = 1453
+No S/S implementation = 1782
+Count of voice providers = 420
+Count of gateway providers = 6720
+Count of intermediate providers = 681
+```
