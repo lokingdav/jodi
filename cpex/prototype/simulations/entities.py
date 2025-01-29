@@ -6,23 +6,16 @@ from cpex import config
 from pylibcpex import Oprf, Utils
 from cpex.prototype.provider import Provider as BaseProvider
 
-# cache_client = None
-
-# def set_cache_client(client):
-#     global cache_client
-#     cache_client = client
-
 class MessageStore:
-    def __init__(self, nodeId: str, gpk, available: bool, cache_client, logger):
+    def __init__(self, nodeId: str, gpk, available: bool, logger):
         self.gpk = gpk
         self.nodeId = nodeId
         self.name = f'sim.ms.{nodeId}'
-        self.cache_client = cache_client
         self.available = available
         self.logger = logger
 
     def log_msg(self, msg):
-        if config.DEBUG:
+        if config.DEBUG and self.logger:
             self.logger.debug(f"--> {self.nodeId}: {msg}")
 
     def get_content_key(self, idx: str):
@@ -40,7 +33,6 @@ class MessageStore:
         value = request['idx'] + '.' + request['ctx'] + '.' + request['sig']
 
         cache.cache_for_seconds(
-            client=self.cache_client, 
             key=self.get_content_key(request['idx']), 
             value=value, 
             seconds=config.REC_TTL_SECONDS
@@ -57,10 +49,7 @@ class MessageStore:
             self.log_msg("Error -- invalid signature")
             return {'_error': 'invalid signature'}
 
-        value = cache.find(
-            client=self.cache_client, 
-            key=self.get_content_key(request['idx'])
-        )
+        value = cache.find(key=self.get_content_key(request['idx']))
         
         if not value:
             return {'_error': 'message not found'}
@@ -70,17 +59,16 @@ class MessageStore:
         return {'idx': msidx, 'ctx': msctx, 'sig': mssig}
 
 class Evaluator:
-    def __init__(self, nodeId: str, gpk, available: bool, cache_client, logger):
+    def __init__(self, nodeId: str, gpk, available: bool, logger):
         self.gpk = gpk
         self.nodeId = nodeId
         self.name = f'sim.ev.{nodeId}'
-        self.cache_client = cache_client
         self.available = available
         self.set_keys()
         self.logger = logger
 
     def set_keys(self):
-        keys = cache.find(client=self.cache_client, key=self.name, dtype=dict)
+        keys = cache.find(key=self.name, dtype=dict)
         if keys:
             self.keys = []
             for item in keys:
@@ -94,10 +82,10 @@ class Evaluator:
     def init_keys(self):
         self.keys = [Oprf.keygen() for _ in range(config.OPRF_KEYLIST_SIZE)]
         keys = json.dumps([Utils.to_base64(sk) + '.' + Utils.to_base64(vk) for (sk, vk) in self.keys])
-        cache.save(client=self.cache_client, key=self.name, value=keys)
+        cache.save(key=self.name, value=keys)
 
     def log_msg(self, msg):
-        if config.DEBUG:
+        if config.DEBUG and self.logger:
             self.logger.debug(f"--> {self.nodeId}: {msg}")
 
     def evaluate(self, request: dict):
@@ -118,8 +106,7 @@ class Evaluator:
     
 
 class Provider(BaseProvider):
-    def __init__(self, params: dict, cache_client):
-        self.cache_client = cache_client
+    def __init__(self, params: dict):
         super().__init__(params=params)
     
     async def make_request(self, req_type, requests):
@@ -133,7 +120,6 @@ class Provider(BaseProvider):
                     nodeId=req['nodeId'], 
                     gpk=self.gpk, 
                     available=available,
-                    cache_client=self.cache_client,
                     logger=self.logger
                 ).evaluate(req['data'])
             elif req_type == 'publish':
@@ -141,7 +127,6 @@ class Provider(BaseProvider):
                     nodeId=req['nodeId'], 
                     gpk=self.gpk, 
                     available=available,
-                    cache_client=self.cache_client,
                     logger=self.logger
                 ).publish(req['data'])
             elif req_type == 'retrieve':
@@ -149,7 +134,6 @@ class Provider(BaseProvider):
                     nodeId=req['nodeId'], 
                     gpk=self.gpk, 
                     available=available,
-                    cache_client=self.cache_client,
                     logger=self.logger
                 ).retrieve(req['data'])
                 

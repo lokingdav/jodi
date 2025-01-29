@@ -138,3 +138,6 @@ def fake_number(cc: str = None):
     nxx = random.randint(100, 999)
     num = str(random.randint(0, 9999)).zfill(4)
     return f"{cc}{npa}{nxx}{num}"
+
+def toMs(seconds):
+    return round(seconds * 1000, 3)
