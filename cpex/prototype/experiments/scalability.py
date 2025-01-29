@@ -10,7 +10,7 @@ from collections import defaultdict
 numIters = 10
 cache_client = None
 
-deployRate = 14.00
+deployRate = 55.96
 maxRepTrustParams = 10
 EXPERIMENT_NUM = 1
 EXPERIMENT_PARAMS = {

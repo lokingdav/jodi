@@ -108,8 +108,8 @@ class Evaluator:
         self.log_msg(f"Uses sk={Utils.to_base64(self.keys[request['i_k']][0])}, pk={Utils.to_base64(self.keys[request['i_k']][1])}")
         
         (fx, vk) = Oprf.evaluate(self.keys[request['i_k']][0], self.keys[request['i_k']][1], Utils.from_base64(request['x']))
-
-        return {"fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk)}
+        time_taken = time.perf_counter() - start_time
+        return {"fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk), 'time_taken': time_taken}
     
 
 class Provider(BaseProvider):
