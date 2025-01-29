@@ -11,11 +11,11 @@ cache_client = None
 
 deployRate = 14.00
 maxRepTrustParams = 10
-EXPERIMENT_NUM = 2
+EXPERIMENT_NUM = 1
 EXPERIMENT_PARAMS = {
-    2: {
-        'node_groups': [(100, 100)],
-        'provider_groups': [40],
+    1: {
+        'node_groups': [(10, 10)],
+        'provider_groups': [10],
     },
     3: {
         'node_groups': [(10, 10)],
@@ -104,8 +104,8 @@ def reset_routes():
 
 def set_simulator(args):
     global Simulator, EXPERIMENT_NUM
-    if args.experiment == 2:
-        EXPERIMENT_NUM = 2
+    if args.experiment == 1:
+        EXPERIMENT_NUM = 1
         Simulator = local.LocalSimulator()
     else:
         EXPERIMENT_NUM = 3
@@ -136,7 +136,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--experiment', type=int, choices=[2, 3], help='Experiment to run. Either 2 or 3. Default=2', default='2')
+    parser.add_argument('--experiment', type=int, choices=[1, 3], help='Experiment to run. Either 1 or 3. Default=1', default='1')
     args = parser.parse_args()
 
     if not any(vars(args).values()):
