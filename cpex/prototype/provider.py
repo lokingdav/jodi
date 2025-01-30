@@ -264,7 +264,7 @@ class Provider:
         req_time_taken = time.perf_counter() - req_time_start
         
         times_taken = [r['time_taken'] for r in responses if 'time_taken' in r]
-        self.compute_time_evaluator = sum(times_taken) / len(times_taken) # Average time taken to evaluate a single request by an EV
+        self.compute_time_evaluator = sum(times_taken) / len(times_taken) if len(times_taken) else 0 # Average time taken to evaluate a single request by an EV
         
         if req_type == 'publish':
             self.compute_time_publish -= req_time_taken # Subtract wait time from compute time

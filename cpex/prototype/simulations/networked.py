@@ -162,9 +162,9 @@ class NetworkedSimulator:
         num_provs = params.get('Num_Provs')
         mode = params.get('mode')
         
-        with Pool(processes=os.cpu_count()*2, initializer=init_worker) as pool:
+        with Pool(processes=3, initializer=init_worker) as pool:
             pages, total_items = self.get_pages(num_provs=num_provs, limit=limit)
-            
+            progress = 0
                 
             for (start_id, end_id) in pages:
                 routes = persistence.retrieve_routes(
@@ -177,7 +177,10 @@ class NetworkedSimulator:
                 if len(routes) == 0:
                     raise Exception("No route to simulate. Please generate routes")
                 
-                print(f"-> Simulating Call From: {start_id}, To:{end_id}, Length: {len(routes)} calls, Total: {total_items}")
+                progress += len(routes)
+                progress_percent = round((progress / total_items) * 100, 2)
+                
+                print(f"-> Simulating Call From: {start_id}, To:{end_id}, Length: {len(routes)} calls, Total: {progress}/{total_items} ({progress_percent}%)")
 
                 start_time = time.perf_counter()
                 results = pool.map(self.simulate_call_sync, routes)

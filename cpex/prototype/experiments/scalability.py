@@ -15,8 +15,8 @@ maxRepTrustParams = 10
 EXPERIMENT_NUM = 1
 EXPERIMENT_PARAMS = {
     1: {
-        'node_groups': [(10, 10)],
-        'provider_groups': [10],
+        'node_groups': [(20, 20)],
+        'provider_groups': [100],
     },
     3: {
         'node_groups': [(10, 10)],

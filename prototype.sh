@@ -115,11 +115,12 @@ run_experiments() {
   echo "Running experiment '$exp'..."
 
   # We'll store the base command in an array for safer invocation
-  local cmd_base=(docker exec -it cpex-exp python cpex/prototype/experiments)
+  local cmd_base=(docker exec cpex-exp python cpex/prototype/experiments)
 
   case "$exp" in
     1)
-      "${cmd_base[@]}"/scalability.py --experiment 1
+      rm output.log
+      "${cmd_base[@]}"/scalability.py --experiment 1 &> output.log
       ;;
     2)
       "${cmd_base[@]}"/microbench.py
