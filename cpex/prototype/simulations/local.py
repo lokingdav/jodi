@@ -25,6 +25,7 @@ class LocalSimulator(NetworkedSimulator):
     
     def create_nodes(self, mode: str, num_evs: int, num_repos: int):
         evals, stores = [], []
+        keysets = {}
 
         for i in range(num_repos):
             name = f'cpex-node-ms-{i}'
@@ -46,9 +47,11 @@ class LocalSimulator(NetworkedSimulator):
                 'fqdn': name,
                 'url': f'http://{name}'
             })
-            Evaluator.set_keys(nodeId=nodeId)
+            keysets[nodeId] = Evaluator.create_keyset()
         if evals:
             cache.save(key=config.EVALS_KEY, value=json.dumps(evals))
+        if keysets:
+            cache.save(key=config.EVAL_KEYSETS_KEY, value=json.dumps(keysets))
 
 def get_status(ntype: str):
     p = config.EV_AVAILABILITY if ntype == 'ev' else config.MS_AVAILABILITY

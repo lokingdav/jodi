@@ -18,6 +18,7 @@ n_mss = [2]#, 3, 4, 5]
 
 def init_worker():
     cache.set_client(cache_client)
+    entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
 
 def bench_sync(options):
     return asyncio.run(bench_async(options))

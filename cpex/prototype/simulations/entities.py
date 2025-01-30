@@ -6,6 +6,20 @@ from cpex import config
 from pylibcpex import Oprf, Utils
 from cpex.prototype.provider import Provider as BaseProvider
 
+evKeySets = None
+
+def set_evaluator_keys(keys: dict):
+    global evKeySets
+    evKeySets = {}
+    for nodeId in keys:
+        evKeySets[nodeId] = []
+        for key in keys[nodeId]:
+            sk, vk = key.split('.')
+            evKeySets[nodeId].append((Utils.from_base64(sk), Utils.from_base64(vk)))
+    
+def get_evaluator_keyset(nodeId: str):
+    return evKeySets.get(nodeId, None)
+
 class MessageStore:
     def __init__(self, nodeId: str, gpk, available: bool, logger):
         self.gpk = gpk
@@ -60,35 +74,19 @@ class MessageStore:
 
 class Evaluator:
     @staticmethod
-    def get_name(nodeId: str):
-        return f'sim.ev.{nodeId}'
-    
+    def create_keyset():
+        keys = []
+        for _ in range(config.OPRF_KEYLIST_SIZE):
+            sk, vk  = Oprf.keygen()
+            keys.append(Utils.to_base64(sk) + '.' + Utils.to_base64(vk))
+        return keys
+        
     def __init__(self, nodeId: str, gpk, available: bool, logger):
         self.gpk = gpk
         self.nodeId = nodeId
-        self.name = Evaluator.get_name(nodeId)
-        self.available = available
         self.logger = logger
-        self.keys = Evaluator.get_keys(nodeId)
-    
-    @staticmethod
-    def set_keys(nodeId):
-        name = Evaluator.get_name(nodeId)
-        keys = cache.find(key=name, dtype=dict)
-        if not keys or len(keys) < config.OPRF_KEYLIST_SIZE:
-            keys = [Oprf.keygen() for _ in range(config.OPRF_KEYLIST_SIZE)]
-            cache.save(key=name, value=json.dumps([Utils.to_base64(sk) + '.' + Utils.to_base64(vk) for (sk, vk) in keys]))
-
-    @staticmethod
-    def get_keys(nodeId):
-        name = Evaluator.get_name(nodeId)
-        keys = cache.find(key=name, dtype=dict)
-        if not keys:
-            raise Exception("Keys not found")
-        for i in range(len(keys)):
-            sk, vk = keys[i].split('.')
-            keys[i] = (Utils.from_base64(sk), Utils.from_base64(vk))
-        return keys
+        self.available = available
+        self.keys = get_evaluator_keyset(nodeId)
 
     def log_msg(self, msg):
         if config.DEBUG and self.logger:

@@ -10,6 +10,7 @@ from cpex.helpers import errors, files, dht, logging
 from cpex.prototype.stirshaken import certs
 from cpex import config, constants
 from cpex.prototype import provider as providerModule
+from cpex.prototype.simulations import entities
 
 gsk, gpk = None, None
 call_placement_services = []
@@ -28,7 +29,8 @@ def init_worker():
         key=config.CPS_KEY, 
         dtype=dict
     )
-
+    entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
+    
 class NetworkedSimulator:
     def simulate_call_sync(self, options: dict):
         res = asyncio.run(self.simulate_call(options))
