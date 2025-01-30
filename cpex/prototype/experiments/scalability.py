@@ -146,6 +146,9 @@ def main(args):
     global cache_client
     
     set_simulator(args)
+    
+    if EXPERIMENT_NUM == 3:
+        raise NotImplementedError("Experiment 3 is not implemented yet")
 
     run_datagen()
     resutlsloc = prepare_results_file()

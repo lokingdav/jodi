@@ -24,7 +24,6 @@ def bench_sync(options):
     return asyncio.run(bench_async(options))
     
 async def bench_async(options):
-    print(f"Running with {options['num_ev']} EVs and {options['num_ms']} MSs")
     n_ev, n_ms = options['num_ev'], options['num_ms']
     
     params = {

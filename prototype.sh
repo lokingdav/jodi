@@ -110,7 +110,7 @@ open_bash() {
 
 run_experiments() {
   local exp="$1"
-  local allowed=(1 2)
+  local allowed=(1 2 3)
 
   echo "Running experiment '$exp'..."
 
@@ -119,12 +119,13 @@ run_experiments() {
 
   case "$exp" in
     1)
-      # microbench.py
-      "${cmd_base[@]}" microbench.py
+      "${cmd_base[@]}"/scalability.py --experiment 1
       ;;
     2)
-      # scalability.py
-      "${cmd_base[@]}" scalability.py
+      "${cmd_base[@]}"/microbench.py
+      ;;
+    3)
+      "${cmd_base[@]}"/scalability.py --experiment 3
       ;;
     *)
       echo "Invalid experiment number '$exp'. Allowed values: ${allowed[*]}"
