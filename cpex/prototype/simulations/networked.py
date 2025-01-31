@@ -162,7 +162,7 @@ class NetworkedSimulator:
         num_provs = params.get('Num_Provs')
         mode = params.get('mode')
         
-        with Pool(processes=3, initializer=init_worker) as pool:
+        with Pool(processes=os.cpu_count() * 2, initializer=init_worker) as pool:
             pages, total_items = self.get_pages(num_provs=num_provs, limit=limit)
             progress = 0
                 

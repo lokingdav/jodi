@@ -7,7 +7,7 @@ from cpex.helpers import files
 from cpex.prototype.simulations import networked, local
 from collections import defaultdict
 
-numIters = 10
+numIters = 1
 cache_client = None
 
 deployRate = 55.96
@@ -20,7 +20,7 @@ EXPERIMENT_PARAMS = {
     },
     3: {
         'node_groups': [(10, 10)],
-        'provider_groups': [40],
+        'provider_groups': [1000],
     }
 }
 
