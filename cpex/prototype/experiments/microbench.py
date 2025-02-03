@@ -13,8 +13,8 @@ numIters = 1000
 cache_client = None
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
-n_evs = [2]#, 3, 4, 5]
-n_mss = [2]#, 3, 4, 5]
+n_evs = [3]#, 3, 4, 5]
+n_mss = [3]#, 3, 4, 5]
 
 def init_worker():
     cache.set_client(cache_client)
@@ -66,8 +66,8 @@ def main():
     simulator = local.LocalSimulator()
     simulator.create_nodes(
         mode=constants.MODE_CPEX, 
-        num_evs=30, 
-        num_repos=30
+        num_evs=20, 
+        num_repos=20
     )
 
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-2.csv"
