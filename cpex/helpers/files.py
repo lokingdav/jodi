@@ -15,13 +15,13 @@ def override_json(fileloc: str, data: dict, indent: int = 2):
 def write_csv(fileloc: str, data: list):
     with open(fileloc, 'w') as file:
         for row in data:
-            file.write(", ".join([str(x) for x in row]) + "\n")
+            file.write(",".join([str(x) for x in row]) + "\n")
     return True
 
 def append_csv(fileloc: str, data: List[List[str]]):
     with open(fileloc, 'a') as file:
         for row in data:
-            file.write(", ".join([str(x) for x in row]) + "\n")
+            file.write(",".join([str(x) for x in row]) + "\n")
     return True
 
 def read_json(fileloc: str, default: dict = None):
