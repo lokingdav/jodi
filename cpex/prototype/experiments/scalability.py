@@ -15,12 +15,14 @@ maxRepTrustParams = 10
 EXPERIMENT_NUM = 1
 EXPERIMENT_PARAMS = {
     1: {
+        'simulator': local.LocalSimulator,
         'node_groups': [(20, 20)],
         'provider_groups': [100],
     },
     3: {
+        'simulator': networked.NetworkedSimulator,
         'node_groups': [(10, 10)],
-        'provider_groups': [1000],
+        'provider_groups': [10, 20, 40, 80, 160, 320, 640, 1280],
     }
 }
 
