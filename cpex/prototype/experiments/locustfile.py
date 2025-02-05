@@ -1,10 +1,12 @@
-from locust import task, FastHttpUser
+from locust import task, FastHttpUser, between
 from pylibcpex import Utils, Oprf
 from cpex.crypto import groupsig, libcpex
 from cpex.helpers import misc
 import random
 
-class EvUser(FastHttpUser):
+class EV(FastHttpUser):
+    wait_time = between(0.5, 1.5)
+    
     def on_start(self):
         gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
         call_details = libcpex.normalize_call_details(
@@ -23,7 +25,9 @@ class EvUser(FastHttpUser):
             if res.js is None:
                 pass
 
-class MsUser(FastHttpUser):
+class MS(FastHttpUser):
+    wait_time = between(0.5, 1.5)
+    
     def on_start(self):
         gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
         self.idx = Utils.to_base64(Utils.random_bytes(32)) 

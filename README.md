@@ -13,3 +13,10 @@ To Kill the experiment, run:
 ```bash
 kill -9 $(cat exp1.pid)
 ```
+
+Run Locust load test
+```bash
+locust --host "hosturl" <type> # replace <type> with MS or EV
+```
+
+base memory = 61 MiB

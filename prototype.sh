@@ -55,15 +55,15 @@ build_image() {
 
   case "$image" in
     cpex)
-      echo "Building '$CPEX_DOCKER_IMAGE' Docker image..."
+      echo "Building CPEX Image"
       docker build -f Dockerfile -t "$CPEX_DOCKER_IMAGE" .
       ;;
     automation)
-      echo "Building '$CPEX_AUTOMATION_DOCKER_IMAGE' Docker image..."
+      echo "Building Image for Automation"
       docker build -f automation/Dockerfile -t "$CPEX_AUTOMATION_DOCKER_IMAGE" .
       ;;
     *)
-      echo "Building both '$CPEX_DOCKER_IMAGE' and '$CPEX_AUTOMATION_DOCKER_IMAGE' Docker images..."
+      echo "Building both Images"
       docker build -f Dockerfile -t "$CPEX_DOCKER_IMAGE" .
       docker build -f automation/Dockerfile -t "$CPEX_AUTOMATION_DOCKER_IMAGE" .
       ;;

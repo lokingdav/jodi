@@ -29,6 +29,26 @@ services:
       - './docker/data/automation/.aws:/root/.aws'
       - './docker/data/automation/.ssh:/root/.ssh'
 
+  evaluator:
+    <<: *cpex-service
+    container_name: cpex-ev
+    command: > 
+      gunicorn cpex.servers.evaluator:app 
+      --bind 0.0.0.0:80 
+      --workers 4 
+      --worker-class uvicorn.workers.UvicornWorker 
+      --reload
+
+  message-store:
+    <<: *cpex-service
+    container_name: cpex-ms
+    command: >
+      gunicorn cpex.servers.message_store:app 
+      --bind 0.0.0.0:80 
+      --workers 4 
+      --worker-class uvicorn.workers.UvicornWorker 
+      --reload
+
 # Cache and Database
   cache:
     container_name: cpex-cache
