@@ -6,6 +6,7 @@ import cpex.config as config
 from cpex.crypto import groupsig
 from cpex.models import cache
 
+cache.set_client(cache.connect())
 app = FastAPI()
 gpk = groupsig.get_gpk()
 
