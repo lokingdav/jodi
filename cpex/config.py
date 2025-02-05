@@ -50,6 +50,8 @@ MS_PORT = env('MS_PORT', '10431')
 CR_PORT = env('CR_PORT', '10432')
 CPS_PORT = env('CPS_PORT', '10433')
 
+SS_DEPLOY_RATE = env('SS_DEPLOY_RATE', 55.96, dtype=float)
+
 def get_container_prefix(mode: str):
     return "atis-cps-" if mode == MODE_ATIS else "cpex-node-"
 

@@ -1,6 +1,7 @@
 import random, math, networkx as nx, numpy as np
 from collections import defaultdict
 from cpex.constants import STATUS_PENDING
+from cpex import config
 from typing import Tuple
 
 weight_key = 'weight'
@@ -39,7 +40,7 @@ def get_stirshaken_adopters(graph: nx.Graph, deploy_rate: float) -> dict:
     )
     return defaultdict(lambda: 0, { int(node): 1 for node in adopter_nodes})
 
-def create(num_providers:int, deploy_rate: float = 10.0) -> Tuple[list, dict]:
+def create(num_providers:int, deploy_rate: float = config.SS_DEPLOY_RATE) -> Tuple[list, dict]:
     graph = nx.barabasi_albert_graph(n=num_providers, m=2)
     routes, stats = get_all_routes(compute_shortest_paths(graph=graph))
     adopters = get_stirshaken_adopters(graph=graph, deploy_rate=deploy_rate)
@@ -54,7 +55,6 @@ def create(num_providers:int, deploy_rate: float = 10.0) -> Tuple[list, dict]:
             'route': _route
         })
         
-    data = [{'_id': 0, 'total': len(data)}] + data
+    data = [{'_id': 0, 'total': len(data), 'all': len(routes)}] + data
     
     return data, stats
-    
