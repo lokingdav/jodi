@@ -21,7 +21,7 @@ def compute_statistics(file_path, columns):
 
     # Compute summary statistics
     # .describe() returns many stats; we'll keep only min/max for illustration
-    summary_stats = df_filtered.describe().T[['min', 'max']]
+    summary_stats = df_filtered.describe().T[['min', 'max', 'mean']]
 
     # Add median
     summary_stats['median'] = df_filtered.median()
@@ -31,63 +31,34 @@ def compute_statistics(file_path, columns):
 
     return summary_stats
 
-def estimate_vcpus(stats, n_mad, rate, p_rate, n_ev, n_ms):
-    """
-    Estimate vCPUs for each row in 'stats' based on:
-      - Median + n_mad * MAD
-      - An overall rate
-      - A special publisher rate (p_rate)
-      - Various scaling factors (n_ev, n_ms) for certain rows
-    """
-    # 1) Compute estimated time as Median + n * MAD
-    estimated_time = stats['median'] + n_mad * stats['MAD']  # in ms
+def estimate_vcpus(stats, n_mad, call_rate, p_rate, N, M):
+    stats['compute'] = stats['median'] + n_mad * stats['MAD']  # in ms
 
-    # Convert milliseconds to seconds
-    processing_time_per_record = estimated_time / 1000.0
+    processing_time_per_record = stats['compute'] / 1000.0
 
-    # Store the computed time in the dataframe
-    stats['compute'] = estimated_time
+    stats['vCPUs'] = processing_time_per_record * call_rate
 
-    # 2) Base vCPUs = (processing_time_per_record * rate)
-    #    Then round up to at least 1
-    stats['vCPUs'] = (processing_time_per_record * rate).apply(lambda x: max(1, round(x)))
+    stats.loc['PUB:P', 'vCPUs'] = processing_time_per_record['PUB:P'] * p_rate
+    stats.loc['RET:P', 'vCPUs'] = processing_time_per_record['RET:P'] * p_rate
 
-    # 3) For PUB:P and RET:P, use p_rate instead of rate
-    #    Here we set a single cell to a single value, no need for .apply
-    if 'PUB:P' in stats.index:
-        stats.loc['PUB:P', 'vCPUs'] = max(
-            1,
-            round(processing_time_per_record['PUB:P'] * p_rate)
-        )
-    if 'RET:P' in stats.index:
-        stats.loc['RET:P', 'vCPUs'] = max(
-            1,
-            round(processing_time_per_record['RET:P'] * p_rate)
-        )
-
-    # 4) Adjust vCPU estimates for PUB:EV, PUB:MS, RET:MS
-    #    Dividing by n_ev/n_ms and rounding up
-    if 'PUB:EV' in stats.index:
-        stats.loc['PUB:EV', 'vCPUs'] = max(
-            1,
-            math.ceil(stats.loc['PUB:EV', 'vCPUs'] / n_ev)
-        )
-    if 'PUB:MS' in stats.index:
-        stats.loc['PUB:MS', 'vCPUs'] = max(
-            1,
-            math.ceil(stats.loc['PUB:MS', 'vCPUs'] / n_ms)
-        )
-    if 'RET:MS' in stats.index:
-        stats.loc['RET:MS', 'vCPUs'] = max(
-            1,
-            math.ceil(stats.loc['RET:MS', 'vCPUs'] / n_ms)
-        )
+    stats.loc['PUB:EV', 'vCPUs'] = stats.loc['PUB:EV', 'vCPUs'] / N
+    stats.loc['RET:EV', 'vCPUs'] = stats.loc['RET:EV', 'vCPUs'] / N
+        
+    stats.loc['PUB:MS', 'vCPUs'] = stats.loc['PUB:MS', 'vCPUs'] / M
+    stats.loc['RET:MS', 'vCPUs'] = stats.loc['RET:MS', 'vCPUs'] / M
     
-    return {
-        'Evaluator': stats.loc['PUB:EV', 'vCPUs'] * 2, # Publish and Retrieve
-        'Provider': stats.loc['PUB:P', 'vCPUs'] + stats.loc['RET:P', 'vCPUs'],
-        'Message Store': stats.loc['PUB:MS', 'vCPUs'] + stats.loc['RET:MS', 'vCPUs'],
+    print(stats)
+    
+    res = {
+        'Provider': math.ceil(stats.loc['PUB:P', 'vCPUs'] + stats.loc['RET:P', 'vCPUs']),
+        'Evaluator': math.ceil(stats.loc['PUB:EV', 'vCPUs'] + stats.loc['RET:EV', 'vCPUs']),
+        'Message Store': math.ceil(stats.loc['PUB:MS', 'vCPUs'] + stats.loc['RET:MS', 'vCPUs']),
     }
+    print('\nVCPUs\n------------------')
+    for k in res:
+        print(f"{k}:\t{res[k]}")
+    print('\n')
+    return res
 
 def get_oob_call_rate(call_rate, n=7300, total_subs=300_000_000, oob_frac=0.4243):
     graph = nx.barabasi_albert_graph(n=n, m=2)
