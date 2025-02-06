@@ -49,11 +49,14 @@ async def bench_async(options):
     results = [
         n_ev, 
         n_ms,
-        pub_compute['publish'],
+        
+        pub_compute['provider'],
         pub_compute['evaluator'],
-        pub_compute['msg_store_pub'],
-        ret_compute['retrieve'], 
-        ret_compute['msg_store_ret']
+        pub_compute['message_store'],
+        
+        ret_compute['provider'], 
+        ret_compute['evaluator'],
+        ret_compute['message_store']
     ]
     
     return results
@@ -71,7 +74,7 @@ def main():
     )
 
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-2.csv"
-    files.write_csv(resutlsloc, [['Num Evals', 'Num Stores', 'PUB:P', 'PUB:EV', 'PUB:MS', 'RET:P', 'RET:MS']])
+    files.write_csv(resutlsloc, [['n', 'm', 'PUB:P', 'PUB:EV', 'PUB:MS', 'RET:P', 'RET:EV', 'RET:MS']])
     
     print(f"Running {numIters} iterations of the CPEX protocol microbenchmark...")
     start = time.perf_counter()
