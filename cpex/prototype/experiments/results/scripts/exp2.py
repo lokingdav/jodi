@@ -16,7 +16,7 @@ if __name__ == "__main__":
         stats=stats,
         n_mad=n_mad, 
         rate=oob_calls_rate, 
-        p_rate=500*oob_frac,
+        p_rate=1000*oob_frac,
         n_ev=n_ev, 
         n_ms=n_ms
     )

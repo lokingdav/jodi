@@ -82,8 +82,12 @@ def estimate_vcpus(stats, n_mad, rate, p_rate, n_ev, n_ms):
             1,
             math.ceil(stats.loc['RET:MS', 'vCPUs'] / n_ms)
         )
-
-    return stats
+    
+    return {
+        'Evaluator': stats.loc['PUB:EV', 'vCPUs'] * 2, # Publish and Retrieve
+        'Provider': stats.loc['PUB:P', 'vCPUs'] + stats.loc['RET:P', 'vCPUs'],
+        'Message Store': stats.loc['PUB:MS', 'vCPUs'] + stats.loc['RET:MS', 'vCPUs'],
+    }
 
 def get_oob_call_rate(call_rate, n=7300, total_subs=300_000_000, oob_frac=0.4243):
     graph = nx.barabasi_albert_graph(n=n, m=2)

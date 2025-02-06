@@ -45,5 +45,7 @@ class MS(FastHttpUser):
     @task
     def retrieve(self):
         with self.rest("POST", "/retrieve", json={'idx': self.idx, 'sig': self.r_sig}) as res:
+            if res.status_code == 404:
+                res.success()
             if res.js is None:
                 pass
