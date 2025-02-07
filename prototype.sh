@@ -71,16 +71,19 @@ build_image() {
 }
 
 compose_up() {
-  local service="$1"
+  local profile="$1"
   echo "Starting Docker Compose services..."
 
-  if [[ -z "$service" ]]; then
-    docker compose -f "$COMPOSE_FILE" up -d
-    # Example: run a setup script inside one of the containers
-    docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
-  else
-    docker compose -f "$COMPOSE_FILE" up -d "$service"
-  fi
+  case "$profile" in
+    all)
+      docker compose -f "$COMPOSE_FILE" up -d
+      ;;
+    *)
+      docker compose -f "$COMPOSE_FILE" up -d experiment automation
+      ;;
+  esac
+
+  docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
 }
 
 compose_down() {

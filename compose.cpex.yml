@@ -12,14 +12,24 @@ services:
   evaluator:
     <<: *cpex-service
     container_name: evaluator
-    command: uvicorn cpex.servers.evaluator:app --host 0.0.0.0 --port 80 --reload
+    command: > 
+      gunicorn cpex.servers.evaluator:app 
+      --bind 0.0.0.0:80 
+      --workers 4 
+      --worker-class uvicorn.workers.UvicornWorker 
+      --reload
     ports:
       - 10430:80
 
   message-store:
     <<: *cpex-service
     container_name: message-store
-    command: uvicorn cpex.servers.message_store:app --host 0.0.0.0 --port 80 --reload
+    command: >
+      gunicorn cpex.servers.message_store:app 
+      --bind 0.0.0.0:80 
+      --workers 4 
+      --worker-class uvicorn.workers.UvicornWorker 
+      --reload
     ports:
       - 10431:80
 
