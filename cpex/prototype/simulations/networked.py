@@ -1,4 +1,4 @@
-import random, asyncio, os, time, math
+import random, asyncio, os, time, math, json
 import numpy as np
 from cpex.prototype import compose
 from multiprocessing import Pool
@@ -11,6 +11,7 @@ from cpex.prototype.stirshaken import certs
 from cpex import config, constants
 from cpex.prototype import provider as providerModule
 from cpex.prototype.simulations import entities
+from cpex.prototype.scripts import setup
 
 gsk, gpk = None, None
 call_placement_services = []
@@ -211,25 +212,11 @@ class NetworkedSimulator:
                 math.ceil(total_calls / total_time) if total_time > 0 else 0
             ]
 
-    def create_nodes(self, mode: str, num_evs: int, num_repos: int):
-        prefix = config.get_container_prefix(mode)
-
-        if config.is_atis_mode(mode):
-            num = compose.count_containers(prefix)
-            if num < num_evs:
-                print(f"Adding {num_evs - num} nodes. Mode: {mode}")
-                compose.add_nodes(count=num_repos - num, mode=mode)
-            return
-        
-        if num_evs:
-            num = compose.count_containers(prefix + 'ev')
-            print(f"Adding {num_evs - num} nodes. Mode: {mode}, Type: ev")
-            compose.add_nodes(count=num_evs - num, mode=mode, ntype='ev')
-
-        if num_repos:
-            num = compose.count_containers(prefix + 'ms')
-            print(f"Adding {num_repos - num} nodes. Mode: {mode}, Type: ms")
-            compose.add_nodes(count=num_repos - num, mode=mode, ntype='ms')
+    def create_nodes(self, **kwargs):
+        nodes = setup.get_node_hosts()
+        cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get(config.CPS_KEY)))
+        cache.save(key=config.EVALS_KEY, value=json.dumps(nodes.get(config.EVALS_KEY)))
+        cache.save(key=config.STORES_KEY, value=json.dumps(nodes.get(config.STORES_KEY)))
             
 class RunningStats:
     def __init__(self):

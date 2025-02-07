@@ -27,7 +27,7 @@ CPEX_DOCKER_IMAGE = "cpex"
 
 STORES_KEY = 'cpex.nodes.ms'
 EVALS_KEY = 'cpex.nodes.ev'
-CPS_KEY = 'atis.cps'
+CPS_KEY = 'sti.nodes.cps'
 EVAL_KEYSETS_KEY = 'cpex.evals.keysets'
 
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)

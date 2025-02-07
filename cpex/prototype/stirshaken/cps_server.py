@@ -20,8 +20,8 @@ def init_server():
     cache_client = cache.connect()
     cache.set_client(cache_client)
     nodes = setup.get_node_hosts()
-    if nodes and nodes.get('sti-cps'):
-        cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get('sti-cps')))
+    if nodes and nodes.get(config.CPS_KEY):
+        cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get(config.CPS_KEY)))
         
     credential = persistence.get_credential(name=REPO_NAME)
     if not credential:

@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from cpex.crypto import groupsig
 from cpex.helpers import files
 import cpex.config as config
-import yaml
+import yaml, re
 from pylibcpex import Utils
 from collections import defaultdict
 
@@ -40,6 +40,12 @@ def update_vars_file(gpk):
     except Exception as e:
         raise Exception("Failed to update vars.yml") from e
 
+def is_valid_ipv4(ip):
+    pattern = r"^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$"
+    return re.match(pattern, ip) is not None
+
+def create_node(fqdn):
+    return {'id': Utils.hash256(fqdn.encode()).hex(), 'name': fqdn, 'fqdn': fqdn, 'ip': fqdn, 'url': f'http://{fqdn}'}
 
 def get_node_hosts():
     hosts_file = 'automation/hosts.yml'
@@ -52,34 +58,20 @@ def get_node_hosts():
         
         for i, name in enumerate(data['all']['hosts'].keys()):
             ip_addr = data['all']['hosts'][name]['ansible_host']
-
-            ev_name = config.get_container_prefix('cpex') + f'ev-{i}'
-            nodes['cpex-ev'].append({
-                'id': Utils.hash256(ev_name.encode()).hex(), 
-                'name': ev_name, 
-                'fqdn': f'{ip_addr}:{config.EV_PORT}',
-                'ip': ip_addr,
-                'url': f'http://{ip_addr}:{config.EV_PORT}',
-            })
-
-            ms_name = config.get_container_prefix('cpex') + f'ms-{i}'
-            nodes['cpex-ms'].append({
-                'id': Utils.hash256(ms_name.encode()).hex(), 
-                'name': ms_name, 
-                'fqdn': f'{ip_addr}:{config.MS_PORT}',
-                'ip': ip_addr,
-                'url': f'http://{ip_addr}:{config.MS_PORT}',
-            })
-
-            cps_name = config.get_container_prefix('atis') + f'cps-{i}'
-            nodes['sti-cps'].append({
-                'id': ip_addr,
-                'name': cps_name,
-                'fqdn': f'{ip_addr}:{config.CPS_PORT}',
-                'ip': ip_addr,
-                'url': f'http://{ip_addr}:{config.CPS_PORT}',
-            })
-
+            
+            if is_valid_ipv4(ip_addr):
+                nodes[config.EVALS_KEY].append(create_node(f'{ip_addr}:{config.EV_PORT}'))
+                nodes[config.STORES_KEY].append(create_node(f'{ip_addr}:{config.MS_PORT}'))
+                nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_PORT}'))
+                nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{str(int(config.CPS_PORT) + 1)}'))
+            else:
+                node = create_node(ip_addr)
+                if '-ev-' in ip_addr:
+                    nodes[config.EVALS_KEY].append(node)
+                elif '-ms-' in ip_addr:
+                    nodes[config.STORES_KEY].append(node)
+                elif '-cps-' in ip_addr:
+                    nodes[config.CPS_KEY].append(node)
     return nodes
 
 def main(args):

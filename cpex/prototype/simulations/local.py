@@ -23,7 +23,9 @@ class LocalSimulator(NetworkedSimulator):
             next_prov=next_prov
         ))
     
-    def create_nodes(self, mode: str, num_evs: int, num_repos: int):
+    def create_nodes(self, **kwargs):
+        num_evs = kwargs['num_evs']
+        num_repos = kwargs['num_repos']
         LocalSimulator.create_cpex_nodes(num_evs, num_repos)
     
     @staticmethod
