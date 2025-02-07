@@ -114,7 +114,7 @@ class NetworkedSimulator:
         logger.debug(f"Total latency for call = {latency} ms")
 
         # if not is_correct:
-        #     logging.print_logs(logger)
+        # logging.print_logs(logger)
             
         logging.close_logger(logger)
 
@@ -154,7 +154,21 @@ class NetworkedSimulator:
             raise Exception("Routes needs to be generated first")
         limit = min(limit, data['total'])
         return [(i, i + limit) for i in range(1, data['total']+1, limit)], data['total']   
+    
+    def validate_node_counts(self, **kwargs):
+        mode = kwargs.get('mode')
+        num_evs = kwargs.get('num_evs')
+        num_mss = kwargs.get('num_mss')
         
+        if config.is_atis_mode(mode):
+            cps = cache.find(key=config.CPS_KEY, dtype=dict)
+            assert cps and len(cps) == num_evs + num_mss
+        else:
+            evs = cache.find(key=config.EVALS_KEY, dtype=dict)
+            assert evs and len(evs) == num_evs
+            ms = cache.find(key=config.STORES_KEY, dtype=dict)
+            assert ms and len(ms) == num_mss
+    
     def run(self, params: dict):
         limit = 1000
         statistics = RunningStats()
@@ -162,6 +176,12 @@ class NetworkedSimulator:
         
         num_provs = params.get('Num_Provs')
         mode = params.get('mode')
+        
+        self.validate_node_counts(
+            num_evs=params.get('Num_EVs'),
+            num_mss=params.get('Num_MSs'),
+            mode=mode
+        )
         
         with Pool(processes=os.cpu_count() * 2, initializer=init_worker) as pool:
             pages, total_items = self.get_pages(num_provs=num_provs, limit=limit)
@@ -198,18 +218,18 @@ class NetworkedSimulator:
             dp = 2
             
             return [
-                mode, 
-                num_provs, 
-                params.get('Num_EVs'), # EV
-                params.get('Num_MSs'), # MS 
-                params.get('n_ev'),
-                params.get('n_ms'),
-                round(statistics.min, dp),
-                round(statistics.max, dp),
-                round(statistics.mean, dp),
-                round(statistics.population_stddev, dp),
-                round(statistics.success_rate, dp), 
-                math.ceil(total_calls / total_time) if total_time > 0 else 0
+                mode, # 0
+                total_calls, # 1
+                params.get('Num_EVs'), # 2
+                params.get('Num_MSs'), # 3 
+                params.get('n_ev'), # 4
+                params.get('n_ms'), # 5
+                round(statistics.min, dp), # 6
+                round(statistics.max, dp), # 7
+                round(statistics.mean, dp), # 8
+                round(statistics.population_stddev, dp), # 9
+                round(statistics.success_rate, dp),  # 10
+                math.ceil(total_calls / total_time) if total_time > 0 else 0 # 11
             ]
 
     def create_nodes(self, **kwargs):

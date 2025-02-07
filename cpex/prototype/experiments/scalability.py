@@ -21,8 +21,8 @@ EXPERIMENT_PARAMS = {
     },
     3: {
         'simulator': networked.NetworkedSimulator,
-        'node_groups': [(10, 10)],
-        'provider_groups': [10, 20, 40, 80, 160, 320, 640, 1280],
+        'node_groups': [(5, 5)],
+        'provider_groups': [10]
     }
 }
 
@@ -35,10 +35,20 @@ def load_checkpoint():
     global experimentState
     if not experimentState:
         experimentState = files.read_json(fileloc=stateFile, default=defaultdict(dict))
-    return experimentState[str(EXPERIMENT_NUM)]
+    key = str(EXPERIMENT_NUM)
+    if key in experimentState:
+        return experimentState[key]
+    return {}
 
 def save_checkpoint(params):
-    experimentState[str(EXPERIMENT_NUM)].update(params)
+    global experimentState
+    
+    key = str(EXPERIMENT_NUM)
+    if key in experimentState:
+        experimentState[key].update(params)
+    else:
+        experimentState[key] = params
+    
     files.override_json(fileloc=stateFile, data=experimentState)
     
 
@@ -73,13 +83,14 @@ def simulate(resutlsloc: str, mode: str, params: dict):
         )
         
         # Handle network churn simulation
-        stop_churning = threading.Event()
-        network_churning = threading.Thread(target=local.network_churn, args=(stop_churning,))
-        network_churning.start()
+        if EXPERIMENT_NUM == 1:
+            stop_churning = threading.Event()
+            network_churning = threading.Thread(target=local.network_churn, args=(stop_churning,))
+            network_churning.start()
         
         for j in range(j_start, len(provider_groups)):
             num_provs = provider_groups[j]
-            print(f"\nRunning simulation with {num_provs}({num_provs * (num_provs - 1) // 2}) call paths and {node_groups[i][0]} ms, {node_groups[i][1]} evs")
+            print(f"\n Started Simulation. Num_Provs: {num_provs}, Num_EVs: {node_groups[i][0]}, Num_MSs: {node_groups[i][1]}")
             result = Simulator.run({
                 'Num_Provs':num_provs,
                 'Num_EVs': node_groups[i][0],
@@ -87,7 +98,11 @@ def simulate(resutlsloc: str, mode: str, params: dict):
                 'mode': mode,
                 **params
             })
-            files.append_csv(resutlsloc, [result])
+            save_result(
+                loc=resutlsloc, 
+                result=result,
+                nodes_count=sum(node_groups[i])
+            )
             print(result)
             print("Results written to", resutlsloc)
             save_checkpoint({
@@ -100,33 +115,46 @@ def simulate(resutlsloc: str, mode: str, params: dict):
             })
         j_start = 0
 
-        stop_churning.set()
-        network_churning.join()
+        if EXPERIMENT_NUM == 1:
+            stop_churning.set()
+            network_churning.join()
 
         save_checkpoint({'NP_idx': -1}) # Reset NP_idx
     i_start = 0
     save_checkpoint({'NN_idx': -1}) # Reset NN_idx
+
+def save_result(**kwargs):
+    resutlsloc = kwargs.get('loc')
+    result = kwargs.get('result')
+    
+    if EXPERIMENT_NUM == 3:
+        result = [
+            result[0], # mode
+            result[1], # calls_count
+            kwargs.get('nodes_count'), # nodes_count
+            result[6], # lat_min
+            result[7], # lat_max
+            result[8], # lat_mean
+            result[9], # lat_std
+            result[10], # success_rate
+            result[11] # calls_per_sec
+        ]
+    files.append_csv(resutlsloc, [result])
 
 def prepare_results_file():
     if EXPERIMENT_NUM not in [1, 3]:
         raise ValueError('Invalid experiment number')
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{EXPERIMENT_NUM}.csv"
     prevState = load_checkpoint()
-    if prevState: return resutlsloc
-    files.write_csv(resutlsloc, [[
-        'mode', 
-        'Num_Provs', 
-        'Num_EVs', 
-        'Num_MSs', 
-        'n_ev',
-        'n_ms',
-        'lat_min', 
-        'lat_max', 
-        'lat_mean', 
-        'lat_std', 
-        'success_rate', 
-        'calls_per_sec'
-    ]])
+    if prevState:
+        return resutlsloc
+    print('Writing Headers to', resutlsloc)
+    statsheader = ['lat_min', 'lat_max','lat_mean','lat_std','success_rate','calls_per_sec']
+    if EXPERIMENT_NUM == 1:
+        headers = ['mode','Num_Provs','Num_EVs','Num_MSs','n_ev','n_ms'] + statsheader
+    elif EXPERIMENT_NUM == 3:
+        headers = ['mode','calls_count','nodes_count'] + statsheader
+    files.write_csv(resutlsloc, [headers])
     return resutlsloc
 
 def reset_routes():
@@ -144,22 +172,7 @@ def set_simulator(args):
         EXPERIMENT_NUM = 3
         Simulator = networked.NetworkedSimulator()
 
-def main(args):
-    global cache_client
-    
-    set_simulator(args)
-    
-    if EXPERIMENT_NUM == 3:
-        raise NotImplementedError("Experiment 3 is not implemented yet")
-
-    run_datagen()
-    resutlsloc = prepare_results_file()
-    reset_routes()
-    
-    cache_client = cache.connect()
-    cache.set_client(cache_client)
-    networked.set_cache_client(cache_client)
-
+def run_experiment_1(resutlsloc):
     prevState = load_checkpoint()
     i_start = prevState.get('n_ev', 1)
     j_start = prevState.get('n_ms', 1)
@@ -178,11 +191,46 @@ def main(args):
             iter_start = 1 # Reset iter_start after first iteration
         j_start = 1 # Reset j_start after first iteration
     i_start = 1 # Reset i_start after first iteration
-
-    files.delete_file(stateFile)
+    delete_state_for_exp()
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
+def run_experiment_3(resutlsloc):
+    simulate(
+        resutlsloc=resutlsloc, 
+        mode=constants.MODE_CPEX, 
+        params={'n_ev': 3, 'n_ms': 3}
+    )
+    # simulate(
+    #     resutlsloc=resutlsloc, 
+    #     mode=constants.MODE_ATIS, 
+    #     params={}
+    # )
+    delete_state_for_exp()
 
+def main(args):
+    global cache_client
+    
+    set_simulator(args)
+
+    run_datagen()
+    resutlsloc = prepare_results_file()
+    reset_routes()
+    
+    cache_client = cache.connect()
+    cache.set_client(cache_client)
+    networked.set_cache_client(cache_client)
+
+    if args.experiment == 1:
+        run_experiment_1(resutlsloc)
+    elif args.experiment == 3:
+        run_experiment_3(resutlsloc)
+
+def delete_state_for_exp():
+    global experimentState
+    if not experimentState: return
+    experimentState[str(EXPERIMENT_NUM)] = {}
+    files.override_json(fileloc=stateFile, data=experimentState)
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment', type=int, choices=[1, 3], help='Experiment to run. Either 1 or 3. Default=1', default='1')
