@@ -5,6 +5,7 @@ x-cpex-service: &cpex-service
     - '.:/app'
   depends_on:
     - cache
+    - mongo
   networks:
     - net
 
@@ -46,6 +47,16 @@ services:
       gunicorn cpex.servers.message_store:app 
       --bind 0.0.0.0:80 
       --workers 4 
+      --worker-class uvicorn.workers.UvicornWorker 
+      --reload
+
+  iwf-proxy:
+    <<: *cpex-service
+    container_name: cpex-proxy
+    command: >
+      gunicorn cpex.servers.cpex_proxy:app 
+      --bind 0.0.0.0:80 
+      --workers 8
       --worker-class uvicorn.workers.UvicornWorker 
       --reload
 

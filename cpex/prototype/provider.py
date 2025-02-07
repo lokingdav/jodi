@@ -28,6 +28,7 @@ class Provider(iwf.CpexIWF):
     def __init__(self, params: dict):
         super().__init__(params)
         self.latencies = []
+        self.mode = params['mode']
         self.pid = params['pid']
         self.SPC = f'sp_{self.pid}'
         self.impl = params['impl']

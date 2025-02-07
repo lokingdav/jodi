@@ -9,6 +9,8 @@ def env(envname, default="", dtype=None):
     value = getenv(envname)
     value = value if value else default
     if dtype == bool:
+        if type(value) == bool:
+            return value
         return value.lower() in ['true', '1', 't', 'y', 'yes']
     if dtype == int:
         return int(value)
@@ -42,6 +44,10 @@ CACHE_PORT = env("CACHE_PORT", "6379")
 CACHE_PASS = env("CACHE_PASS")
 CACHE_DB = env("CACHE_DB", "0")
 
+n_ev = env('n_ev', 3)
+n_ms = env('n_ms', 3)
+FAKE_PROXY = env('FAKE_PROXY', True, dtype=bool)
+
 NODE_ID = env('NODE_ID')
 NODE_FQDN = env('NODE_FQDN')
 
@@ -63,7 +69,7 @@ HOST_APP_PATH = env('HOST_APP_PATH')
 # General Parameters
 T_MAX_SECONDS = env('T_MAX_SECONDS', 10, dtype=int)
 REC_TTL_SECONDS = env('REC_TTL_SECONDS',15, dtype=int)
-REPLICATION = env('REPLICATION', 3)
+
 
 # Group Signatures
 TGS_MSK = env('TGS_MSK')
@@ -74,7 +80,6 @@ TGS_GSK = env('TGS_GSK')
 # OPRF Parameters
 OPRF_KEYLIST_SIZE = env('OPRF_KEYLIST_SIZE', 10, dtype=int)
 OPRF_INTERVAL_SECONDS = env('OPRF_INTERVAL_SECONDS', 10, dtype=int)
-OPRF_EV_PARAM = env('OPRF_EV_PARAM', 2)
 
 # Network Churn
 EV_AVAILABILITY = env('EV_AVAILABILITY', 0.99, dtype=float)
@@ -87,3 +92,4 @@ MS_DOWN_TIME = (UP_TIME_DURATION * (1 - MS_AVAILABILITY)) / MS_AVAILABILITY
 CHURN_INTERVAL_SECONDS = env('CHURN_INTERVAL_SECONDS', min(EV_DOWN_TIME, MS_DOWN_TIME), dtype=float)
 
 EMPTY_TOKEN = env('EMPTY_TOKEN', '-1')
+

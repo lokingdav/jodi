@@ -2,17 +2,17 @@ import time
 import cpex.config as config
 from cpex.helpers import misc, http
 from typing import List
-from cpex.crypto import libcpex
-from pylibcpex import Utils
+from cpex.crypto import libcpex, groupsig
+from pylibcpex import Utils, Oprf
 
 class CpexIWF:
     def __init__(self, params: dict):
-        self.logger = params.get('logger')
         self.n_ev = params['n_ev']
         self.n_ms = params['n_ms']
         self.gpk = params['gpk']
         self.gsk = params['gsk']
-        self.mode = params['mode']
+        self.logger = params.get('logger')
+        self.fake_proxy = params.get('fake_proxy', False)
         
         # Providers compute time
         self.publish_provider_time = 0
@@ -25,24 +25,6 @@ class CpexIWF:
         # Message stores compute time
         self.publish_ms_time = 0
         self.retrieve_ms_time = 0
-        
-    def get_publish_compute_times(self):
-        return {
-            'provider': misc.toMs(self.publish_provider_time),
-            'evaluator': misc.toMs(self.publish_ev_time),
-            'message_store': misc.toMs(self.publish_ms_time),
-        }
-
-    def get_retrieve_compute_times(self):
-        return {
-            'provider': misc.toMs(self.retrieve_provider_time),
-            'evaluator': misc.toMs(self.retrieve_ev_time),
-            'message_store': misc.toMs(self.retrieve_ms_time),
-        }
-    
-    def log_msg(self, msg):
-        if config.DEBUG and self.logger:
-            self.logger.debug(msg)
     
     async def cpex_publish(self, src, dst, token):
         call_id = await self.cpex_generate_call_id(src=src, dst=dst, req_type='publish')
@@ -115,5 +97,62 @@ class CpexIWF:
         return token
     
     async def make_request(self, req_type: str, requests: List[dict]):
-        responses = await http.posts(reqs=requests)
-        return responses
+        if self.fake_proxy:
+            return await make_fake_request(
+                req_type=req_type, 
+                requests=requests,
+                gsk=self.gsk,
+                gpk=self.gpk
+            )
+        else:
+            return await http.posts(reqs=requests)
+    
+    def get_publish_compute_times(self):
+        return {
+            'provider': misc.toMs(self.publish_provider_time),
+            'evaluator': misc.toMs(self.publish_ev_time),
+            'message_store': misc.toMs(self.publish_ms_time),
+        }
+
+    def get_retrieve_compute_times(self):
+        return {
+            'provider': misc.toMs(self.retrieve_provider_time),
+            'evaluator': misc.toMs(self.retrieve_ev_time),
+            'message_store': misc.toMs(self.retrieve_ms_time),
+        }
+    
+    def log_msg(self, msg):
+        if config.DEBUG and self.logger:
+            self.logger.debug(msg)
+            
+async def make_fake_request(req_type: str, requests: List[dict], gsk: str, gpk: str):
+    if req_type == 'evaluate':
+        return fake_ev_evaluate(requests=requests, gsk=gsk, gpk=gpk)
+    elif req_type == 'publish':
+        return fake_ms_publish(requests=requests, gsk=gsk, gpk=gpk)
+    elif req_type == 'retrieve':
+        return fake_ms_retrieve(requests=requests, gsk=gsk, gpk=gpk)
+        
+def fake_ev_evaluate(requests: List[dict], gsk: str, gpk: str):
+    responses = []
+    sk, pk = Oprf.keygen()
+    for request in requests:
+        fx, vk = Oprf.evaluate(sk, pk, Utils.from_base64(request['data']['x']))
+        responses.append({ "fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk) })
+    return responses
+
+def fake_ms_publish(requests: List[dict], gsk: str, gpk: str):
+    responses = []
+    for request in requests:
+        responses.append({'_success': 'message stored'})
+    return responses
+
+def fake_ms_retrieve(requests: List[dict], gsk: str, gpk: str):
+    responses = []
+    for request in requests:
+        responses.append({
+            'idx': 'dbzv7wD3D0lTtM1l/RfRTWKTnDMXqgRk3Epwp2Mh+qk=', 
+            'ctx': 'Hlnv8bLedWZKWaNGSE74HXfKMV4kybw1WtM4jwhlAjU=:OLFjsWrGV/vbuF2T8tzzKQ4Ha1NXa3DcEa4o3+OKovf2kLdEvMJ/cY/IoVOZsbICPwwCSGEcMe6uUCclg+oaMYFDZISdOp0Xski5cyD7W5NKcuIkJANUJu0FXcRGOfACTQTs9jhgOHmWGuQmyvfvcG2tMJFGupYlaXezC9P3avN7cDK+w+6gHgYXOd5yWdBg/MxtZ8oK9XR6pAWbXgWKyKA2UzqYQj9yKYhebBJfAg3O4nojlYsAWGhHnunAMGI32HjIesGRnXthxDV+TjT/9D96FVy+7V9K38Ri7T1tFG1j27ySiUAuVdWjOW5UjS83OQNigkwiiQYkvyvo/NMSqWjB03n5ja82CqWt1nI6yLvIRuSGJU2X+a665JGWEHndRa5UsYTUPu+fpc6tuBC1Mwl9HE73cNKtCYa4ewR5MVnrXFhNX96aKJMvAJU6QUR7GShZnoI1Rvobu9nil7gn2ulki/w=', 
+            'sig': 'ATAAAAAh2WRbHPXWLJLt00kSTAjgjqm7N+3yaz0VpJ64tGhuOFtaKFu0T5pzEG8GXVv+9oMwAAAAuad5cXhfksh5OkIW6o0CXjnDtPk3enuy48KhcoYsy3z4tSFs7feyU6xQ5RaWhaSKMAAAAK7dD3uyb0jD4N7E0HHrug4Zfu/2iUysyNCu3f8NUbSJKnR4zPZ839iZEPsP0+WMiiAAAAAI+vgnAxgf8URFEmKb//m9gJB+lRuJscoqSPHyrY5mIiAAAAD59QI/ImkNFB5jlAyz83mlWJ3ufykC02OLq7AgjaATDyAAAABVn1qiqknCxJerwNA9tbIvqcNgIGEX3AMJTDtzBS4lSyAAAABS5i5yic69ZxXu9WYnyw9fTzjMxE4Zz666sD4znS/oVSAAAACPS68QLVG00j/L8x5DI30M48PDK4XXYF1dXspMdGapPCAAAACHxFj3DH0pHg58QNrQfurI2xrrdi2zMSXQQTKqxUchSQ=='
+        })
+    return responses

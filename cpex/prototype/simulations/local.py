@@ -24,6 +24,10 @@ class LocalSimulator(NetworkedSimulator):
         ))
     
     def create_nodes(self, mode: str, num_evs: int, num_repos: int):
+        LocalSimulator.create_cpex_nodes(num_evs, num_repos)
+    
+    @staticmethod
+    def create_cpex_nodes(num_evs: int, num_repos: int):
         evals, stores = [], []
         keysets = {}
 

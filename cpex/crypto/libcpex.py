@@ -119,12 +119,14 @@ def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str, gpk):
     for res in responses:
         if '_error' in res or not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=gpk):
             continue
-        
-        c_0, c_1 = res['ctx'].split(':')
-        kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_id))
-        msg: bytes = Ciphering.dec(kenc, Utils.from_base64(c_1))
-        
-        if msg:
-            return msg.decode('utf-8')
+        try:
+            c_0, c_1 = res['ctx'].split(':')
+            kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_id))
+            msg: bytes = Ciphering.dec(kenc, Utils.from_base64(c_1))
+            
+            if msg:
+                return msg.decode('utf-8')
+        except:
+            continue
         
     return None
