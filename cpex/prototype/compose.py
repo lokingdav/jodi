@@ -4,7 +4,8 @@ from cpex.models import cache
 from pylibcpex import Utils
 from multiprocessing import Pool
 from typing import Tuple
-from cpex.helpers import dht
+from cpex.helpers import dht, files
+import yaml
 
 def get_client():
     return docker.from_env()
@@ -25,10 +26,13 @@ def add_node(name: str):
     
     if 'atis-' in name:
         command = command.replace('[app]', 'cpex.prototype.stirshaken.cps_server:app')
+        command = command.replace('[port]', config.CPS_PORT)
     elif '-ev' in name:
         command = command.replace('[app]', 'cpex.servers.evaluator:app')
+        command = command.replace('[port]', config.EV_PORT)
     else:
         command = command.replace('[app]', 'cpex.servers.message_store:app')
+        command = command.replace('[port]', config.MS_PORT)
     
     client.containers.run(
         name=name,
@@ -42,34 +46,33 @@ def add_node(name: str):
     
     print(f"Started container {name}")
 
-def cache_repositories(mode: str):
-    cps, ms, ev = [], [], []
+def save_hosts(mode: str):
+    hosts_file = 'automation/hosts.yml'
+    if not files.is_empty(hosts_file):
+        print("\nautomation/hosts.yml is not empty. Delete it first and rerun the command\n")
+        return
+
     containers = get_client().containers.list()
+
+    # Dictionary that holds just the container-related hosts
+    container_hosts = {}
     for container in containers:
-        if not container.name.startswith(config.get_container_prefix(mode)):
-            continue
-        
-        noderec = {
-            'id': Utils.hash256(container.name.encode()).hex(),
-            'name': container.name,
-            'fqdn': container.name,
-            'url': f'http://{container.name}'
+        if container.name.startswith(config.get_container_prefix(mode)):
+            container_hosts[container.name] = {
+                'ansible_host': container.name,
+                'ansible_user': 'ubuntu',
+            }
+
+    inventory = {
+        'all': {
+            'hosts': container_hosts
         }
-        
-        if 'atis-' in container.name:
-            cps.append(noderec)
-        elif '-ev' in container.name:
-            ev.append(noderec)
-        else:
-            ms.append(noderec)
-            
-    # print('CPS', [c.get('name') for c in cps])
-    # print('MS', [m.get('name') for m in ms])
-    # print('EVALS', [e.get('name') for e in ev])
-    
-    if cps: cache.save(key=config.CPS_KEY, value=json.dumps(cps))
-    if ms: cache.save(key=config.STORES_KEY, value=json.dumps(ms))
-    if ev: cache.save(key=config.EVALS_KEY, value=json.dumps(ev))
+    }
+
+    # Write to file
+    with open(hosts_file, 'w') as file:
+        yaml.dump(inventory, file)
+
 
 def remove_repositories(mode: str):
     client = get_client()
@@ -97,18 +100,25 @@ def add_nodes(count: int, mode: str, ntype: str = None):
     names = [ prefix+str(i) for i in range(start_id, start_id + count) ]
     with Pool(processes= os.cpu_count()) as pool:
         pool.map(add_node, names)
+    
+def main(args):
+    if config.is_atis_mode(args.mode):
+        add_nodes(args.count, args.mode)
+    else:
+        add_nodes(args.count, args.mode, 'ms')
+        add_nodes(args.count, args.mode, 'ev')
         
-    cache_repositories(mode=mode)
+    save_hosts(mode=args.mode)
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--count', type=int, help='Number of nodes to add', required=True)
     parser.add_argument('--mode', type=str, help='Mode of operation', required=True)
-    parser.add_argument('--type', type=str, help='Type of node to add: ms or ev if mode is CPEX', required=False)
     args = parser.parse_args()
 
     if not any(vars(args).values()):
         parser.print_help()
     else:
-        add_nodes(args.count, args.mode, args.type)
+        main(args)
+        # save_hosts(args.mode)
         
