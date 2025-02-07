@@ -11,7 +11,7 @@ from cpex.helpers import files
 from cpex.models import persistence
 from cpex.prototype.stirshaken import certs
 
-ca_certs_file = config.CONF_DIR + '/cas.certs.json'
+certs_file = config.CONF_DIR + '/certs.json'
 
 states = [
     'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 
@@ -67,40 +67,30 @@ def create_credential(name: str, caprivk: str, cacert: str):
     certificate = certs.sign_csr(csr_str, caprivk, cacert)
     
     return { constants.PRIV_KEY: privk, constants.CERT_KEY: certificate }
-
-def get_random_intermediate_ca():
-    credentials = files.read_json(ca_certs_file)
-    icakey = constants.INTERMEDIATE_CA_KEY
-    index = random.randint(0, len(credentials[icakey]) - 1)
-    return credentials[icakey][index]
     
 def setup():
-    if not files.is_empty(ca_certs_file):
+    if not files.is_empty(certs_file):
         print("[SKIPPING] Root and intermediate CAs have already been generated.")
         return True
     
     root_ca = create_root_ca()
-    icas = []
-    
+    data = {constants.ROOT_CA_KEY: root_ca}
+    num_certs_per_ica = 10
     for ica in range(int(config.NO_OF_INTERMEDIATE_CAS)):
-        ica_name = f"Intermediate CA {ica}"
-        ica = create_credential(ica_name, root_ca[constants.PRIV_KEY], root_ca[constants.CERT_KEY])
-        icas.append(ica)
-        
-    data = {
-        constants.ROOT_CA_KEY: root_ca,
-        constants.INTERMEDIATE_CA_KEY: icas
-    }
+        ica_name = f"{constants.INTERMEDIATE_CA_KEY}-{ica}"
+        data[ica_name] = create_credential(ica_name, root_ca[constants.PRIV_KEY], root_ca[constants.CERT_KEY])
+        for i in range(num_certs_per_ica):
+            idx = ica * num_certs_per_ica + i
+            ocrt_name = f"{constants.OTHER_CREDS_KEY}-{idx}"
+            data[ocrt_name] = create_credential(ocrt_name,  data[ica_name][constants.PRIV_KEY],  data[ica_name][constants.CERT_KEY])
     
-    files.override_json(ca_certs_file, data)
+    files.override_json(certs_file, data)
 
-    print(f"Root CA and Intermediate CA keys and certificates have been generated and stored in {ca_certs_file}")
-    
-    return data
+    print(f"Certificates have been generated and stored in {certs_file}")
 
-def issue_cert(name: str, ctype: str = 'cps'):
-    ica = get_random_intermediate_ca()
-    cred = create_credential(name, ica[constants.PRIV_KEY], ica[constants.CERT_KEY])
-    cred['type'] = ctype
-    # persistence.store_credential(name, cred)
-    return cred
+def load_certs():
+    if files.is_empty(certs_file):
+        raise Exception(f"Certificates have not been generated")
+    creds = files.read_json(certs_file)
+    i = random.randint(0, int(config.NO_OF_INTERMEDIATE_CAS) * 10 - 1)
+    return creds[f"{constants.OTHER_CREDS_KEY}-{i}"], creds

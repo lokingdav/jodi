@@ -5,6 +5,7 @@ import cpex.config as config
 import yaml, re
 from pylibcpex import Utils
 from collections import defaultdict
+from cpex.prototype.stirshaken import stirsetup
 
 def groupsig_setup():
     if config.TGS_GPK and config.TGS_GSK and config.TGS_GML and config.TGS_MSK:
@@ -74,13 +75,23 @@ def get_node_hosts():
                     nodes[config.CPS_KEY].append(node)
     return nodes
 
+def setup_certificates():
+    stirsetup.setup()
+    
 def main(args):
     if args.all or args.groupsig:
         groupsig_setup()
+        setup_certificates()
+    else:
+        if args.groupsig:
+            groupsig_setup()
+        elif args.certs:
+            setup_certificates()
 
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--groupsig', action='store_true', help='Setup group signature')
+    parser.add_argument('--certs', action='store_true', help='Setup STIR/SHAKEN certificates')
     parser.add_argument('--all', action='store_true', help='Setup everything')
     args = parser.parse_args()
     # if no arguments, print help

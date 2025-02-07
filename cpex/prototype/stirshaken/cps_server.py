@@ -12,20 +12,21 @@ from cpex.prototype.scripts import setup
 from cpex.helpers import misc, files, http
 
 tmax = 15
-credential = None
+MY_CRED = None
+CERTS_REPO = None
 REPO_NAME = f'cps_{config.NODE_ID}'
 
 def init_server():
-    global credential
+    global MY_CRED, CERTS_REPO
+    
     cache_client = cache.connect()
     cache.set_client(cache_client)
+    
     nodes = setup.get_node_hosts()
     if nodes and nodes.get(config.CPS_KEY):
         cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get(config.CPS_KEY)))
-        
-    credential = persistence.get_credential(name=REPO_NAME)
-    if not credential:
-        credential = stirsetup.issue_cert(name=REPO_NAME)
+
+    MY_CRED, CERTS_REPO = stirsetup.load_certs()
 
     return FastAPI()
         
@@ -82,7 +83,7 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     MY_FQDN = config.NODE_FQDN.replace(f':{config.CPS_PORT}', f':{config.CR_PORT}')
     auth = auth_service.AuthService(
         ownerId=config.NODE_ID,
-        private_key_pem=credential[constants.PRIV_KEY],
+        private_key_pem=MY_CRED[constants.PRIV_KEY],
         x5u=f'http://{MY_FQDN}/certs/{REPO_NAME}'
     )
 
@@ -93,7 +94,7 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
             action='republish', 
             orig=orig, 
             dest=dest, 
-            passports=request.passports, 
+            passports=request.passports,
             iss=decoded.get('iss'), 
             aud=repo.get('fqdn')
         )
@@ -146,11 +147,18 @@ async def republish(dest: str, orig: str, authorization: str = Header(None)):
     
     return success_response(content=passports)
 
+@app.get("/certs/{key}")
+async def get_certificate(key: str):
+    cert = CERTS_REPO.get(key)
+    if not cert or 'cert' not in cert:
+        return not_found_response()
+    return success_response(content={"cert": cert['cert']})
+
 @app.get("/health")
 async def health():
     return {
-        "CPS ID": config.NODE_ID,
-        "CPS FQDN": config.NODE_FQDN,
-        "message": "OK", 
-        "status": 200
+        "FQDN": config.NODE_FQDN,
+        "Message": "OK", 
+        "Status": 200,
+        "Others": [n['fqdn'] for n in cache.get_other_cpses()]
     }

@@ -1,6 +1,6 @@
 import json
 from redis import Redis
-from cpex.config import CACHE_HOST, CACHE_PORT, CACHE_PASS, CACHE_DB, NODE_ID, get_container_prefix, CPS_KEY
+from cpex.config import CACHE_HOST, CACHE_PORT, CACHE_PASS, CACHE_DB, NODE_FQDN, CPS_KEY
 
 client = None
 
@@ -43,4 +43,4 @@ def cache_for_seconds(key: str, value: str, seconds: int):
 
 def get_other_cpses():
     repos = find(key=CPS_KEY, dtype=dict)
-    return [repo for repo in repos if repo.get('id') != NODE_ID]
+    return [repo for repo in repos if repo.get('fqdn') != NODE_FQDN]

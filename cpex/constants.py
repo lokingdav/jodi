@@ -1,5 +1,6 @@
 ROOT_CA_KEY='rca'
 INTERMEDIATE_CA_KEY='ica'
+OTHER_CREDS_KEY='ocrt'
 CERT_KEY='cert'
 PRIV_KEY='sk'
 
