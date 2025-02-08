@@ -21,7 +21,7 @@ EXPERIMENT_PARAMS = {
     },
     3: {
         'simulator': networked.NetworkedSimulator,
-        'node_groups': [(5, 5)],
+        'node_groups': [(1, 1)],
         'provider_groups': [10]
     }
 }

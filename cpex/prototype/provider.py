@@ -182,6 +182,8 @@ class Provider(iwf.CpexIWF):
         url: str = self.cps['url']
         url = f'{url}/retrieve/{signal.To}/{signal.From}'
         response = await http.get(url=url, params={}, headers=headers)
+        if type(response) == list and len(response) > 0:
+            return response[0]
         return response
 
     def convert_sip_to_tdm(self, signal: SIPSignal):

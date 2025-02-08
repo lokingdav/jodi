@@ -6,7 +6,7 @@ import json
 
 import cpex.config as config
 import cpex.constants as constants
-from cpex.models import persistence, cache
+from cpex.models import cache
 from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service, certs
 from cpex.prototype.scripts import setup
 from cpex.helpers import misc, files, http
