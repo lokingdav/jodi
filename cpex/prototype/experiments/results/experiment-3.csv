@@ -1,2 +1,2 @@
 mode,calls_count,nodes_count,lat_min,lat_max,lat_mean,lat_std,success_rate,calls_per_sec
-atis,19,2,10.5,19.8,13.05,2.43,100.0,69
+atis,38,2,9.8,29.9,12.17,3.96,100.0,74

@@ -45,15 +45,17 @@ def create(num_providers:int, deploy_rate: float = config.SS_DEPLOY_RATE) -> Tup
     routes, stats = get_all_routes(compute_shortest_paths(graph=graph))
     adopters = get_stirshaken_adopters(graph=graph, deploy_rate=deploy_rate)
     data = []
+    index = 1
     for i, route in enumerate(routes):
         _route = [(r, adopters[int(r)]) for r in route]
         if all([r[1] == 1 for r in _route]):
             continue
         data.append({
-            '_id': i+1,
+            '_id': index,
             'status': STATUS_PENDING,
             'route': _route
         })
+        index += 1
         
     data = [{'_id': 0, 'total': len(data), 'all': len(routes)}] + data
     

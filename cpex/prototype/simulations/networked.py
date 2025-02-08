@@ -162,7 +162,7 @@ class NetworkedSimulator:
         if not data:
             raise Exception("Routes needs to be generated first")
         limit = min(limit, data['total'])
-        return [(i, i + limit) for i in range(1, data['total']+1, limit)], data['total']   
+        return [(i, i + limit-1) for i in range(1, data['total']+1, limit)], data['total']   
     
     def validate_node_counts(self, **kwargs):
         mode = kwargs.get('mode')
