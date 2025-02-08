@@ -33,17 +33,18 @@ class Provider(iwf.CpexIWF):
         self.SPC = f'sp_{self.pid}'
         self.impl = params['impl']
         self.next_prov = params.get('next_prov')
-        self.cps_fqdn = params.get('cps_fqdn')
-        self.cr_fqdn = params.get('cr_fqdn')
+
+        self.cps = params.get('cps')
+        self.cr = params.get('cr')
 
         if self.mode not in [constants.MODE_ATIS, constants.MODE_CPEX]:
             raise Exception('Mode must be specified as either atis or cpex')
         
         if config.is_atis_mode(self.mode):
-            if not self.cps_fqdn:
-                raise Exception('CPS FQDN must be specified')
-            if not self.cr_fqdn:
-                raise Exception('CR FQDN must be specified')
+            if not self.cps:
+                raise Exception('CPS must be specified')
+            if not self.cr:
+                raise Exception('CR must be specified')
             
         self.load_auth_service()
     
@@ -60,30 +61,21 @@ class Provider(iwf.CpexIWF):
         return self.next_prov and self.next_prov[1] == 1
 
     def load_auth_service(self):
-        credKey = f'creds.{self.SPC}'
-        credential = cache.find(key=credKey, dtype=dict)
-        
-        if not credential:
-            credential = stirsetup.issue_cert(name=self.SPC, ctype='sp')
-            cache.save(key=credKey, value=json.dumps(credential))
-            
         self.auth_service = AuthService(
             ownerId=self.pid,
-            private_key_pem=credential[constants.PRIV_KEY],
-            x5u=f'http://{self.cr_fqdn}/certs/{self.SPC}'
+            private_key_pem=self.cr['sk'],
+            x5u=self.cr['x5u'],
         )
     
     async def originate(self, src: str = None, dst: str = None) -> Union[SIPSignal, TDMSignal]:
         src = misc.fake_number(1) if src is None else src
         dst = misc.fake_number(1) if dst is None else dst
         attest = random.choice(['A', 'B', 'C'])
-        
-        self.log_msg(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) ORIGINATES Call From src={src} to dst={dst} with attest={attest}')
+        self.log_msg(f'* Provider({self.pid}, imp={self.impl}, ORIGINATES Call From src={src} to dst={dst} with attest={attest}')
         token = self.auth_service.create_passport(orig=src, dest=dst, attest=attest)
         signal = {'To': dst, 'From': src, 'Pid': self.pid}
         signal = SIPSignal(**signal, Identity=token)
         signal = await self.forward_call(signal)
-            
         return signal, token
     
     async def forward_call(self, signal: Union[SIPSignal, TDMSignal]):
@@ -93,7 +85,7 @@ class Provider(iwf.CpexIWF):
         return signal
     
     async def receive(self, incoming_signal: Union[SIPSignal, TDMSignal]) -> Union[SIPSignal, TDMSignal]:
-        self.log_msg(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) RECEIVES {get_type(incoming_signal)}')
+        self.log_msg(f'* Provider({self.pid}, imp={self.impl}, RECEIVES {get_type(incoming_signal)}')
         
         if isinstance(incoming_signal, TDMSignal):
             if not self.impl or not self.next_prov_is_capable():
@@ -113,7 +105,7 @@ class Provider(iwf.CpexIWF):
                     return self.convert_sip_to_tdm(incoming_signal)
     
     async def terminate(self, incoming_signal: Union[SIPSignal, TDMSignal]):
-        self.log_msg(f'* Provider({self.pid}, imp={self.impl}, cps={self.cps_fqdn}) TERMINATES {get_type(incoming_signal)}')
+        self.log_msg(f'* Provider({self.pid}, imp={self.impl} TERMINATES {get_type(incoming_signal)}')
 
         if isinstance(incoming_signal, SIPSignal) and incoming_signal.Identity:
             return incoming_signal.Identity
@@ -140,7 +132,6 @@ class Provider(iwf.CpexIWF):
         time_taken = time.perf_counter() - start_time
         self.latencies.append(time_taken)
         self.publish_provider_time += time_taken
-        
         return tdm_signal
         
     async def atis_publish(self, signal: SIPSignal):
@@ -150,11 +141,12 @@ class Provider(iwf.CpexIWF):
             dest=signal.To,
             passports=[signal.Identity],
             iss=self.pid,
-            aud=self.cps_fqdn
+            aud=self.cps['fqdn']
         )
         headers: dict = {'Authorization': 'Bearer ' + authorization }
         payload: dict = {'passports': [ signal.Identity ]}
-        url: str = f'http://{self.cps_fqdn}/publish/{signal.To}/{signal.From}'
+        url: str = self.cps['url']
+        url = f'{url}/publish/{signal.To}/{signal.From}'
         await http.posts(reqs=[{'url': url, 'data': payload, 'headers': headers}])
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
@@ -184,10 +176,11 @@ class Provider(iwf.CpexIWF):
             dest=signal.To,
             passports=[],
             iss=self.pid,
-            aud=self.cps_fqdn
+            aud=self.cps['fqdn']
         )
         headers: dict = {'Authorization': 'Bearer ' + authorization }
-        url: str = f'http://{self.cps_fqdn}/retrieve/{signal.To}/{signal.From}'
+        url: str = self.cps['url']
+        url = f'{url}/retrieve/{signal.To}/{signal.From}'
         response = await http.get(url=url, params={}, headers=headers)
         return response
 

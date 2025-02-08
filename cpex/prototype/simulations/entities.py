@@ -11,6 +11,8 @@ evKeySets = None
 def set_evaluator_keys(keys: dict):
     global evKeySets
     evKeySets = {}
+    if not keys:
+        return
     for nodeId in keys:
         evKeySets[nodeId] = []
         for key in keys[nodeId]:

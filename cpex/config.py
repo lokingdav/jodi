@@ -31,6 +31,7 @@ CPS_KEY = 'sti.nodes.cps'
 EVAL_KEYSETS_KEY = 'cpex.evals.keysets'
 
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)
+NUM_CREDS_PER_ICA = env("NO_CREDS_PER_ICA", 20)
 CONF_DIR = env("CONF_DIR", "conf")
 
 DB_HOST = env("DB_HOST", "mongo")

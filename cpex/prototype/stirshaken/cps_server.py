@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status, Header
+from fastapi import FastAPI, status, Header, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
@@ -7,26 +7,26 @@ import json
 import cpex.config as config
 import cpex.constants as constants
 from cpex.models import persistence, cache
-from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service
+from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service, certs
 from cpex.prototype.scripts import setup
 from cpex.helpers import misc, files, http
 
 tmax = 15
 MY_CRED = None
 CERTS_REPO = None
-REPO_NAME = f'cps_{config.NODE_ID}'
+REPO_NAME = f'cps_{config.NODE_FQDN}'
 
 def init_server():
     global MY_CRED, CERTS_REPO
     
-    cache_client = cache.connect()
-    cache.set_client(cache_client)
+    cache.set_client(cache.connect())
     
     nodes = setup.get_node_hosts()
     if nodes and nodes.get(config.CPS_KEY):
         cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get(config.CPS_KEY)))
 
     MY_CRED, CERTS_REPO = stirsetup.load_certs()
+    certs.set_certificate_repository(CERTS_REPO)
 
     return FastAPI()
         
@@ -80,11 +80,10 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
         return success_response()
 
     # 4. create new requests with payload: orig, dest, passports, token. Token is the authorization header bearer token
-    MY_FQDN = config.NODE_FQDN.replace(f':{config.CPS_PORT}', f':{config.CR_PORT}')
     auth = auth_service.AuthService(
         ownerId=config.NODE_ID,
         private_key_pem=MY_CRED[constants.PRIV_KEY],
-        x5u=f'http://{MY_FQDN}/certs/{REPO_NAME}'
+        x5u=f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
     )
 
     reqs = []
@@ -152,7 +151,7 @@ async def get_certificate(key: str):
     cert = CERTS_REPO.get(key)
     if not cert or 'cert' not in cert:
         return not_found_response()
-    return success_response(content={"cert": cert['cert']})
+    return cert['cert']
 
 @app.get("/health")
 async def health():

@@ -32,20 +32,35 @@ services:
       - 6379:6379
     networks:
       - net
-    
-  sti-cr:
-    <<: *cpex-service
-    container_name: sti-cr
-    command: uvicorn cpex.prototype.stirshaken.cert_repo:app --host 0.0.0.0 --port 80 --reload
-    ports:
-      - 10432:80
 
-  sti-cps:
+  atis-cps-0:
     <<: *cpex-service
-    container_name: sti-cps
+    container_name: atis-cps-0
     command: uvicorn cpex.prototype.stirshaken.cps_server:app --host 0.0.0.0 --port 80 --reload
     ports:
       - 10433:80
+    environment:
+      - NODE_FQDN=atis-cps-0
+
+  atis-cps-1:
+    <<: *cpex-service
+    container_name: atis-cps-1
+    command: uvicorn cpex.prototype.stirshaken.cps_server:app --host 0.0.0.0 --port 80 --reload
+    ports:
+      - 10434:80
+    environment:
+      - NODE_FQDN=atis-cps-1
+
+  experiment:
+    <<: *cpex-service
+    container_name: cpex-exp
+    command: tail -f /dev/null
+    environment:
+      - DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
+      - HOST_APP_PATH=${HOST_APP_PATH}
+    volumes:
+      - '.:/app'
+      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
 
 networks:
   net:

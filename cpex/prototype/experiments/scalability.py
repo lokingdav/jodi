@@ -81,7 +81,6 @@ def simulate(resutlsloc: str, mode: str, params: dict):
             num_evs=node_groups[i][0],
             num_repos=node_groups[i][1]
         )
-        return
         
         # Handle network churn simulation
         if EXPERIMENT_NUM == 1:
@@ -91,7 +90,13 @@ def simulate(resutlsloc: str, mode: str, params: dict):
         
         for j in range(j_start, len(provider_groups)):
             num_provs = provider_groups[j]
-            print(f"\n Started Simulation. Num_Provs: {num_provs}, Num_EVs: {node_groups[i][0]}, Num_MSs: {node_groups[i][1]}")
+            if config.is_atis_mode(mode):
+                suffix = f"Num_CPSs: {sum(node_groups[i]) }"
+            else:
+                suffix = f"Num_EVs: {node_groups[i][0]}, Num_MSs: {node_groups[i][1]}"
+                
+            print(f"\n Started Simulation. Num_Provs: {num_provs}, {suffix}")
+
             result = Simulator.run({
                 'Num_Provs':num_provs,
                 'Num_EVs': node_groups[i][0],

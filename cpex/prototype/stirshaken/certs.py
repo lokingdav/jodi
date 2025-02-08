@@ -10,6 +10,12 @@ import cpex.constants as constants
 
 from typing import Tuple
 
+credentials = None
+
+def set_certificate_repository(creds):
+    global credentials
+    credentials = creds
+
 def generate_key_pair() -> Tuple[str, str]:
     private_key = ec.generate_private_key(
         ec.SECP256R1()  # or SECP384R1, SECP521R1, etc.
@@ -83,9 +89,14 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
 
 
 def download(url: str) -> str:
+    if config.NODE_FQDN in url:
+        key = url.split('/')[-1]
+        return credentials[key]['cert']
+    
     if not validators.url(url) and not url.startswith('http'):
         raise ValueError(f'Cert url must be a valid URL: {url}')
     try:
+        print('Downloading certificate...')
         res = requests.get(url=url)
         res.raise_for_status()
         return res.text

@@ -7,13 +7,14 @@ from cpex.crypto import groupsig
 from cpex.prototype import network
 from cpex.models import cache, persistence
 from cpex.helpers import errors, files, dht, logging
-from cpex.prototype.stirshaken import certs
+from cpex.prototype.stirshaken import stirsetup
 from cpex import config, constants
 from cpex.prototype import provider as providerModule
 from cpex.prototype.simulations import entities
 from cpex.prototype.scripts import setup
 
 gsk, gpk = None, None
+credentials = None
 call_placement_services = []
 
 cache_client = None
@@ -23,13 +24,14 @@ def set_cache_client(client):
     cache_client = client
 
 def init_worker():
-    global gsk, gpk, call_placement_services
+    global gsk, gpk, call_placement_services, credentials
     cache.set_client(cache_client)
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
     call_placement_services = cache.find(
         key=config.CPS_KEY, 
         dtype=dict
     )
+    _, credentials = stirsetup.load_certs()
     entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
     
 class NetworkedSimulator:
@@ -38,6 +40,12 @@ class NetworkedSimulator:
         return res
     
     def create_prov_params(self, pid, impl, mode, options, next_prov):
+        [cps, cr] = random.choices(call_placement_services, k=2)
+        ica = random.randint(0, config.NO_OF_INTERMEDIATE_CAS - 1)
+        ocrt = random.randint(0, config.NUM_CREDS_PER_ICA - 1)
+        idx = f"{constants.OTHER_CREDS_KEY}-{ica * config.NUM_CREDS_PER_ICA + ocrt}" 
+        cred = credentials[idx]
+        
         return {
             'pid': pid,
             'impl': bool(int(impl)),
@@ -47,18 +55,19 @@ class NetworkedSimulator:
             'n_ev': options.get('n_ev'),
             'n_ms': options.get('n_ms'),
             'next_prov': next_prov,
-            'cps_fqdn': 'cps.example.com',
-            'cr_fqdn': 'cr.example.com',
+            'cps': { 'url': cps['url'], 'fqdn': cps['fqdn'] },
+            'cr': {'x5u': cr['url'] + f'/certs/{idx}', 'sk': cred['sk']},
         }
         
     def create_provider_instance(self, pid, impl, mode, options, next_prov):
-        return providerModule.Provider(self.create_prov_params(
+        params = self.create_prov_params(
             pid=pid, 
             impl=impl, 
             mode=mode, 
             options=options, 
             next_prov=next_prov
-        ))
+        )
+        return providerModule.Provider(params)
 
     async def simulate_call(self, options: dict):
         mode: str = options.get('mode')
@@ -82,7 +91,7 @@ class NetworkedSimulator:
         logger.debug(f"Simulating call with route: {route}")
         
         providers, signal, start_token, final_token = {}, None, None, None
-        
+
         for i, (idx, impl) in enumerate(route):
             pid = 'P' + str(idx)
             provider: providerModule.Provider = providers.get(pid)
@@ -98,7 +107,7 @@ class NetworkedSimulator:
                 )
                 provider.logger = logger
                 providers[pid] = provider
-                
+
             if i == 0: # Originating provider
                 signal, start_token = await provider.originate()
             elif i == len(route) - 1: # Terminating provider
@@ -183,7 +192,7 @@ class NetworkedSimulator:
             mode=mode
         )
         
-        with Pool(processes=os.cpu_count() * 2, initializer=init_worker) as pool:
+        with Pool(processes=1, initializer=init_worker) as pool:
             pages, total_items = self.get_pages(num_provs=num_provs, limit=limit)
             progress = 0
                 

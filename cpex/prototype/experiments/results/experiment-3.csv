@@ -1,2 +1,1 @@
 mode,calls_count,nodes_count,lat_min,lat_max,lat_mean,lat_std,success_rate,calls_per_sec
-cpex,45,10,196.7,375.4,298.6,43.24,100.0,113

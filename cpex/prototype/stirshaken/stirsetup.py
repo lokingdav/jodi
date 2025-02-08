@@ -47,6 +47,7 @@ def create_root_ca():
         x509.NameAttribute(NameOID.COMMON_NAME, u"Root CA"),
     ])
     return {
+        'id': constants.ROOT_CA_KEY,
         constants.PRIV_KEY: root_private_key_str,
         constants.CERT_KEY: create_self_signed_cert(root_private_key_str, root_subject)
     } 
@@ -66,7 +67,7 @@ def create_credential(name: str, caprivk: str, cacert: str):
     # Sign CSR with Intermediate CA to create credential certificate
     certificate = certs.sign_csr(csr_str, caprivk, cacert)
     
-    return { constants.PRIV_KEY: privk, constants.CERT_KEY: certificate }
+    return { 'id': name, constants.PRIV_KEY: privk, constants.CERT_KEY: certificate }
     
 def setup():
     if not files.is_empty(certs_file):
@@ -75,12 +76,11 @@ def setup():
     
     root_ca = create_root_ca()
     data = {constants.ROOT_CA_KEY: root_ca}
-    num_certs_per_ica = 10
     for ica in range(int(config.NO_OF_INTERMEDIATE_CAS)):
         ica_name = f"{constants.INTERMEDIATE_CA_KEY}-{ica}"
         data[ica_name] = create_credential(ica_name, root_ca[constants.PRIV_KEY], root_ca[constants.CERT_KEY])
-        for i in range(num_certs_per_ica):
-            idx = ica * num_certs_per_ica + i
+        for i in range(config.NUM_CREDS_PER_ICA):
+            idx = ica * config.NUM_CREDS_PER_ICA + i
             ocrt_name = f"{constants.OTHER_CREDS_KEY}-{idx}"
             data[ocrt_name] = create_credential(ocrt_name,  data[ica_name][constants.PRIV_KEY],  data[ica_name][constants.CERT_KEY])
     
