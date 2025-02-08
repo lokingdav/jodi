@@ -21,7 +21,7 @@ EXPERIMENT_PARAMS = {
     },
     3: {
         'simulator': networked.NetworkedSimulator,
-        'node_groups': [(1, 1)],
+        'node_groups': [(5, 5)],
         'provider_groups': [10]
     }
 }
@@ -150,10 +150,16 @@ def save_result(**kwargs):
 def prepare_results_file():
     if EXPERIMENT_NUM not in [1, 3]:
         raise ValueError('Invalid experiment number')
+    
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{EXPERIMENT_NUM}.csv"
+
+    if not files.is_empty(resutlsloc):
+        return resutlsloc
+    
     prevState = load_checkpoint()
     if prevState:
         return resutlsloc
+    
     print('Writing Headers to', resutlsloc)
     statsheader = ['lat_min', 'lat_max','lat_mean','lat_std','success_rate','calls_per_sec']
     if EXPERIMENT_NUM == 1:
