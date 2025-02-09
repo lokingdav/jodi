@@ -39,4 +39,8 @@ async def evaluate(req: EvaluateRequest):
 
 @app.get("/health")
 async def health():
-    return { "message": "OK", "type": "Evaluator", "status": 200 }
+    return { 
+        "Status": 200,
+        "Message": "OK", 
+        "Type": "Evaluator", 
+    }

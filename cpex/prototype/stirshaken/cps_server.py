@@ -13,7 +13,7 @@ from cpex.helpers import misc, files, http
 
 MY_CRED = None
 CERTS_REPO = None
-REPO_NAME = f'cps.{config.NODE_FQDN}'
+BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 
 def init_server():
     global MY_CRED, CERTS_REPO
@@ -46,7 +46,7 @@ def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     return decoded
 
 def get_record_key(dest: str, orig: str):
-    return f'{REPO_NAME}.{dest}.{orig}'
+    return f'{BASE_CACHE_KEY}:{dest}:{orig}'
 
 def success_response(content={"message": "OK"}):
     return JSONResponse(content=content, status_code=status.HTTP_200_OK)
@@ -164,7 +164,7 @@ async def health():
         },
         "Config": {
             "T_MAX_SECONDS": config.T_MAX_SECONDS,
-            
+            "BASE_CACHE_KEY": BASE_CACHE_KEY
         },
         "Others": [n['fqdn'] for n in cache.get_other_cpses()]
     }

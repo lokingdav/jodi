@@ -67,4 +67,8 @@ async def retrieve(req: RetrieveRequest):
 
 @app.get("/health")
 async def health():
-    return { "message": "OK", "type": "Message Store", "status": 200 }
+    return { 
+        "Status": 200,
+        "Message": "OK", 
+        "Type": "Message Store", 
+    }

@@ -246,6 +246,9 @@ class NetworkedSimulator:
         cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get(config.CPS_KEY)))
         cache.save(key=config.EVALS_KEY, value=json.dumps(nodes.get(config.EVALS_KEY)))
         cache.save(key=config.STORES_KEY, value=json.dumps(nodes.get(config.STORES_KEY)))
+        # print("EV", nodes[config.EVALS_KEY])
+        # print("MS", nodes[config.STORES_KEY])
+        # print("CPS", nodes[config.CPS_KEY])
             
 class RunningStats:
     def __init__(self):
