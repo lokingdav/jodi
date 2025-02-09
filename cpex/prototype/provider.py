@@ -204,7 +204,7 @@ class Provider(iwf.CpexIWF):
             'To': signal.To,
             'From': signal.From,
             'Pid': self.pid,
-            'Identity': token if token else config.EMPTY_TOKEN
+            'Identity': token if token and type(token) == str else config.EMPTY_TOKEN
         })
     
     def convert_sip_to_sip(self, signal: SIPSignal) -> SIPSignal:
