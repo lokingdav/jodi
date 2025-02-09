@@ -62,28 +62,12 @@
         src: "../../conf/certs.json"
         dest: "{{ repo_dest }}/conf/certs.json"
 
-    - name: Duplicate .env.example to .env on the remote
-      command: cp .env.example .env
-      args:
-        chdir: "{{ repo_dest }}"
-      tags:
-        - copy_env
-
-    - name: Update APP_ENV key in .env
+    - name: Copy .env to Node
       tags:
         - update_env
-      lineinfile:
-        path: "{{ repo_dest }}/.env"
-        regexp: '^APP_ENV='
-        line: "APP_ENV=prod"
-
-    - name: Update TGS_GPK key in .env
-      tags:
-        - update_env
-      lineinfile:
-        path: "{{ repo_dest }}/.env"
-        regexp: '^TGS_GPK='
-        line: "TGS_GPK={{ tgs_gpk_value }}"
+      copy:
+        src: "../../.env"
+        dest: "{{ repo_dest }}/.env"
     
     - name: Add or update NODE_IP in .env
       lineinfile:

@@ -202,16 +202,16 @@ def run_experiment_1(resutlsloc):
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
 def run_experiment_3(resutlsloc):
-    # simulate(
-    #     resutlsloc=resutlsloc, 
-    #     mode=constants.MODE_CPEX, 
-    #     params={'n_ev': 3, 'n_ms': 3}
-    # 
     simulate(
         resutlsloc=resutlsloc, 
         mode=constants.MODE_ATIS, 
         params={}
     )
+    # simulate(
+    #     resutlsloc=resutlsloc, 
+    #     mode=constants.MODE_CPEX, 
+    #     params={'n_ev': 3, 'n_ms': 3}
+    # 
     delete_state_for_exp()
 
 def main(args):

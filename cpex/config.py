@@ -18,8 +18,6 @@ def env(envname, default="", dtype=None):
         return float(value)
     return value
 
-APP_ENV = env('APP_ENV', 'dev')
-APP_ENV_PROD = APP_ENV == 'prod'
 DEBUG = env('APP_DEBUG', True, dtype=bool)
 
 COMPOSE_NETWORK_ID = "cpex_net"
