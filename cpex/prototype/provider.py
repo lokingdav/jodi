@@ -149,6 +149,7 @@ class Provider(iwf.CpexIWF):
         payload: dict = {'passports': [ signal.Identity ]}
         url: str = self.cps['url']
         url = f'{url}/publish/{signal.To}/{signal.From}'
+        self.log_msg(f'--> PUBLISH URL: {url}')
         await http.posts(reqs=[{'url': url, 'data': payload, 'headers': headers}])
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:

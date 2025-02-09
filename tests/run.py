@@ -1,14 +1,13 @@
-import asyncio, argparse, json
+import asyncio, argparse, json, random
 from cpex.prototype.provider import Provider
 from cpex.helpers import dht
 from cpex.models import cache
 from cpex.crypto import groupsig
 from cpex.helpers import logging
 from cpex.prototype.simulations.networked import NetworkedSimulator
+from cpex import config
 
-mode = 'cpex'
-fqdn1 = '54.211.175.148:10433'# f'atis-cps-{cps_id}'
-fqdn2 = '54.211.175.148:10434'# f'atis-cps-{cps_id}'
+mode = 'atis'
 
 cache.set_client(cache.connect())
 gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
@@ -16,6 +15,7 @@ gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
 async def main():
     sim = NetworkedSimulator()
     sim.create_nodes()
+    [cps1, cps2] = cache.find(config.CPS_KEY, dtype=dict)[0:2]
 
     logger = logging.create_logger('tests/run.py')
 
@@ -29,8 +29,8 @@ async def main():
         'n_ms': 1,
         'logger': logger,
         'next_prov': (1, 0),
-        'cps': { 'url': f'http://{fqdn1}', 'fqdn': fqdn1 },
-        'cr': {'x5u': f'http://{fqdn1}/certs/ocrt-164', 'sk': "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgM2RHw7TQdVvbo9pq\n829inltAQ+Ud8qYRYvbrdu2dIeKhRANCAAS3YDPLvKw41B2PV87DUDn04qOtZDFH\nWJS+M2Nqk7eAgWGVbh6T6BQkiMXifXGvBQ1wFNIPRY1rsi330VP8dzPd\n-----END PRIVATE KEY-----\n"},
+        'cps': { 'url': cps1['url'], 'fqdn': cps1['fqdn'] },
+        'cr': {'x5u': cps2['url'] + f'/certs/ocrt-164', 'sk': "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgM2RHw7TQdVvbo9pq\n829inltAQ+Ud8qYRYvbrdu2dIeKhRANCAAS3YDPLvKw41B2PV87DUDn04qOtZDFH\nWJS+M2Nqk7eAgWGVbh6T6BQkiMXifXGvBQ1wFNIPRY1rsi330VP8dzPd\n-----END PRIVATE KEY-----\n"},
     })
 
     signal, token = await provider1.originate()
@@ -45,8 +45,8 @@ async def main():
         'n_ms': 1,
         'logger': logger,
         'next_prov': None,
-        'cps': { 'url': f'http://{fqdn2}', 'fqdn': fqdn2 },
-        'cr': {'x5u': f'http://{fqdn2}/certs/ocrt-164', 'sk': "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgM2RHw7TQdVvbo9pq\n829inltAQ+Ud8qYRYvbrdu2dIeKhRANCAAS3YDPLvKw41B2PV87DUDn04qOtZDFH\nWJS+M2Nqk7eAgWGVbh6T6BQkiMXifXGvBQ1wFNIPRY1rsi330VP8dzPd\n-----END PRIVATE KEY-----\n"},
+        'cps': { 'url': cps2['url'], 'fqdn': cps2['fqdn'] },
+        'cr': {'x5u': cps1['url'] + f'/certs/ocrt-164', 'sk': "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgM2RHw7TQdVvbo9pq\n829inltAQ+Ud8qYRYvbrdu2dIeKhRANCAAS3YDPLvKw41B2PV87DUDn04qOtZDFH\nWJS+M2Nqk7eAgWGVbh6T6BQkiMXifXGvBQ1wFNIPRY1rsi330VP8dzPd\n-----END PRIVATE KEY-----\n"},
     })
     token_retrieved = await provider2.terminate(signal)
 

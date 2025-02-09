@@ -124,6 +124,7 @@ class CpexIWF:
         }
     
     def log_msg(self, msg):
+        print(msg)
         if config.DEBUG and self.logger:
             self.logger.debug(msg)
             

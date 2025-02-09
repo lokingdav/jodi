@@ -62,6 +62,7 @@ app = init_server()
 
 @app.post("/publish/{dest}/{orig}")
 async def publish(dest: str, orig: str, request: PublishRequest, authorization: str = Header(None)):
+    print("Received publish request from", orig, "to", dest, flush=True)
     # 1. Verify authorization header token attached by the provider
     decoded = authorize_request(authorization, request.passports)
     if not decoded:

@@ -6,45 +6,18 @@
     - vars.yml
 
   tasks:
-    - name: Start Cpex Prototype
+    - name: Stop Services
       tags:
-        - start_cpex
-      command: "./prototype.sh cpex up"
+        - stop_services
+      command: "./prototype.sh down"
       args:
         chdir: "{{ repo_dest }}"
 
-    - name: Stop Cpex Prototype
+    - name: Start Services
       tags:
-        - stop_cpex
-      command: "./prototype.sh cpex down"
+        - start_services
+      command: "./prototype.sh up exp3"
       args:
         chdir: "{{ repo_dest }}"
 
-    - name: Restart Cpex Prototype
-      tags:
-        - restart_cpex
-      command: "./prototype.sh cpex restart"
-      args:
-        chdir: "{{ repo_dest }}"
-
-    - name: Start ATIS OOB
-      tags:
-        - start_atis
-      command: "./prototype.sh atis up"
-      args:
-        chdir: "{{ repo_dest }}"
     
-    - name: Stop ATIS OOB
-      tags:
-        - stop_atis
-      command: "./prototype.sh atis down"
-      args:
-        chdir: "{{ repo_dest }}"
-
-    - name: Restart ATIS OOB
-      tags:
-        - restart_atis
-      command: "./prototype.sh atis restart"
-      args:
-        chdir: "{{ repo_dest }}"
-

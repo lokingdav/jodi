@@ -73,9 +73,10 @@
       lineinfile:
         path: "{{ repo_dest }}/.env"
         regexp: '^NODE_IP='
-        line: "NODE_IP={{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+        line: "NODE_IP={{ hostvars[inventory_hostname].ansible_host }}"
         create: yes
       tags:
         - update_env
+        - update_node_ip
 
 
