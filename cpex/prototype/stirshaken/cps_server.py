@@ -156,8 +156,13 @@ async def get_certificate(key: str):
 @app.get("/health")
 async def health():
     return {
-        "FQDN": config.NODE_FQDN,
-        "Message": "OK", 
         "Status": 200,
+        "Message": "OK", 
+        "Node": {
+            "ID": config.NODE_ID,
+            "IP": config.NODE_IP,
+            "FQDN": config.NODE_FQDN,
+            "PORT": config.NODE_PORT,
+        },
         "Others": [n['fqdn'] for n in cache.get_other_cpses()]
     }

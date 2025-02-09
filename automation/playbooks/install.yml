@@ -55,6 +55,13 @@
         src: "../hosts.yml"
         dest: "{{ repo_dest }}/automation/hosts.yml"
 
+    - name: Copy conf/certs to Node
+      tags:
+        - copy_certs
+      copy:
+        src: "../../conf/certs.json"
+        dest: "{{ repo_dest }}/conf/certs.json"
+
     - name: Duplicate .env.example to .env on the remote
       command: cp .env.example .env
       args:
