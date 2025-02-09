@@ -4,7 +4,7 @@ from cpex.helpers import dht
 from cpex.models import cache
 from cpex.crypto import groupsig
 
-cps_id = 0
+cps_id = 1
 
 async def main():
     provider = Provider({

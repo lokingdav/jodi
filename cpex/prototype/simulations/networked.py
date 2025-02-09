@@ -192,10 +192,10 @@ class NetworkedSimulator:
             mode=mode
         )
         
-        with Pool(processes=1, initializer=init_worker) as pool:
+        with Pool(processes=os.cpu_count() * 2, initializer=init_worker) as pool:
             pages, total_items = self.get_pages(num_provs=num_provs, limit=limit)
             progress = 0
-                
+            # print('pages', pages)
             for (start_id, end_id) in pages:
                 routes = persistence.retrieve_routes(
                     collection_id=num_provs,
@@ -218,7 +218,7 @@ class NetworkedSimulator:
                 total_calls += len(results)
                 
                 for (latency_ms, len_routes, is_correct) in results:
-                    if latency_ms < 1: # filter out routes that do not involve oob
+                    if latency_ms == 0: # filter out routes that do not involve oob
                         continue
                     statistics.update_x(latency_ms)
                     if is_correct:

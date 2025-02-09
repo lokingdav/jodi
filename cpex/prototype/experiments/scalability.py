@@ -22,7 +22,7 @@ EXPERIMENT_PARAMS = {
     3: {
         'simulator': networked.NetworkedSimulator,
         'node_groups': [(5, 5)],
-        'provider_groups': [10]
+        'provider_groups': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
     }
 }
 
@@ -155,12 +155,7 @@ def prepare_results_file():
 
     if not files.is_empty(resutlsloc):
         return resutlsloc
-    
-    prevState = load_checkpoint()
-    if prevState:
-        return resutlsloc
-    
-    print('Writing Headers to', resutlsloc)
+
     statsheader = ['lat_min', 'lat_max','lat_mean','lat_std','success_rate','calls_per_sec']
     if EXPERIMENT_NUM == 1:
         headers = ['mode','Num_Provs','Num_EVs','Num_MSs','n_ev','n_ms'] + statsheader
