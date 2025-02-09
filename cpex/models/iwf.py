@@ -55,8 +55,8 @@ class CpexIWF:
         
         self.log_msg(f'--> Generates Call Details: {call_details}')
         requests, masks = libcpex.create_evaluation_requests(call_details, n_ev=self.n_ev, gsk=self.gsk, gpk=self.gpk)
-        self.log_msg(f'--> Created Requests for the Following EVs: {[r["nodeId"] for r in requests]}')
-        
+        self.log_msg(f'--> Created Requests for the Following EVs: {[r["nodeId"]+":::"+str(r["data"]["i_k"]) for r in requests]}')
+        self.log_msg(f'--> Request Type: {req_type}')
         req_time_start = time.perf_counter()
         responses = await self.make_request('evaluate', requests=requests)
         req_time_taken = time.perf_counter() - req_time_start
@@ -83,10 +83,12 @@ class CpexIWF:
             return None
         
         reqs = libcpex.create_retrieve_requests(call_id=call_id, n_ms=self.n_ms, gsk=self.gsk, gpk=self.gpk)
+        self.log_msg(f'--> Created Retrieve Requests for the Following MSs: {[r["nodeId"] for r in reqs]}')
         
         req_time_start = time.perf_counter()
         responses = await self.make_request('retrieve', requests=reqs)
         req_time_taken = time.perf_counter() - req_time_start
+        self.log_msg(f'--> Responses: {responses}')
         
         self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         

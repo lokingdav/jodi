@@ -135,6 +135,7 @@ class Provider(iwf.CpexIWF):
         return tdm_signal
         
     async def atis_publish(self, signal: SIPSignal):
+        self.log_msg(f'--> Executes ATIS PUBLISH')
         authorization: str = self.auth_service.authenticate_request(
             action='publish',
             orig=signal.From,
@@ -143,6 +144,7 @@ class Provider(iwf.CpexIWF):
             iss=self.pid,
             aud=self.cps['fqdn']
         )
+        self.log_msg(f'Authorized Request with: Bearer {authorization}')
         headers: dict = {'Authorization': 'Bearer ' + authorization }
         payload: dict = {'passports': [ signal.Identity ]}
         url: str = self.cps['url']
@@ -170,6 +172,7 @@ class Provider(iwf.CpexIWF):
         return signal
     
     async def atis_retrieve_token(self, signal: TDMSignal) -> List[str]:
+        self.log_msg(f'--> Executes ATIS RETRIEVE')
         authorization: str = self.auth_service.authenticate_request(
             action='retrieve',
             orig=signal.From,
@@ -178,6 +181,7 @@ class Provider(iwf.CpexIWF):
             iss=self.pid,
             aud=self.cps['fqdn']
         )
+        self.log_msg(f'Authorized Request with: Bearer {authorization}')
         headers: dict = {'Authorization': 'Bearer ' + authorization }
         url: str = self.cps['url']
         url = f'{url}/retrieve/{signal.To}/{signal.From}'

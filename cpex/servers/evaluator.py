@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -30,9 +31,9 @@ async def evaluate(req: EvaluateRequest):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
     
-    print(f"\nReceived request to evaluate {req.x} with index {req.i_k}", flush=True)
+    # print(f"\n{os.getpid()} --> Received request to evaluate {req.x} with index {req.i_k}", flush=True)
     privk, publk = kr_instance.get_key(req.i_k)
-    print(f"Using key with index {req.i_k}, \n\tsk: {oprf.Utils.to_base64(privk)}, \n\tpk: {oprf.Utils.to_base64(publk)}", flush=True)
+    # print(f"{os.getpid()} --> Using key with index {req.i_k}, \n\tsk: {oprf.Utils.to_base64(privk)}, \n\tpk: {oprf.Utils.to_base64(publk)}", flush=True)
     
     return JSONResponse(
         content=oprf.evaluate(privk=privk, publk=publk, x=req.x), 
