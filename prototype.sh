@@ -13,6 +13,7 @@ fi
 # Configuration Variables
 ###############################################################################
 COMPOSE_FILE="compose.prototype.yml"
+COMPOSE_ALL_FILE="compose.all.yml"
 
 CMD="$1"
 SUBCMD="$2"
@@ -70,20 +71,28 @@ build_image() {
   esac
 }
 
+initial_setup() {
+  echo "Setting up initial configuration..."
+  docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
+}
+
 compose_up() {
   local profile="$1"
   echo "Starting Docker Compose services..."
 
   case "$profile" in
+    exp3)
+      docker compose -f $COMPOSE_ALL_FILE up -d
+      ;;
     all)
       docker compose -f "$COMPOSE_FILE" up -d
+      initial_setup
       ;;
     *)
       docker compose -f "$COMPOSE_FILE" up -d experiment
+      initial_setup
       ;;
   esac
-
-  docker exec -it cpex-exp python cpex/prototype/scripts/setup.py --all
 }
 
 compose_down() {

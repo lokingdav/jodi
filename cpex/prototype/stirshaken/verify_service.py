@@ -4,11 +4,12 @@ from cpex.models import cache
 from cpex import config
 
 def load_public_key(x5u: str):
-    certificate = cache.find(x5u)
+    key = f'{config.NODE_FQDN}:certs:{x5u}'
+    certificate = cache.find(key)
     if not certificate:
         certificate = certs.download(x5u)
         if certificate:
-            cache.save(key=x5u, value=certificate)
+            cache.save(key=key, value=certificate)
         else:
             return None
     certificate = certificate.replace("\\n", "\n")

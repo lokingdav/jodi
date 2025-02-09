@@ -6,7 +6,7 @@ from cpex.crypto import groupsig
 from cpex.helpers import logging
 from cpex.prototype.simulations.networked import NetworkedSimulator
 
-mode = 'cpex'
+mode = 'atis'
 cps_id = 1
 fqdn1 = '54.211.175.148:10433'# f'atis-cps-{cps_id}'
 fqdn2 = '54.211.175.148:10434'# f'atis-cps-{cps_id}'
