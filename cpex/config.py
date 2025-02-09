@@ -69,8 +69,7 @@ def is_atis_mode(mode: str):
 HOST_APP_PATH = env('HOST_APP_PATH')
 
 # General Parameters
-T_MAX_SECONDS = env('T_MAX_SECONDS', 10, dtype=int)
-REC_TTL_SECONDS = env('REC_TTL_SECONDS',15, dtype=int)
+T_MAX_SECONDS = env('T_MAX_SECONDS', 15, dtype=int)
 
 
 # Group Signatures
@@ -94,4 +93,3 @@ MS_DOWN_TIME = (UP_TIME_DURATION * (1 - MS_AVAILABILITY)) / MS_AVAILABILITY
 CHURN_INTERVAL_SECONDS = env('CHURN_INTERVAL_SECONDS', min(EV_DOWN_TIME, MS_DOWN_TIME), dtype=float)
 
 EMPTY_TOKEN = env('EMPTY_TOKEN', '-1')
-

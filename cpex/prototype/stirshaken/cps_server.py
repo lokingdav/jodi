@@ -11,7 +11,6 @@ from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service, c
 from cpex.prototype.scripts import setup
 from cpex.helpers import misc, files, http
 
-tmax = 15
 MY_CRED = None
 CERTS_REPO = None
 REPO_NAME = f'cps.{config.NODE_FQDN}'
@@ -71,7 +70,7 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     cache.cache_for_seconds(
         key=get_record_key(dest=dest, orig=orig), 
         value=request.passports, 
-        seconds=tmax
+        seconds=config.T_MAX_SECONDS
     )
 
     repositories = cache.get_other_cpses()
@@ -123,7 +122,7 @@ async def republish(dest: str, orig: str, request: RepublishRequest, authorizati
     cache.cache_for_seconds(
         key=get_record_key(dest=dest, orig=orig), 
         value=request.passports, 
-        seconds=tmax
+        seconds=config.T_MAX_SECONDS
     )
 
     return success_response()
@@ -162,6 +161,10 @@ async def health():
             "IP": config.NODE_IP,
             "PORT": config.NODE_PORT,
             "FQDN": config.NODE_FQDN,
+        },
+        "Config": {
+            "T_MAX_SECONDS": config.T_MAX_SECONDS,
+            
         },
         "Others": [n['fqdn'] for n in cache.get_other_cpses()]
     }

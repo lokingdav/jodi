@@ -51,7 +51,7 @@ class MessageStore:
         cache.cache_for_seconds(
             key=self.get_content_key(request['idx']), 
             value=value, 
-            seconds=config.REC_TTL_SECONDS
+            seconds=config.T_MAX_SECONDS
         )
 
         return {'_success': 'message stored'}

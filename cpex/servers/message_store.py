@@ -43,7 +43,7 @@ async def publish(req: PublishRequest):
     cache.cache_for_seconds(
         key=get_record_key(req.idx), 
         value=value, 
-        seconds=config.REC_TTL_SECONDS
+        seconds=config.T_MAX_SECONDS
     )
     
     return success_response()
