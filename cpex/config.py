@@ -49,7 +49,6 @@ n_ev = env('n_ev', 3)
 n_ms = env('n_ms', 3)
 FAKE_PROXY = env('FAKE_PROXY', True, dtype=bool)
 
-NODE_ID = env('NODE_ID')
 NODE_IP = env('NODE_IP')
 NODE_PORT = env('NODE_PORT')
 NODE_FQDN = env('NODE_FQDN', f'{NODE_IP}:{NODE_PORT}')

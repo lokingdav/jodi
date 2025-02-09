@@ -32,7 +32,7 @@ def success_response(content = {"message": "Created"}):
     )
     
 def get_record_key(idx: str):
-    return f"ms:{config.NODE_ID}:{idx}"
+    return f"ms:{config.NODE_FQDN}:{idx}"
     
 @app.post("/publish")
 async def publish(req: PublishRequest):

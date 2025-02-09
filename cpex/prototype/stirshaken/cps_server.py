@@ -14,7 +14,7 @@ from cpex.helpers import misc, files, http
 tmax = 15
 MY_CRED = None
 CERTS_REPO = None
-REPO_NAME = f'cps_{config.NODE_FQDN}'
+REPO_NAME = f'cps.{config.NODE_FQDN}'
 
 def init_server():
     global MY_CRED, CERTS_REPO
@@ -81,7 +81,7 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
 
     # 4. create new requests with payload: orig, dest, passports, token. Token is the authorization header bearer token
     auth = auth_service.AuthService(
-        ownerId=config.NODE_ID,
+        ownerId=config.NODE_FQDN,
         private_key_pem=MY_CRED[constants.PRIV_KEY],
         x5u=f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
     )
@@ -159,10 +159,9 @@ async def health():
         "Status": 200,
         "Message": "OK", 
         "Node": {
-            "ID": config.NODE_ID,
             "IP": config.NODE_IP,
-            "FQDN": config.NODE_FQDN,
             "PORT": config.NODE_PORT,
+            "FQDN": config.NODE_FQDN,
         },
         "Others": [n['fqdn'] for n in cache.get_other_cpses()]
     }

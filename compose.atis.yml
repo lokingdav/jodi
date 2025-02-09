@@ -30,7 +30,6 @@ services:
     ports:
       - 10433:80
     environment:
-      - NODE_FQDN=atis-cps-0
       - NODE_PORT=10433
 
   atis-cps-1:
@@ -45,7 +44,6 @@ services:
     ports:
       - 10434:80
     environment:
-      - NODE_FQDN=atis-cps-1
       - NODE_PORT=10434
 
 networks:
