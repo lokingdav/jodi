@@ -111,10 +111,12 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     
     # 5. Send requests to all repositories
     responses = await http.posts(reqs)
+    print("Republished passports to all others", flush=True)
     return success_response()
 
 @app.post("/republish/{dest}/{orig}")
 async def republish(dest: str, orig: str, request: RepublishRequest, authorization: str = Header(None)):
+    print("Received republish request from", orig, "to", dest, flush=True)
     # 1. Verify authorization header token attached by the provider
     decoded = authorize_request(authorization, request.passports)
     if not decoded:
@@ -126,11 +128,12 @@ async def republish(dest: str, orig: str, request: RepublishRequest, authorizati
         value=request.passports, 
         seconds=config.T_MAX_SECONDS
     )
-
+    
     return success_response()
 
 @app.get("/retrieve/{dest}/{orig}")
 async def republish(dest: str, orig: str, authorization: str = Header(None)):
+    print("Received retrieve request from", orig, "to", dest, flush=True)
     # 1. Verify authorization header token attached by the provider
     decoded = authorize_request(authorization)
     if not decoded:
