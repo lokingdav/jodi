@@ -14,6 +14,7 @@ from cpex.helpers import misc, files, http
 MY_CRED = None
 CERTS_REPO = None
 BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
+OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
 
 def init_server():
     global MY_CRED, CERTS_REPO
@@ -22,7 +23,7 @@ def init_server():
     
     nodes = setup.get_node_hosts()
     if nodes and nodes.get(config.CPS_KEY):
-        cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get(config.CPS_KEY)))
+        cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
 
     MY_CRED, CERTS_REPO = stirsetup.load_certs()
     certs.set_certificate_repository(CERTS_REPO)
@@ -73,7 +74,7 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
         seconds=config.T_MAX_SECONDS
     )
 
-    repositories = cache.get_other_cpses()
+    repositories = cache.get_other_cpses(key=OTHER_CPSs)
 
     if not repositories:
         return success_response()
@@ -166,5 +167,5 @@ async def health():
             "T_MAX_SECONDS": config.T_MAX_SECONDS,
             "BASE_CACHE_KEY": BASE_CACHE_KEY
         },
-        "Others": [n['fqdn'] for n in cache.get_other_cpses()]
+        "Others": [n['fqdn'] for n in cache.get_other_cpses(OTHER_CPSs)]
     }
