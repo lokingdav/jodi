@@ -15,7 +15,7 @@ services:
     command: > 
       gunicorn cpex.servers.evaluator:app 
       --bind 0.0.0.0:80 
-      --workers 2
+      --workers 1
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --reload
@@ -28,7 +28,7 @@ services:
     command: >
       gunicorn cpex.servers.message_store:app 
       --bind 0.0.0.0:80 
-      --workers 2
+      --workers 1
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --reload
