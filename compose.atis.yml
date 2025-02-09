@@ -6,24 +6,9 @@ x-cpex-service: &cpex-service
   networks:
     - net
   depends_on:
-    - mongo
     - cache
 
 services:
-  mongo:
-    container_name: sti-mongo
-    image: mongo
-    platform: linux/x86_64
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: secret
-    ports:
-      - 27017:27017
-    volumes:
-      - ./docker/data/sti-mongo:/data/db
-    networks:
-      - net
-
   cache:
     container_name: sti-cache
     image: redis
@@ -36,11 +21,17 @@ services:
   atis-cps-0:
     <<: *cpex-service
     container_name: atis-cps-0
-    command: uvicorn cpex.prototype.stirshaken.cps_server:app --host 0.0.0.0 --port 80 --reload
+    command: > 
+      gunicorn cpex.prototype.stirshaken.cps_server:app 
+      --bind 0.0.0.0:80 
+      --workers 2
+      --worker-class uvicorn.workers.UvicornWorker 
+      --reload
     ports:
       - 10433:80
     environment:
       - NODE_FQDN=atis-cps-0
+      - NODE_PORT=10433
 
   atis-cps-1:
     <<: *cpex-service
@@ -50,17 +41,7 @@ services:
       - 10434:80
     environment:
       - NODE_FQDN=atis-cps-1
-
-  experiment:
-    <<: *cpex-service
-    container_name: cpex-exp
-    command: tail -f /dev/null
-    environment:
-      - DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
-      - HOST_APP_PATH=${HOST_APP_PATH}
-    volumes:
-      - '.:/app'
-      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
+      - NODE_PORT=10434
 
 networks:
   net:

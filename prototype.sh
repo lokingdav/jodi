@@ -21,7 +21,7 @@ VALID_CMDS=(build up down restart ps bash runexp cpex atis)
 
 # Docker images (adjust names as needed)
 CPEX_DOCKER_IMAGE="cpex"
-CPEX_AUTOMATION_DOCKER_IMAGE="cpex-automation"
+CPEX_AUTOMATION_DOCKER_IMAGE="cpex-experiment"
 
 # Optional container naming conventions
 CPEX_NODE_PREFIX="cpex-node"
@@ -79,7 +79,7 @@ compose_up() {
       docker compose -f "$COMPOSE_FILE" up -d
       ;;
     *)
-      docker compose -f "$COMPOSE_FILE" up -d experiment automation
+      docker compose -f "$COMPOSE_FILE" up -d experiment
       ;;
   esac
 

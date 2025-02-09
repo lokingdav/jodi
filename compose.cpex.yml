@@ -15,7 +15,7 @@ services:
     command: > 
       gunicorn cpex.servers.evaluator:app 
       --bind 0.0.0.0:80 
-      --workers 4 
+      --workers 2
       --worker-class uvicorn.workers.UvicornWorker 
       --reload
     ports:
@@ -27,7 +27,7 @@ services:
     command: >
       gunicorn cpex.servers.message_store:app 
       --bind 0.0.0.0:80 
-      --workers 4 
+      --workers 2
       --worker-class uvicorn.workers.UvicornWorker 
       --reload
     ports:

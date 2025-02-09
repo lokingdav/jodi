@@ -3,7 +3,7 @@
   hosts: all
   become: yes
   vars_files:
-    - playbooks/vars.yml
+    - vars.yml
 
   tasks:
     - name: Start Cpex Prototype

@@ -3,7 +3,7 @@ FROM cpex
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ANSIBLE_VERSION=2.18
 
-WORKDIR /manager 
+WORKDIR /app 
 
 # Install dependencies
 RUN apt-get update && \

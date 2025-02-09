@@ -11,7 +11,8 @@ x-cpex-service: &cpex-service
 
 services:
   experiment:
-    <<: *cpex-service
+    image: cpex-experiment
+    platform: linux/x86_64
     container_name: cpex-exp
     command: tail -f /dev/null
     environment:
@@ -20,15 +21,13 @@ services:
     volumes:
       - '.:/app'
       - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
-
-  automation:
-    image: cpex-automation
-    container_name: cpex-automation
-    command: tail -f /dev/null
-    volumes:
-      - './automation:/manager'
       - './docker/data/automation/.aws:/root/.aws'
       - './docker/data/automation/.ssh:/root/.ssh'
+    depends_on:
+      - cache
+      - mongo
+    networks:
+      - net
 
   evaluator:
     <<: *cpex-service

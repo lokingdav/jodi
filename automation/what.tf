@@ -23,7 +23,7 @@ provider "aws" {
 }
 
 variable "instance_type" {
-  default = "t3.nano"
+  default = "t3.small"
 }
 
 variable "key_name" {
