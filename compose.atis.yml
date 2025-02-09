@@ -26,6 +26,7 @@ services:
       --bind 0.0.0.0:80 
       --workers 2
       --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
       --reload
     ports:
       - 10433:80
@@ -40,6 +41,7 @@ services:
       --bind 0.0.0.0:80 
       --workers 2
       --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
       --reload
     ports:
       - 10434:80

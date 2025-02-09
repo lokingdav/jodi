@@ -20,7 +20,7 @@ def env(envname, default="", dtype=None):
 
 APP_ENV = env('APP_ENV', 'dev')
 APP_ENV_PROD = APP_ENV == 'prod'
-DEBUG = env('APP_DEBUG', 'true', dtype=bool)
+DEBUG = env('APP_DEBUG', True, dtype=bool)
 
 COMPOSE_NETWORK_ID = "cpex_net"
 CPEX_DOCKER_IMAGE = "cpex"
