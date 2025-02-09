@@ -30,7 +30,9 @@ async def evaluate(req: EvaluateRequest):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
     
+    print(f"Received request to evaluate {req.x} with index {req.i_k}")
     privk, publk = kr_instance.get_key(req.i_k)
+    print(f"Using key with index {req.i_k}, \n\tsk: {oprf.Utils.to_base64(privk)}, \n\tpk: {oprf.Utils.to_base64(publk)}")
     
     return JSONResponse(
         content=oprf.evaluate(privk=privk, publk=publk, x=req.x), 
