@@ -16,7 +16,6 @@ create() {
 
 destroy() {
     terraform destroy
-    # rm -rf hosts.yml
 }
 
 case "$cmd" in

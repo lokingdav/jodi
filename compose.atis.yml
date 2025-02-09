@@ -36,7 +36,12 @@ services:
   atis-cps-1:
     <<: *cpex-service
     container_name: atis-cps-1
-    command: uvicorn cpex.prototype.stirshaken.cps_server:app --host 0.0.0.0 --port 80 --reload
+    command:  > 
+      gunicorn cpex.prototype.stirshaken.cps_server:app 
+      --bind 0.0.0.0:80 
+      --workers 2
+      --worker-class uvicorn.workers.UvicornWorker 
+      --reload
     ports:
       - 10434:80
     environment:
