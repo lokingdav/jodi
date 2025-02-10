@@ -7,6 +7,7 @@ from cpex.models import cache
 from multiprocessing import Pool
 from cpex.prototype import provider as providerMod
 from cpex.prototype.simulations import entities, local
+from cpex.prototype.stirshaken import stirsetup
 
 
 numIters = 1000
@@ -15,6 +16,8 @@ gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
 n_evs = [3]#, 3, 4, 5]
 n_mss = [3]#, 3, 4, 5]
+
+cred, allcreds = stirsetup.load_certs()
 
 def init_worker():
     cache.set_client(cache_client)
@@ -32,7 +35,8 @@ async def bench_async(options):
         'gpk': gpk, 
         'gsk': gsk,
         'n_ev': n_ev,
-        'n_ms': n_ms
+        'n_ms': n_ms,
+        'cr': {'x5u': 'https://example.com/ev1.crt', 'sk': cred['sk']},
     }
 
     logger = logging.create_logger('microbench')
@@ -80,7 +84,7 @@ def main():
     start = time.perf_counter()
     params = []
 
-    with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
+    with Pool(processes=min(5, os.cpu_count()), initializer=init_worker) as pool:
         for _ in range(numIters):
             for n_ev in n_evs:
                 for n_ms in n_mss:

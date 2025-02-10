@@ -27,15 +27,15 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
         key=calldt_hash, 
         count=n_ev,
     )
+
+    # Blind and sign the call details
+    x, mask = Oprf.blind(call_details)
+    x_str = Utils.to_base64(x)
+    sig = groupsig.sign(msg=str(i_k) + x_str, gsk=gsk, gpk=gpk)
     
-    masks = []
+    # Create evaluation requests
     requests = []
-    
     for ev in evaluators:
-        x, mask = Oprf.blind(call_details)
-        masks.append(mask)
-        x_str = Utils.to_base64(x)
-        sig: str = groupsig.sign(msg=str(i_k) + x_str, gsk=gsk, gpk=gpk)
         requests.append({
             'nodeId': ev.get('id'),
             'avail': ev.get('avail', None),
@@ -43,9 +43,9 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
             'data': { 'i_k': i_k, 'x': x_str, 'sig': sig}
         })
     
-    return requests, masks
+    return requests, mask
 
-def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
+def create_call_id(responses: List[dict], mask: bytes) -> bytes:
     xor = None
     
     for i in range(len(responses)):
@@ -55,8 +55,9 @@ def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
         cid_i = Oprf.unblind(
             Utils.from_base64(responses[i]['fx']), 
             Utils.from_base64(responses[i]['vk']), 
-            masks[i]
+            mask
         )
+        
         if xor is None:
             xor = cid_i
         else:
@@ -65,46 +66,40 @@ def create_call_id(responses: List[dict], masks: List[bytes]) -> bytes:
     return Utils.hash256(xor) if xor else None
 
 def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, stores = None) -> List[dict]:
-    stores = dht.get_stores(key=call_id, count=n_ms, nodes=stores)
-    call_id_str = Utils.to_base64(call_id)
-
-    requests = []
+    # Generate the index, encrypt msg and sign request
+    idx = Utils.to_base64(Utils.hash256(call_id))
+    ctx = encrypt_and_mac(call_id=call_id, plaintext=msg)
+    sig = groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk)
     
+    # Create storage requests for closest n_ms stores
+    requests = []
+    stores = dht.get_stores(key=call_id, count=n_ms, nodes=stores)
     for store in stores:
-        idx = Utils.to_base64(Utils.hash256(bytes(call_id_str + store['id'], 'utf-8')))
-        ctx = encrypt_and_mac(call_id=call_id, plaintext=msg)
         requests.append({
             'nodeId': store['id'],
             'avail': store.get('avail', None),
             'url': store['url'] + '/publish',
-            'data': { 
-                'idx': idx, 
-                'ctx': ctx, 
-                'sig': groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk) 
-            }
+            'data': {'idx': idx, 'ctx': ctx, 'sig': sig }
         })
 
     return requests
 
 def create_retrieve_requests(call_id: bytes, n_ms: int, gsk, gpk, stores=None) -> List[dict]:
-    stores = dht.get_stores(key=call_id, count=n_ms, nodes=stores)
-    call_id = Utils.to_base64(call_id)
-    
-    reqs = []
+    # Generate the index and sign request
+    idx = Utils.to_base64(Utils.hash256(call_id))
+    sig = groupsig.sign(msg=idx, gsk=gsk, gpk=gpk)
 
+    requests = []
+    stores = dht.get_stores(key=call_id, count=n_ms, nodes=stores)
     for store in stores:
-        idx = Utils.to_base64(Utils.hash256(bytes(call_id + store['id'], 'utf-8')))
-        reqs.append({
+        requests.append({
             'nodeId': store['id'],
             'avail': store.get('avail', None),
             'url': store['url'] + '/retrieve',
-            'data': { 
-                'idx': idx, 
-                'sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk) 
-            }
+            'data': { 'idx': idx, 'sig': sig }
         })
 
-    return reqs
+    return requests
 
 def encrypt_and_mac(call_id: bytes, plaintext: str) -> str:
     c_0 = Utils.random_bytes(32)
