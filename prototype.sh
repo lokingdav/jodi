@@ -12,9 +12,6 @@ fi
 ###############################################################################
 # Configuration Variables
 ###############################################################################
-COMPOSE_FILE="compose.prototype.yml"
-COMPOSE_ALL_FILE="compose.all.yml"
-
 CMD="$1"
 SUBCMD="$2"
 
@@ -81,18 +78,21 @@ compose_up() {
   echo "Starting Docker Compose services..."
 
   case "$profile" in
-    exp3)
-      docker compose -f $COMPOSE_ALL_FILE up -d
+    cpex)
+      docker compose --profile cpex up -d
+      ;;
+    atis)
+      docker compose --profile atis up -d
       ;;
     all)
-      docker compose -f "$COMPOSE_FILE" up -d
-      initial_setup
+      docker compose up -d
       ;;
     *)
-      docker compose -f "$COMPOSE_FILE" up -d experiment
-      initial_setup
+      docker compose up -d experiment
       ;;
   esac
+
+  initial_setup
 }
 
 compose_down() {
@@ -103,7 +103,8 @@ compose_down() {
   fi
 
   echo "Stopping Docker Compose services..."
-  docker compose -f "$COMPOSE_FILE" down
+  docker compose --profile cpex down
+  docker compose --profile atis down
 }
 
 dockerps() {
@@ -152,19 +153,17 @@ manage_prod_app() {
   local action="$2"
   local allowed=(up down restart)
 
-  comp_file="compose.$app.yml"
-
   echo "Running '$app' app with action '$action'..."
 
   case "$action" in
     up)
-      docker compose -f "$comp_file" up -d
+      docker compose --profile "$app" up -d
       ;;
     down)
-      docker compose -f "$comp_file" down
+      docker compose --profile "$app" down
       ;;
     restart)
-      docker compose -f "$comp_file" restart
+      docker compose --profile "$app" restart
       ;;
     *)
       echo "Invalid action '$action'. Allowed values: ${allowed[*]}"

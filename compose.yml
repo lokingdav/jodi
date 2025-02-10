@@ -5,7 +5,6 @@ x-cpex-service: &cpex-service
     - '.:/app'
   depends_on:
     - cache
-    - mongo
   networks:
     - net
 
@@ -29,25 +28,34 @@ services:
     networks:
       - net
 
+# CPeX Services
   evaluator:
     <<: *cpex-service
-    container_name: cpex-ev
+    container_name: evaluator
     command: > 
       gunicorn cpex.servers.evaluator:app 
       --bind 0.0.0.0:80 
-      --workers 4 
+      --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
       --reload
+    ports:
+      - 10430:80
+    profiles: [cpex]
 
   message-store:
     <<: *cpex-service
-    container_name: cpex-ms
+    container_name: message-store
     command: >
       gunicorn cpex.servers.message_store:app 
       --bind 0.0.0.0:80 
-      --workers 4 
+      --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
       --reload
+    ports:
+      - 10431:80
+    profiles: [cpex]
 
   iwf-proxy:
     <<: *cpex-service
@@ -57,7 +65,41 @@ services:
       --bind 0.0.0.0:80 
       --workers 8
       --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
       --reload
+    profiles: [proxy]
+
+  atis-cps-0:
+    <<: *cpex-service
+    container_name: atis-cps-0
+    command: > 
+      gunicorn cpex.prototype.stirshaken.cps_server:app 
+      --bind 0.0.0.0:80 
+      --workers 4
+      --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
+      --reload
+    ports:
+      - 10433:80
+    environment:
+      - NODE_PORT=10433
+    profiles: [atis]
+
+  atis-cps-1:
+    <<: *cpex-service
+    container_name: atis-cps-1
+    command:  > 
+      gunicorn cpex.prototype.stirshaken.cps_server:app 
+      --bind 0.0.0.0:80 
+      --workers 4
+      --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
+      --reload
+    ports:
+      - 10434:80
+    environment:
+      - NODE_PORT=10434
+    profiles: [atis]
 
 # Cache and Database
   cache:
