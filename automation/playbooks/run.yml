@@ -16,7 +16,7 @@
     - name: Start Services
       tags:
         - start_services
-      command: "./prototype.sh up exp3"
+      command: "./prototype.sh cpex up"
       args:
         chdir: "{{ repo_dest }}"
 

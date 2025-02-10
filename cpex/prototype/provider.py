@@ -144,13 +144,14 @@ class Provider(iwf.CpexIWF):
             iss=self.pid,
             aud=self.cps['fqdn']
         )
-        self.log_msg(f'Authorized Request with: Bearer {authorization}')
+        # self.log_msg(f'Authorized Request with: Bearer {authorization}')
         headers: dict = {'Authorization': 'Bearer ' + authorization }
         payload: dict = {'passports': [ signal.Identity ]}
         url: str = self.cps['url']
         url = f'{url}/publish/{signal.To}/{signal.From}'
         self.log_msg(f'--> PUBLISH URL: {url}')
-        await http.posts(reqs=[{'url': url, 'data': payload, 'headers': headers}])
+        responses = await http.posts(reqs=[{'url': url, 'data': payload, 'headers': headers}])
+        print("ATIS PUBLISH Responses: ", responses)
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
         self.log_msg(f'--> Executes RETRIEVE')
@@ -182,11 +183,13 @@ class Provider(iwf.CpexIWF):
             iss=self.pid,
             aud=self.cps['fqdn']
         )
-        self.log_msg(f'Authorized Request with: Bearer {authorization}')
+        # self.log_msg(f'Authorized Request with: Bearer {authorization}')
         headers: dict = {'Authorization': 'Bearer ' + authorization }
         url: str = self.cps['url']
         url = f'{url}/retrieve/{signal.To}/{signal.From}'
+        print(f'--> RETRIEVE URL: {url}')
         response = await http.get(url=url, params={}, headers=headers)
+        print("ATIS RETRIEVE Response: ", response)
         if type(response) == list and len(response) > 0:
             return response[0]
         return response

@@ -225,6 +225,9 @@ class NetworkedSimulator:
                         statistics.update_correct()
                 
             dp = 2
+
+            print('time taken', total_time)
+            print('total calls', total_calls)
             
             return [
                 mode, # 0

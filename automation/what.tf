@@ -23,7 +23,7 @@ provider "aws" {
 }
 
 variable "instance_type" {
-  default = "t3.small"
+  default = "t3.xlarge"
 }
 
 variable "key_name" {
@@ -44,6 +44,14 @@ variable "us_west_1_count" {
 
 variable "us_west_2_count" {
   default = 2
+}
+
+variable "sg_start_port" {
+  default = 10430
+}
+
+variable "sg_end_port" {
+  default = 10434
 }
 
 provider "aws" {
@@ -101,8 +109,8 @@ resource "aws_security_group" "sg_use1" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 10430
-    to_port     = 10433
+    from_port   = var.sg_start_port
+    to_port     = var.sg_end_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -125,8 +133,8 @@ resource "aws_security_group" "sg_use2" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 10430
-    to_port     = 10433
+    from_port   = var.sg_start_port
+    to_port     = var.sg_end_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -149,8 +157,8 @@ resource "aws_security_group" "sg_usw1" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 10430
-    to_port     = 10433
+    from_port   = var.sg_start_port
+    to_port     = var.sg_end_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -173,8 +181,8 @@ resource "aws_security_group" "sg_usw2" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port   = 10430
-    to_port     = 10433
+    from_port   = var.sg_start_port
+    to_port     = var.sg_end_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

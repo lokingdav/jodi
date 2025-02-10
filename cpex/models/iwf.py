@@ -48,7 +48,7 @@ class CpexIWF:
         self.publish_provider_time -= req_time_taken # Subtract wait time from compute time
         self.publish_ms_time = req_time_taken / len(reqs) # Average time taken to store a message by a single store
         
-        self.log_msg(f'--> Responses: {responses}')
+        # self.log_msg(f'--> Responses: {responses}')
     
     async def cpex_generate_call_id(self, src: str, dst: str, req_type: str) -> str:
         call_details: str = libcpex.normalize_call_details(src=src, dst=dst)
@@ -88,7 +88,7 @@ class CpexIWF:
         req_time_start = time.perf_counter()
         responses = await self.make_request('retrieve', requests=reqs)
         req_time_taken = time.perf_counter() - req_time_start
-        self.log_msg(f'--> Responses: {responses}')
+        # self.log_msg(f'--> Responses: {responses}')
         
         self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         
@@ -124,7 +124,7 @@ class CpexIWF:
         }
     
     def log_msg(self, msg):
-        print(msg)
+        # print(msg)
         if config.DEBUG and self.logger:
             self.logger.debug(msg)
             
