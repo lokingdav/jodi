@@ -30,7 +30,7 @@ def init_worker():
     call_placement_services = cache.find(
         key=config.CPS_KEY, 
         dtype=dict
-    )
+    ) or []
     _, credentials = stirsetup.load_certs()
     entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
     
@@ -40,7 +40,16 @@ class NetworkedSimulator:
         return res
     
     def create_prov_params(self, pid, impl, mode, options, next_prov):
-        [cps, cr] = random.choices(call_placement_services, k=2)
+        if len(call_placement_services) >= 2:
+            [cps, cr] = random.choices(call_placement_services, k=2)
+        else:
+            # Put dummy values
+            if config.is_atis_mode(mode):
+                raise Exception("ATIS mode requires at least 2 CPS")
+            
+            cps = {'url': 'http://example2.com', 'fqdn': 'example2.com'}
+            cr = {'url': 'http://example2.com', 'fqdn': 'example2.com'}
+            
         ica = random.randint(0, config.NO_OF_INTERMEDIATE_CAS - 1)
         ocrt = random.randint(0, config.NUM_CREDS_PER_ICA - 1)
         idx = f"{constants.OTHER_CREDS_KEY}-{ica * config.NUM_CREDS_PER_ICA + ocrt}" 
@@ -55,7 +64,7 @@ class NetworkedSimulator:
             'n_ev': options.get('n_ev'),
             'n_ms': options.get('n_ms'),
             'next_prov': next_prov,
-            'cps': { 'url': cps['url'], 'fqdn': cps['fqdn'] },
+            'cps': { 'url': cps['url'], 'fqdn': cps['fqdn'] } if cps else None,
             'cr': {'x5u': cr['url'] + f'/certs/{idx}', 'sk': cred['sk']},
         }
         
@@ -79,7 +88,6 @@ class NetworkedSimulator:
         
         if len(route) == 0:
             raise Exception('Invalid simulation parameter')
-        # print(route)
         
         if not isinstance(route, list):
             raise Exception("Route parameter must be an instance of a list")
@@ -90,23 +98,17 @@ class NetworkedSimulator:
         logger = logging.create_logger('simulator')
         logger.debug(f"Simulating call with route: {route}")
         
-        providers, signal, start_token, final_token = {}, None, None, None
+        signal, start_token, final_token, latency = None, None, None, 0
 
         for i, (idx, impl) in enumerate(route):
-            pid = 'P' + str(idx)
-            provider: providerModule.Provider = providers.get(pid)
-            
-            if not provider:
-                next_prov = route[i + 1] if i + 1 < len(route) else None
-                provider = self.create_provider_instance(
-                    pid=pid, 
-                    impl=impl, 
-                    mode=mode, 
-                    options=options, 
-                    next_prov=next_prov
-                )
-                provider.logger = logger
-                providers[pid] = provider
+            provider = self.create_provider_instance(
+                pid='P' + str(idx), 
+                impl=impl, 
+                mode=mode, 
+                options=options, 
+                next_prov=route[i + 1] if i + 1 < len(route) else None
+            )
+            provider.logger = logger
 
             if i == 0: # Originating provider
                 signal, start_token = await provider.originate()
@@ -114,16 +116,16 @@ class NetworkedSimulator:
                 final_token = await provider.terminate(signal)
             else: # Intermediate provider
                 signal = await provider.receive(signal)
-        
-        is_correct = start_token == final_token
-        latency = 0
-        
-        for provider in providers.values():
+
             latency += provider.get_latency_ms()
+            provider.reset()
+            
+        is_correct = start_token == final_token
+                
         logger.debug(f"Total latency for call = {latency} ms")
 
         # if not is_correct:
-        # logging.print_logs(logger)
+        #   logging.print_logs(logger)
             
         logging.close_logger(logger)
 

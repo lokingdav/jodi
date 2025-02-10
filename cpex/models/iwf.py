@@ -14,15 +14,15 @@ class CpexIWF:
         self.logger = params.get('logger')
         self.fake_proxy = params.get('fake_proxy', False)
         
-        # Providers compute time
+        self.reset()
+        
+    def reset(self):
         self.publish_provider_time = 0
         self.retrieve_provider_time = 0
         
-        # Evaluators compute time
         self.publish_ev_time = 0
         self.retrieve_ev_time = 0
         
-        # Message stores compute time
         self.publish_ms_time = 0
         self.retrieve_ms_time = 0
         

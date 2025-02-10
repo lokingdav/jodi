@@ -59,6 +59,10 @@ class Provider(iwf.CpexIWF):
     
     def next_prov_is_capable(self):
         return self.next_prov and self.next_prov[1] == 1
+    
+    def reset(self):
+        self.latencies = []
+        super().reset()
 
     def load_auth_service(self):
         self.auth_service = AuthService(
