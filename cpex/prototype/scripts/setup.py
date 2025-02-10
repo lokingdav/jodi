@@ -52,6 +52,9 @@ def get_node_hosts():
     hosts_file = 'automation/hosts.yml'
     nodes = defaultdict(list)
 
+    if files.is_empty(hosts_file):
+        return nodes
+    
     with open(hosts_file, 'r') as file:
         data = yaml.safe_load(file)
         if not data or 'all' not in data or 'hosts' not in data['all']:

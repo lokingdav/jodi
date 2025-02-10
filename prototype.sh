@@ -85,10 +85,10 @@ compose_up() {
       docker compose --profile atis up -d
       ;;
     all)
-      docker compose up -d
+      docker compose --profile cpex --profile atis --profile experiment cpex up -d
       ;;
     *)
-      docker compose up -d experiment
+      docker compose --profile experiment up -d
       ;;
   esac
 
@@ -105,6 +105,8 @@ compose_down() {
   echo "Stopping Docker Compose services..."
   docker compose --profile cpex down
   docker compose --profile atis down
+  docker compose --profile experiment down
+  docker compose down
 }
 
 dockerps() {

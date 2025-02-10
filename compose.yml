@@ -27,6 +27,7 @@ services:
       - mongo
     networks:
       - net
+    profiles: [experiment]
 
 # CPeX Services
   evaluator:

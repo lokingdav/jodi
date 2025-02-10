@@ -13,11 +13,16 @@
       args:
         chdir: "{{ repo_dest }}"
 
-    - name: Start Services
+    - name: Start CPEX Services
       tags:
-        - start_services
-      command: "./prototype.sh atis up"
+        - start_cpex
+      command: "./prototype.sh down && ./prototype.sh cpex up"
       args:
         chdir: "{{ repo_dest }}"
 
-    
+    - name: Start ATIS Services
+      tags:
+        - start_atis
+      command: "./prototype.sh down && ./prototype.sh atis up"
+      args:
+        chdir: "{{ repo_dest }}"
