@@ -132,7 +132,7 @@ async def republish(dest: str, orig: str, request: RepublishRequest, authorizati
     return success_response()
 
 @app.get("/retrieve/{dest}/{orig}")
-async def republish(dest: str, orig: str, authorization: str = Header(None)):
+async def retrieve(dest: str, orig: str, authorization: str = Header(None)):
     print("Received retrieve request from", orig, "to", dest, flush=True)
     # 1. Verify authorization header token attached by the provider
     decoded = authorize_request(authorization)
