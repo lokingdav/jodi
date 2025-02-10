@@ -3,7 +3,7 @@ from cpex.prototype.provider import Provider
 from cpex.helpers import dht
 from cpex.models import cache
 from cpex.crypto import groupsig
-from cpex.helpers import logging
+from cpex.helpers import mylogging
 from cpex.prototype.simulations.networked import NetworkedSimulator
 from cpex import config
 
@@ -17,7 +17,7 @@ async def main():
     sim.create_nodes()
     [cps1, cps2] = cache.find(config.CPS_KEY, dtype=dict)[0:2]
 
-    logger = logging.create_logger('tests/run.py')
+    logger = mylogging.create_stream_logger('tests/run.py')
 
     provider1 = Provider({
         'pid': 'P0',
@@ -56,8 +56,7 @@ async def main():
     print(f"Tokens Match: {token == token_retrieved}")
     print(f'Total Latency: {provider1.get_latency_ms() + provider2.get_latency_ms()} ms')
 
-
-    logging.print_logs(logger)
+    mylogging.print_logs(logger)
 
 if __name__ == '__main__':
     asyncio.run(main())

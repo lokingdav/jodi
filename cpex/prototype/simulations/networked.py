@@ -6,7 +6,7 @@ from typing import Tuple
 from cpex.crypto import groupsig
 from cpex.prototype import network
 from cpex.models import cache, persistence
-from cpex.helpers import errors, files, dht, logging
+from cpex.helpers import errors, mylogging
 from cpex.prototype.stirshaken import stirsetup
 from cpex import config, constants
 from cpex.prototype import provider as providerModule
@@ -95,7 +95,7 @@ class NetworkedSimulator:
         if len(set([p for (p, _) in route])) == 1:
             return options.get('_id')
         
-        logger = logging.create_logger('simulator')
+        logger = mylogging.create_stream_logger('simulator')
         logger.debug(f"Simulating call with route: {route}")
         
         signal, start_token, final_token, latency = None, None, None, 0
@@ -125,9 +125,9 @@ class NetworkedSimulator:
         logger.debug(f"Total latency for call = {latency} ms")
 
         # if not is_correct:
-        #   logging.print_logs(logger)
+        #   mylogging.print_logs(logger)
             
-        logging.close_logger(logger)
+        mylogging.close_logger(logger)
 
         return (latency, len(route), is_correct)
 

@@ -70,9 +70,9 @@ services:
       --reload
     profiles: [proxy]
 
-  atis-cps-0:
+  sti-cps-0:
     <<: *cpex-service
-    container_name: atis-cps-0
+    container_name: sti-cps-0
     command: > 
       gunicorn cpex.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 
@@ -87,9 +87,9 @@ services:
       - NODE_PORT=10433
     profiles: [atis]
 
-  atis-cps-1:
+  sti-cps-1:
     <<: *cpex-service
-    container_name: atis-cps-1
+    container_name: sti-cps-1
     command:  > 
       gunicorn cpex.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 

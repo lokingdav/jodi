@@ -2,19 +2,21 @@ from fastapi import FastAPI, status, Header, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
-import json
+import json, os
 
 import cpex.config as config
 import cpex.constants as constants
 from cpex.models import cache
 from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service, certs
 from cpex.prototype.scripts import setup
-from cpex.helpers import misc, http
+from cpex.helpers import misc, http, mylogging
 
 MY_CRED = None
 CERTS_REPO = None
 BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
+
+mylogging.init_mylogger(name='server_logs', filename=f'cps.{os.getpid()}.log')
 
 def init_server():
     global MY_CRED, CERTS_REPO

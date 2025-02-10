@@ -1,7 +1,20 @@
 import logging
 from io import StringIO
 
-def create_logger(name:str, level:int=logging.DEBUG) -> logging.Logger:
+mylogger = None
+
+def init_mylogger(name:str, filename:str, level:int=logging.DEBUG) -> logging.Logger:
+    global mylogger
+    
+    mylogger = logging.getLogger(name)
+    mylogger.setLevel(level)
+
+    file_handler = logging.FileHandler(filename)
+    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+
+    mylogger.addHandler(file_handler)
+
+def create_stream_logger(name:str, level:int=logging.DEBUG) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(level)
 

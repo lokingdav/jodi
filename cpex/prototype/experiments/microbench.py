@@ -1,5 +1,5 @@
 import time, os, asyncio, json
-from cpex.helpers import misc, http, files, dht, logging
+from cpex.helpers import misc, http, files, dht, mylogging
 from cpex.crypto import libcpex, groupsig
 from pylibcpex import Oprf, Utils
 from cpex import config, constants
@@ -39,7 +39,7 @@ async def bench_async(options):
         'cr': {'x5u': 'https://example.com/ev1.crt', 'sk': cred['sk']},
     }
 
-    logger = logging.create_logger('microbench')
+    logger = mylogging.create_stream_logger('microbench')
     
     originating_provider = entities.Provider({'pid': 'P0', 'logger': logger, 'next_prov': (5, 0), **params})
     terminating_provider = entities.Provider({'pid': 'P5', 'logger': logger, **params})
