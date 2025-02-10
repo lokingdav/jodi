@@ -9,7 +9,7 @@ import cpex.constants as constants
 from cpex.models import cache
 from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service, certs
 from cpex.prototype.scripts import setup
-from cpex.helpers import misc, files, http
+from cpex.helpers import misc, http
 
 MY_CRED = None
 CERTS_REPO = None
