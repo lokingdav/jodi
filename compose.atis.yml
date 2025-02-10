@@ -24,7 +24,7 @@ services:
     command: > 
       gunicorn cpex.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 
-      --workers 2
+      --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --reload
@@ -39,7 +39,7 @@ services:
     command:  > 
       gunicorn cpex.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 
-      --workers 2
+      --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --reload
