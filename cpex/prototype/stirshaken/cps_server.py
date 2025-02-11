@@ -64,10 +64,11 @@ app = init_server()
 
 @app.post("/publish/{dest}/{orig}")
 async def publish(dest: str, orig: str, request: PublishRequest, authorization: str = Header(None)):
-    print("Received publish request from", orig, "to", dest, flush=True)
+    mylogging.mylogger.debug(f"===== PUBLISH request: src={orig},  dst={dest}, passports={request.passports}")
     # 1. Verify authorization header token attached by the provider
     decoded = authorize_request(authorization, request.passports)
     if not decoded:
+        mylogging.mylogger.error(f"Unauthorized request")
         return unauthorized_response()
     
     # 2. Store passports in cache for 15 seconds
@@ -78,9 +79,11 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     )
 
     repositories = cache.get_other_cpses(key=OTHER_CPSs)
+    mylogging.mylogger.debug(f"Found {len(repositories)} other CPSes")
 
     if not repositories:
         return success_response()
+        
 
     # 4. create new requests with payload: orig, dest, passports, token. Token is the authorization header bearer token
     auth = auth_service.AuthService(
@@ -113,12 +116,12 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
     
     # 5. Send requests to all repositories
     responses = await http.posts(reqs)
-    print("Republished passports to all others", flush=True)
+    mylogging.mylogger.debug("Republished passports to all others")
     return success_response()
 
 @app.post("/republish/{dest}/{orig}")
 async def republish(dest: str, orig: str, request: RepublishRequest, authorization: str = Header(None)):
-    print("Received republish request from", orig, "to", dest, flush=True)
+    mylogging.mylogger.debug(f"===== REPUBLISH request: src={orig},  dst={dest}, passports={request.passports}")
     # 1. Verify authorization header token attached by the provider
     decoded = authorize_request(authorization, request.passports)
     if not decoded:
@@ -135,7 +138,7 @@ async def republish(dest: str, orig: str, request: RepublishRequest, authorizati
 
 @app.get("/retrieve/{dest}/{orig}")
 async def retrieve(dest: str, orig: str, authorization: str = Header(None)):
-    print("Received retrieve request from", orig, "to", dest, flush=True)
+    mylogging.mylogger.debug(f"===== RETRIEVE request from, src={orig},  dst={dest}")
     # 1. Verify authorization header token attached by the provider
     decoded = authorize_request(authorization)
     if not decoded:
