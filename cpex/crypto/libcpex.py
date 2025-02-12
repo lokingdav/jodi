@@ -18,7 +18,7 @@ def normalize_call_details(src: str, dst: str):
 
 def get_index_from_call_details(call_details: str) -> int:
     digest: bytes = Utils.hash160(call_details.encode('utf-8'))
-    return int(digest.hex(), 16) % config.OPRF_KEYLIST_SIZE
+    return int(digest.hex(), 16) % config.KEYLIST_SIZE
 
 def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
     i_k: int = get_index_from_call_details(call_details)

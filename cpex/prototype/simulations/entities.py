@@ -78,7 +78,7 @@ class Evaluator:
     @staticmethod
     def create_keyset():
         keys = []
-        for _ in range(config.OPRF_KEYLIST_SIZE):
+        for _ in range(config.KEYLIST_SIZE):
             sk, vk  = Oprf.keygen()
             keys.append(Utils.to_base64(sk) + '.' + Utils.to_base64(vk))
         return keys

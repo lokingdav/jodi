@@ -7,17 +7,17 @@ from cpex.helpers import mylogging
 from cpex.prototype.simulations.networked import NetworkedSimulator
 from cpex import config
 
-mode = 'atis'
-
 cache.set_client(cache.connect())
 gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
 
-async def main():
+async def main(args):
     sim = NetworkedSimulator()
     sim.create_nodes()
     [cps1, cps2] = cache.find(config.CPS_KEY, dtype=dict)[0:2]
 
     logger = mylogging.create_stream_logger('tests/run.py')
+
+    mode = args.mode
 
     provider1 = Provider({
         'pid': 'P0',
@@ -50,13 +50,13 @@ async def main():
     })
     token_retrieved = await provider2.terminate(signal)
 
-    # print(f'\nSignal: {signal}')
-    # print(f'Original Token: {token}')
-    # print(f'Retrieved Token: {token_retrieved}\n')
     print(f"Tokens Match: {token == token_retrieved}")
     print(f'Total Latency: {provider1.get_latency_ms() + provider2.get_latency_ms()} ms')
 
     mylogging.print_logs(logger)
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--mode', type=str, default='cpex', help='Mode to run the simulation in')
+    args = parser.parse_args()
+    asyncio.run(main(args))

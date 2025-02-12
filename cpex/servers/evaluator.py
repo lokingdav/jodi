@@ -2,21 +2,16 @@ import os
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from contextlib import asynccontextmanager
 
 from cpex.crypto import groupsig, oprf
+from cpex.models import cache
+from cpex.helpers import mylogging
 
-kr_instance = None
+mylogging.init_mylogger('evaluator', 'evaluator.log')
+cache.set_client(cache.connect())
 gpk = groupsig.get_gpk()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global kr_instance
-    kr_instance = oprf.begin_key_rotation()
-    yield
-    kr_instance.stop_rotation()
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 class EvaluateRequest(BaseModel):
     i_k: int
@@ -31,12 +26,12 @@ async def evaluate(req: EvaluateRequest):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
     
-    # print(f"\n{os.getpid()} --> Received request to evaluate {req.x} with index {req.i_k}", flush=True)
-    privk, publk = kr_instance.get_key(req.i_k)
-    # print(f"{os.getpid()} --> Using key with index {req.i_k}, \n\tsk: {oprf.Utils.to_base64(privk)}, \n\tpk: {oprf.Utils.to_base64(publk)}", flush=True)
+    # mylogging.mylogger.debug(f"\n{os.getpid()} --> Received request to evaluate {req.x} with index {req.i_k}")
+    sk, pk = oprf.KeyRotation.get_key(req.i_k)
+    # mylogging.mylogger.debug(f"{os.getpid()} --> Using key with index {req.i_k}, \n\tsk: {oprf.Utils.to_base64(sk)}\n\tpk: {oprf.Utils.to_base64(pk)}")
     
     return JSONResponse(
-        content=oprf.evaluate(privk=privk, publk=publk, x=req.x), 
+        content=oprf.evaluate(sk=sk, pk=pk, x=req.x), 
         status_code=status.HTTP_201_CREATED
     )
 

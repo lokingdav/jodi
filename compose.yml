@@ -43,6 +43,15 @@ services:
     ports:
       - 10430:80
     profiles: [cpex]
+    depends_on:
+      - ev-keyrotation
+      - cache
+
+  ev-keyrotation:
+    <<: *cpex-service
+    container_name: ev-keyrotation
+    command: python cpex/servers/keyrotation.py
+    profiles: [cpex]
 
   message-store:
     <<: *cpex-service
