@@ -12,17 +12,17 @@ cache_client = None
 
 deployRate = 55.96
 maxRepTrustParams = 10
-EXPERIMENT_NUM = 1
+EXPERIMENT_NUM = '1'
 EXPERIMENT_PARAMS = {
-    1: {
+    '1': {
         'simulator': local.LocalSimulator,
         'node_groups': [(20, 20)],
         'provider_groups': [100],
     },
-    3: {
+    '3': {
         'simulator': networked.NetworkedSimulator,
         'node_groups': [(10, 10)],
-        'provider_groups': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+        'provider_groups': [10]#, 20, 30, 40, 50, 60, 70, 80, 90, 100],
     }
 }
 
@@ -35,19 +35,16 @@ def load_checkpoint():
     global experimentState
     if not experimentState:
         experimentState = files.read_json(fileloc=stateFile, default=defaultdict(dict))
-    key = str(EXPERIMENT_NUM)
-    if key in experimentState:
-        return experimentState[key]
+    if EXPERIMENT_NUM in experimentState:
+        return experimentState[EXPERIMENT_NUM]
     return {}
 
 def save_checkpoint(params):
     global experimentState
-    
-    key = str(EXPERIMENT_NUM)
-    if key in experimentState:
-        experimentState[key].update(params)
+    if EXPERIMENT_NUM in experimentState:
+        experimentState[EXPERIMENT_NUM].update(params)
     else:
-        experimentState[key] = params
+        experimentState[EXPERIMENT_NUM] = params
     
     files.override_json(fileloc=stateFile, data=experimentState)
     
@@ -67,7 +64,7 @@ def run_datagen():
             [(num_provs, deployRate, True) for num_provs in groups]
         )
 
-def simulate(resutlsloc: str, mode: str, params: dict):
+def simulate(resutlsloc: str, mode: str, params: dict = {}):
     prevState = load_checkpoint()
     i_start = prevState.get('NN_idx', -1) + 1
     j_start = prevState.get('NP_idx', -1) + 1
@@ -83,7 +80,7 @@ def simulate(resutlsloc: str, mode: str, params: dict):
         )
         
         # Handle network churn simulation
-        if EXPERIMENT_NUM == 1:
+        if EXPERIMENT_NUM == '1':
             stop_churning = threading.Event()
             network_churning = threading.Thread(target=local.network_churn, args=(stop_churning,))
             network_churning.start()
@@ -98,7 +95,7 @@ def simulate(resutlsloc: str, mode: str, params: dict):
             print(f"\n Started Simulation. Num_Provs: {num_provs}, {suffix}")
 
             result = Simulator.run({
-                'Num_Provs':num_provs,
+                'Num_Provs': num_provs,
                 'Num_EVs': node_groups[i][0],
                 'Num_MSs': node_groups[i][1],
                 'mode': mode,
@@ -121,7 +118,7 @@ def simulate(resutlsloc: str, mode: str, params: dict):
             })
         j_start = 0
 
-        if EXPERIMENT_NUM == 1:
+        if EXPERIMENT_NUM == '1':
             stop_churning.set()
             network_churning.join()
 
@@ -133,7 +130,7 @@ def save_result(**kwargs):
     resutlsloc = kwargs.get('loc')
     result = kwargs.get('result')
     
-    if EXPERIMENT_NUM == 3:
+    if EXPERIMENT_NUM in ['3a', '3b']:
         result = [
             result[0], # mode
             result[1], # calls_count
@@ -148,35 +145,33 @@ def save_result(**kwargs):
     files.append_csv(resutlsloc, [result])
 
 def prepare_results_file():
-    if EXPERIMENT_NUM not in [1, 3]:
+    if EXPERIMENT_NUM not in ['1', '3a', '3b']:
         raise ValueError('Invalid experiment number')
     
-    resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{EXPERIMENT_NUM}.csv"
+    exp_num = '1' if EXPERIMENT_NUM == '1' else '3'
+    resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{exp_num}.csv"
 
     if not files.is_empty(resutlsloc):
         return resutlsloc
 
     statsheader = ['lat_min', 'lat_max','lat_mean','lat_std','success_rate','calls_per_sec']
-    if EXPERIMENT_NUM == 1:
+    if EXPERIMENT_NUM == '1':
         headers = ['mode','Num_Provs','Num_EVs','Num_MSs','n_ev','n_ms'] + statsheader
-    elif EXPERIMENT_NUM == 3:
+    else:
         headers = ['mode','calls_count','nodes_count'] + statsheader
-    files.write_csv(resutlsloc, [headers])
-    return resutlsloc
 
-def reset_routes():
-    provider_groups = get_provider_groups()
-    for num_provs in provider_groups:
-        persistence.reset_marked_routes(num_provs)
+    files.write_csv(resutlsloc, [headers])
+
+    return resutlsloc
 
 def set_simulator(args):
     global Simulator, EXPERIMENT_NUM
-    
-    if args.experiment == 1:
-        EXPERIMENT_NUM = 1
+
+    EXPERIMENT_NUM = args.experiment
+
+    if args.experiment == '1':
         Simulator = local.LocalSimulator()
     else:
-        EXPERIMENT_NUM = 3
         Simulator = networked.NetworkedSimulator()
 
 def run_experiment_1(resutlsloc):
@@ -202,18 +197,10 @@ def run_experiment_1(resutlsloc):
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
 def run_experiment_3(resutlsloc):
-    simulate(
-        resutlsloc=resutlsloc, 
-        mode=constants.MODE_ATIS, 
-        params={}
-    )
-    # print("Sleeping for 5 seconds...")
-    # time.sleep(5)
-    # simulate(
-    #     resutlsloc=resutlsloc, 
-    #     mode=constants.MODE_CPEX, 
-    #     params={'n_ev': 3, 'n_ms': 3}
-    # )
+    if EXPERIMENT_NUM == '3a':
+        simulate(resutlsloc=resutlsloc, mode=constants.MODE_ATIS)
+    else:
+        simulate(resutlsloc=resutlsloc, mode=constants.MODE_CPEX, params={'n_ev': 3, 'n_ms': 3})
     delete_state_for_exp()
 
 def main(args):
@@ -223,15 +210,14 @@ def main(args):
 
     run_datagen()
     resutlsloc = prepare_results_file()
-    reset_routes()
     
     cache_client = cache.connect()
     cache.set_client(cache_client)
     networked.set_cache_client(cache_client)
 
-    if args.experiment == 1:
+    if args.experiment == '1':
         run_experiment_1(resutlsloc)
-    elif args.experiment == 3:
+    elif args.experiment in ['3a', '3b']:
         run_experiment_3(resutlsloc)
 
 def delete_state_for_exp():
@@ -242,7 +228,7 @@ def delete_state_for_exp():
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--experiment', type=int, choices=[1, 3], help='Experiment to run. Either 1 or 3. Default=1', default='1')
+    parser.add_argument('--experiment', type=str, choices=['1', '3a', '3b'], help='Experiment to run. Either 1, 3a or 3b. Default=1', default='1')
     args = parser.parse_args()
 
     if not any(vars(args).values()):

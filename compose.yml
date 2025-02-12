@@ -88,7 +88,6 @@ services:
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --timeout 0
       --reload
     ports:
       - 10433:80
@@ -105,7 +104,6 @@ services:
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --timeout 0
       --reload
     ports:
       - 10434:80
