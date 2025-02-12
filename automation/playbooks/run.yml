@@ -16,13 +16,13 @@
     - name: Start CPEX Services
       tags:
         - start_cpex
-      command: "./prototype.sh down && ./prototype.sh cpex up"
+      command: "./prototype.sh cpex up"
       args:
         chdir: "{{ repo_dest }}"
 
     - name: Start ATIS Services
       tags:
         - start_atis
-      command: "./prototype.sh down && ./prototype.sh atis up"
+      command: "./prototype.sh atis up"
       args:
         chdir: "{{ repo_dest }}"
