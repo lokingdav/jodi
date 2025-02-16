@@ -79,41 +79,43 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
 
     repositories = cache.get_other_cpses(key=OTHER_CPSs)
     mylogging.mylogger.debug(f"{os.getpid()}: Found {len(repositories)} other CPSes")
-
-    if not repositories:
-        return success_response()
-
-    auth = auth_service.AuthService(
-        ownerId=config.NODE_FQDN,
-        private_key_pem=MY_CRED[constants.PRIV_KEY],
-        x5u=f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
-    )
-
-    reqs = []
-        
-    for repo in repositories:
-        token = auth.authenticate_request(
-            action='republish', 
-            orig=orig, 
-            dest=dest, 
-            passports=request.passports,
-            iss=decoded.get('iss'), 
-            aud=repo.get('fqdn')
-        )
-        reqs.append({
-            'url': repo.get('url') + f'/republish/{dest}/{orig}',
-            'data': {
-                'passports': request.passports,
-                'token': authorization
-            },
-            'headers': {
-                'Authorization': f'Bearer {token}'
-            }
-        })
     
-    responses = await http.posts(reqs)
-    mylogging.mylogger.debug(f"{os.getpid()}: Republished responses: {responses}")
     return success_response()
+
+    # if not repositories:
+    #     return success_response()
+
+    # auth = auth_service.AuthService(
+    #     ownerId=config.NODE_FQDN,
+    #     private_key_pem=MY_CRED[constants.PRIV_KEY],
+    #     x5u=f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
+    # )
+
+    # reqs = []
+        
+    # for repo in repositories:
+    #     token = auth.authenticate_request(
+    #         action='republish', 
+    #         orig=orig, 
+    #         dest=dest, 
+    #         passports=request.passports,
+    #         iss=decoded.get('iss'), 
+    #         aud=repo.get('fqdn')
+    #     )
+    #     reqs.append({
+    #         'url': repo.get('url') + f'/republish/{dest}/{orig}',
+    #         'data': {
+    #             'passports': request.passports,
+    #             'token': authorization
+    #         },
+    #         'headers': {
+    #             'Authorization': f'Bearer {token}'
+    #         }
+    #     })
+    
+    # responses = await http.posts(reqs)
+    # mylogging.mylogger.debug(f"{os.getpid()}: Republished responses: {responses}")
+    # return success_response()
 
 @app.post("/republish/{dest}/{orig}")
 async def republish(dest: str, orig: str, request: RepublishRequest, authorization: str = Header(None)):
