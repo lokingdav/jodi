@@ -16,7 +16,7 @@
     - name: Clear logs
       tags:
         - clear_logs
-      command: "rm -rf ./logs/*.log"
+      shell: "rm -rf ./logs/*.log"
       args:
         chdir: "{{ repo_dest }}"
 
