@@ -13,14 +13,13 @@ cache_client = None
 deployRate = 55.96
 maxRepTrustParams = 10
 EXPERIMENT_NUM = '1'
+EXPERIMENT_PART = ''
 EXPERIMENT_PARAMS = {
     '1': {
-        'simulator': local.LocalSimulator,
         'node_groups': [(20, 20)],
         'provider_groups': [100],
     },
     '3': {
-        'simulator': networked.NetworkedSimulator,
         'node_groups': [(10, 10)],
         'provider_groups': [10]#, 20, 30, 40, 50, 60, 70, 80, 90, 100],
     }
@@ -64,7 +63,7 @@ def run_datagen():
             [(num_provs, deployRate, True) for num_provs in groups]
         )
 
-def simulate(resutlsloc: str, mode: str, params: dict = {}):
+def simulate(resultsloc: str, mode: str, params: dict = {}):
     prevState = load_checkpoint()
     i_start = prevState.get('NN_idx', -1) + 1
     j_start = prevState.get('NP_idx', -1) + 1
@@ -102,12 +101,12 @@ def simulate(resutlsloc: str, mode: str, params: dict = {}):
                 **params
             })
             save_result(
-                loc=resutlsloc, 
+                loc=resultsloc, 
                 result=result,
                 nodes_count=sum(node_groups[i])
             )
             print(result)
-            print("Results written to", resutlsloc)
+            print("Results written to", resultsloc)
             save_checkpoint({
                 **params,
                 'N_ev': node_groups[i][0], 
@@ -127,10 +126,10 @@ def simulate(resutlsloc: str, mode: str, params: dict = {}):
     save_checkpoint({'NN_idx': -1}) # Reset NN_idx
 
 def save_result(**kwargs):
-    resutlsloc = kwargs.get('loc')
+    resultsloc = kwargs.get('loc')
     result = kwargs.get('result')
     
-    if EXPERIMENT_NUM in ['3a', '3b']:
+    if EXPERIMENT_NUM == '3':
         result = [
             result[0], # mode
             result[1], # calls_count
@@ -142,17 +141,16 @@ def save_result(**kwargs):
             result[10], # success_rate
             result[11] # calls_per_sec
         ]
-    files.append_csv(resutlsloc, [result])
+    files.append_csv(resultsloc, [result])
 
 def prepare_results_file():
-    if EXPERIMENT_NUM not in ['1', '3a', '3b']:
+    if EXPERIMENT_NUM not in ['1', '3']:
         raise ValueError('Invalid experiment number')
     
-    exp_num = '1' if EXPERIMENT_NUM == '1' else '3'
-    resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{exp_num}.csv"
+    resultsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{EXPERIMENT_NUM}.csv"
 
-    if not files.is_empty(resutlsloc):
-        return resutlsloc
+    if not files.is_empty(resultsloc):
+        return resultsloc
 
     statsheader = ['lat_min', 'lat_max','lat_mean','lat_std','success_rate','calls_per_sec']
     if EXPERIMENT_NUM == '1':
@@ -160,21 +158,22 @@ def prepare_results_file():
     else:
         headers = ['mode','calls_count','nodes_count'] + statsheader
 
-    files.write_csv(resutlsloc, [headers])
+    files.write_csv(resultsloc, [headers])
 
-    return resutlsloc
+    return resultsloc
 
 def set_simulator(args):
-    global Simulator, EXPERIMENT_NUM
-
-    EXPERIMENT_NUM = args.experiment
+    global Simulator, EXPERIMENT_NUM, EXPERIMENT_PART
 
     if args.experiment == '1':
+        EXPERIMENT_NUM = '1'
         Simulator = local.LocalSimulator()
     else:
+        EXPERIMENT_NUM = '3'
+        EXPERIMENT_PART = args.experiment[-1]
         Simulator = networked.NetworkedSimulator()
 
-def run_experiment_1(resutlsloc):
+def run_experiment_1(resultsloc):
     prevState = load_checkpoint()
     i_start = prevState.get('n_ev', 1)
     j_start = prevState.get('n_ms', 1)
@@ -188,7 +187,7 @@ def run_experiment_1(resutlsloc):
                 params = {'n_ev': i, 'n_ms': j, 'iter': iteration}
                 print(f"\n============ Iteration {iteration}/{numIters}, {params} ============")
                 start_time = time.perf_counter()
-                simulate(resutlsloc=resutlsloc, mode=constants.MODE_CPEX, params=params)
+                simulate(resultsloc=resultsloc, mode=constants.MODE_CPEX, params=params)
                 print(f"\tTime taken: {time.perf_counter() - start_time:.2f} seconds\n=============================================")
             iter_start = 1 # Reset iter_start after first iteration
         j_start = 1 # Reset j_start after first iteration
@@ -196,11 +195,16 @@ def run_experiment_1(resutlsloc):
     delete_state_for_exp()
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
-def run_experiment_3(resutlsloc):
-    if EXPERIMENT_NUM == '3a':
-        simulate(resutlsloc=resutlsloc, mode=constants.MODE_ATIS)
+def run_experiment_3(resultsloc):
+    conf = {'resultsloc': resultsloc, 'mode': constants.MODE_CPEX}
+    
+    if EXPERIMENT_PART == 'a':
+        conf['mode'] = constants.MODE_ATIS
     else:
-        simulate(resutlsloc=resutlsloc, mode=constants.MODE_CPEX, params={'n_ev': 3, 'n_ms': 3})
+        conf['params'] = {'n_ev': 3, 'n_ms': 3}
+    
+    simulate(**conf)
+    
     delete_state_for_exp()
 
 def main(args):
@@ -209,21 +213,21 @@ def main(args):
     set_simulator(args)
 
     run_datagen()
-    resutlsloc = prepare_results_file()
+    resultsloc = prepare_results_file()
     
     cache_client = cache.connect()
     cache.set_client(cache_client)
     networked.set_cache_client(cache_client)
 
     if args.experiment == '1':
-        run_experiment_1(resutlsloc)
+        run_experiment_1(resultsloc)
     elif args.experiment in ['3a', '3b']:
-        run_experiment_3(resutlsloc)
+        run_experiment_3(resultsloc)
 
 def delete_state_for_exp():
     global experimentState
     if not experimentState: return
-    experimentState[str(EXPERIMENT_NUM)] = {}
+    experimentState[EXPERIMENT_NUM] = {}
     files.override_json(fileloc=stateFile, data=experimentState)
         
 if __name__ == "__main__":

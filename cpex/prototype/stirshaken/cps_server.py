@@ -17,6 +17,12 @@ BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
 
 mylogging.init_mylogger(name='cps_logs', filename=f'cps_server.log')
+        
+class PublishRequest(BaseModel):
+    passports: List[str]
+    
+class RepublishRequest(PublishRequest):
+    token: str
 
 def init_server():
     global MY_CRED, CERTS_REPO
@@ -30,14 +36,7 @@ def init_server():
     MY_CRED, CERTS_REPO = stirsetup.load_certs()
     certs.set_certificate_repository(CERTS_REPO)
 
-    return FastAPI()
-        
-class PublishRequest(BaseModel):
-    passports: List[str]
-    
-class RepublishRequest(PublishRequest):
-    token: str
-    
+    return FastAPI()    
 
 def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     authorization = authorization.replace("Bearer ", "")
@@ -60,10 +59,54 @@ def not_found_response(content={"message": "Not Found"}):
 def unauthorized_response(content={"message": "Unauthorized"}):
     return JSONResponse(content=content, status_code=status.HTTP_401_UNAUTHORIZED)
 
+async def do_republish(dest: str, orig: str, request: PublishRequest, authorization: str, decoded: dict):
+    mylogging.mylogger.debug(f"{os.getpid()}: Republish started for {orig} to {dest}")
+    
+    repositories = cache.get_other_cpses(key=OTHER_CPSs)
+    
+    if not repositories:
+        mylogging.mylogger.debug(f"{os.getpid()}: No other CPS found")
+        return success_response()
+    else:
+        mylogging.mylogger.debug(f"{os.getpid()}: Found {len(repositories)} other CPS")
+
+    authService = auth_service.AuthService(
+        ownerId=config.NODE_FQDN,
+        private_key_pem=MY_CRED[constants.PRIV_KEY],
+        x5u=f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
+    )
+    mylogging.mylogger.debug(f"{os.getpid()}: AuthService initialized")
+
+    reqs = []
+        
+    for repo in repositories:
+        token = authService.authenticate_request(
+            action='republish', 
+            orig=orig, 
+            dest=dest, 
+            passports=request.passports,
+            iss=decoded.get('iss'), 
+            aud=repo.get('fqdn')
+        )
+        reqs.append({
+            'url': repo.get('url') + f'/republish/{dest}/{orig}',
+            'data': {
+                'passports': request.passports,
+                'token': authorization
+            },
+            'headers': {
+                'Authorization': f'Bearer {token}'
+            }
+        })
+    
+    mylogging.mylogger.debug(f"{os.getpid()}: Sending republish requests: {[r['url'] for r in reqs]}")
+    responses = await http.posts(reqs)
+    mylogging.mylogger.debug(f"{os.getpid()}: Republished responses: {responses}")
+
 app = init_server()
 
 @app.post("/publish/{dest}/{orig}")
-async def publish(dest: str, orig: str, request: PublishRequest, authorization: str = Header(None)):
+async def handle_publish_req(dest: str, orig: str, request: PublishRequest, authorization: str = Header(None)):
     mylogging.mylogger.debug(f"{os.getpid()}: PUBLISH request: src={orig},  dst={dest}, passports={request.passports}")
     
     decoded = authorize_request(authorization, request.passports)
@@ -76,53 +119,24 @@ async def publish(dest: str, orig: str, request: PublishRequest, authorization: 
         value=request.passports, 
         seconds=config.T_MAX_SECONDS
     )
-
-    repositories = cache.get_other_cpses(key=OTHER_CPSs)
-    mylogging.mylogger.debug(f"{os.getpid()}: Found {len(repositories)} other CPSes")
     
+    await do_republish(
+        dest=dest, 
+        orig=orig, 
+        request=request, 
+        authorization=authorization, 
+        decoded=decoded
+    )
+
     return success_response()
 
-    # if not repositories:
-    #     return success_response()
-
-    # auth = auth_service.AuthService(
-    #     ownerId=config.NODE_FQDN,
-    #     private_key_pem=MY_CRED[constants.PRIV_KEY],
-    #     x5u=f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
-    # )
-
-    # reqs = []
-        
-    # for repo in repositories:
-    #     token = auth.authenticate_request(
-    #         action='republish', 
-    #         orig=orig, 
-    #         dest=dest, 
-    #         passports=request.passports,
-    #         iss=decoded.get('iss'), 
-    #         aud=repo.get('fqdn')
-    #     )
-    #     reqs.append({
-    #         'url': repo.get('url') + f'/republish/{dest}/{orig}',
-    #         'data': {
-    #             'passports': request.passports,
-    #             'token': authorization
-    #         },
-    #         'headers': {
-    #             'Authorization': f'Bearer {token}'
-    #         }
-    #     })
-    
-    # responses = await http.posts(reqs)
-    # mylogging.mylogger.debug(f"{os.getpid()}: Republished responses: {responses}")
-    # return success_response()
-
 @app.post("/republish/{dest}/{orig}")
-async def republish(dest: str, orig: str, request: RepublishRequest, authorization: str = Header(None)):
+async def handle_republish_req(dest: str, orig: str, request: RepublishRequest, authorization: str = Header(None)):
     mylogging.mylogger.debug(f"{os.getpid()}: REPUBLISH request: src={orig},  dst={dest}, passports={request.passports}")
     
     decoded = authorize_request(authorization, request.passports)
     if not decoded:
+        mylogging.mylogger.error(f"{os.getpid()}: REPUBLISH request unauthorized")
         return unauthorized_response()
     
     cache.cache_for_seconds(
@@ -130,15 +144,17 @@ async def republish(dest: str, orig: str, request: RepublishRequest, authorizati
         value=request.passports, 
         seconds=config.T_MAX_SECONDS
     )
+    mylogging.mylogger.debug(f"{os.getpid()}: Passports cached")
     
     return success_response()
 
 @app.get("/retrieve/{dest}/{orig}")
-async def retrieve(dest: str, orig: str, authorization: str = Header(None)):
+async def handle_retrieve_req(dest: str, orig: str, authorization: str = Header(None)):
     mylogging.mylogger.debug(f"{os.getpid()}: RETRIEVE request from, src={orig},  dst={dest}")
     
     decoded = authorize_request(authorization)
     if not decoded:
+        mylogging.mylogger.error(f"{os.getpid()}: RETRIEVE request unauthorized")
         return unauthorized_response()
     
     passports = cache.find(
@@ -147,19 +163,21 @@ async def retrieve(dest: str, orig: str, authorization: str = Header(None)):
     )
 
     if not passports:
+        mylogging.mylogger.error(f"{os.getpid()}: Passports not found for RETRIEVE request")
         return not_found_response()
     
+    mylogging.mylogger.debug(f"{os.getpid()}: Passports sent for RETRIEVE request")
     return success_response(content=passports)
 
 @app.get("/certs/{key}")
-async def get_certificate(key: str):
+async def handle_get_certificate_req(key: str):
     cert = CERTS_REPO.get(key)
     if not cert or 'cert' not in cert:
         return not_found_response()
     return cert['cert']
 
 @app.get("/health")
-async def health():
+async def handle_health_req():
     return {
         "Status": 200,
         "Message": "OK", 
