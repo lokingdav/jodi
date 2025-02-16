@@ -2,7 +2,7 @@
 set -e  # Exit immediately if any command fails
 
 cmd=$1
-cmds=('configure' 'create' 'destroy' 'install' 'run')
+cmds=('configure' 'create' 'destroy' 'install' 'run' 'pull')
 
 configure() {
     ./scripts/generate-ssh-keys.sh
@@ -23,14 +23,18 @@ install() {
     ansible-playbook -i hosts.yml playbooks/install.yml
 }
 
+pull_changes() {
+    ansible-playbook -i hosts.yml playbooks/install.yml --tags "checkout_branch"
+}
+
 runapp() {
     local app=$1
     case "$app" in
         cpex)
-            tags="stop_cpex,start_cpex"
+            tags="stop_services,clear_logs,start_cpex"
             ;;
         atis)
-            tags="stop_atis,start_atis"
+            tags="stop_services,clear_logs,start_atis"
             ;;
         *)
             echo "Unknown app: $app"
@@ -53,6 +57,9 @@ case "$cmd" in
         ;;
     install)
         install
+        ;;
+    pull)
+        pull_changes
         ;;
     run)
         # Ensure an app name is provided

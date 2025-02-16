@@ -13,6 +13,13 @@
       args:
         chdir: "{{ repo_dest }}"
 
+    - name: Clear logs
+      tags:
+        - clear_logs
+      command: "rm -rf ./logs/*.log"
+      args:
+        chdir: "{{ repo_dest }}"
+
     - name: Start CPEX Services
       tags:
         - start_cpex
