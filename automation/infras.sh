@@ -29,12 +29,19 @@ pull_changes() {
 
 runapp() {
     local app=$1
+    local pull=$2
+
+    tags="stop_services,clear_logs"
+    if [ "$pull" == "--pull" ]; then
+        tags="$tags,checkout_branch"
+    fi
+
     case "$app" in
         cpex)
-            tags="stop_services,clear_logs,start_cpex"
+            tags="$tags,start_cpex"
             ;;
         atis)
-            tags="stop_services,clear_logs,start_atis"
+            tags="$tags,start_atis"
             ;;
         *)
             echo "Unknown app: $app"
@@ -42,7 +49,7 @@ runapp() {
             ;;
     esac
     
-    ansible-playbook -i hosts.yml playbooks/run.yml --tags "$tags"
+    ansible-playbook -i hosts.yml playbooks/main.yml --tags "$tags"
 }
 
 case "$cmd" in
@@ -67,7 +74,7 @@ case "$cmd" in
             echo "Usage: $0 run {cpex|atis}"
             exit 1
         fi
-        runapp "$2"
+        runapp "$2" "$3"
         ;;
     *)
         echo "Usage: $0 {${cmds[*]}}"
