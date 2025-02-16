@@ -120,13 +120,13 @@ async def handle_publish_req(dest: str, orig: str, request: PublishRequest, auth
         seconds=config.T_MAX_SECONDS
     )
     
-    await do_republish(
-        dest=dest, 
-        orig=orig, 
-        request=request, 
-        authorization=authorization, 
-        decoded=decoded
-    )
+    # await do_republish(
+    #     dest=dest, 
+    #     orig=orig, 
+    #     request=request, 
+    #     authorization=authorization, 
+    #     decoded=decoded
+    # )
 
     return success_response()
 
