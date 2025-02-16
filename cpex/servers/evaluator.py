@@ -7,7 +7,7 @@ from cpex.crypto import groupsig, oprf
 from cpex.models import cache
 from cpex.helpers import mylogging
 
-mylogging.init_mylogger('evaluator', 'evaluator.log')
+mylogging.init_mylogger('evaluator', 'logs/evaluator.log')
 cache.set_client(cache.connect())
 gpk = groupsig.get_gpk()
 

@@ -16,7 +16,7 @@ CERTS_REPO = None
 BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
 
-mylogging.init_mylogger(name='cps_logs', filename=f'cps_server.log')
+mylogging.init_mylogger(name='cps_logs', filename=f'logs/cps_server.log')
         
 class PublishRequest(BaseModel):
     passports: List[str]
