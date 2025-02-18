@@ -28,11 +28,22 @@ def find(key: str, dtype = str):
     
     return data
 
+def find_all(keys: list, dtype = str):
+    data = client.mget(keys)
+    if dtype == int:
+        return [int(d) for d in data if d]
+    if dtype == dict:
+        return [json.loads(d) for d in data if d]
+    
+    return data
+
 def save(key: str, value: str):
     if type(value) != str:
         raise TypeError("Value must be a string")
-    
     return client.set(key, value)
+
+def save_all(data: dict):
+    return client.mset(data)
 
 def cache_for_seconds(key: str, value: str, seconds: int):
     if type(value) == dict or type(value) == list:

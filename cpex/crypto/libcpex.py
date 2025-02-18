@@ -5,6 +5,7 @@ from cpex.helpers import dht
 from typing import List
 import re
 from datetime import datetime
+from itertools import product
 
 def normalize_ts() -> str:
     return datetime.now().date()
@@ -24,7 +25,7 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
     i_k: int = get_index_from_call_details(call_details)
     calldt_hash = Utils.hash256(bytes(call_details, 'utf-8'))
     evaluators = dht.get_evals(
-        key=calldt_hash, 
+        keys=calldt_hash, 
         count=n_ev,
     )
 
@@ -45,25 +46,25 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
     
     return requests, mask
 
-def create_call_id(responses: List[dict], mask: bytes) -> bytes:
-    xor = None
-    
-    for i in range(len(responses)):
-        if '_error' in responses[i]:
+def create_call_ids(responses: List[dict], mask: bytes, req_type: str) -> bytes:
+    cids = []
+    responses = [reslist for reslist in responses if '_error' not in reslist or len(reslist) > 0]
+    if req_type == 'publish': # Only consider the first response from each evaluator
+        responses = [reslist[0:1] for reslist in responses]
+
+    responses = list(product(*responses))
+
+    for reslist in responses:
+        if len(reslist) == 0:
             continue
-        
-        cid_i = Oprf.unblind(
-            Utils.from_base64(responses[i]['fx']), 
-            Utils.from_base64(responses[i]['vk']), 
-            mask
-        )
-        
-        if xor is None:
-            xor = cid_i
-        else:
-            xor = Utils.xor(xor, cid_i)
-        
-    return Utils.hash256(xor) if xor else None
+
+        digest = None
+        for res in reslist:
+            cid = Oprf.unblind(Utils.from_base64(res['fx']), Utils.from_base64(res['vk']), mask)
+            digest = Utils.xor(digest, cid) if digest else cid
+        cids.append(Utils.hash256(digest))
+
+    return cids
 
 def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, stores = None) -> List[dict]:
     # Generate the index, encrypt msg and sign request
@@ -73,7 +74,7 @@ def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, store
     
     # Create storage requests for closest n_ms stores
     requests = []
-    stores = dht.get_stores(key=call_id, count=n_ms, nodes=stores)
+    stores = dht.get_stores(keys=call_id, count=n_ms, nodes=stores)
     for store in stores:
         requests.append({
             'nodeId': store['id'],
@@ -84,20 +85,22 @@ def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, store
 
     return requests
 
-def create_retrieve_requests(call_id: bytes, n_ms: int, gsk, gpk, stores=None) -> List[dict]:
-    # Generate the index and sign request
-    idx = Utils.to_base64(Utils.hash256(call_id))
-    sig = groupsig.sign(msg=idx, gsk=gsk, gpk=gpk)
-
+def create_retrieve_requests(call_ids: List[bytes], n_ms: int, gsk, gpk, stores=None) -> List[dict]:
     requests = []
-    stores = dht.get_stores(key=call_id, count=n_ms, nodes=stores)
-    for store in stores:
-        requests.append({
-            'nodeId': store['id'],
-            'avail': store.get('avail', None),
-            'url': store['url'] + '/retrieve',
-            'data': { 'idx': idx, 'sig': sig }
-        })
+    stores_per_cid = dht.get_stores(keys=call_ids, count=n_ms, nodes=stores)
+
+    assert len(call_ids) == len(stores_per_cid)
+
+    for i, stores in enumerate(stores_per_cid):
+        idx = Utils.to_base64(Utils.hash256(call_ids[i]))
+        for store in stores:
+            requests.append({
+                'cid_idx': i,
+                'nodeId': store['id'],
+                'avail': store.get('avail', None),
+                'url': store['url'] + '/retrieve',
+                'data': { 'idx': idx, 'sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk) }
+            })
 
     return requests
 
@@ -107,14 +110,15 @@ def encrypt_and_mac(call_id: bytes, plaintext: str) -> str:
     c_1 = Ciphering.enc(kenc, plaintext.encode('utf-8'))
     return Utils.to_base64(c_0) + ':' + Utils.to_base64(c_1)
 
-def decrypt(call_id: bytes, responses: List[dict], src: str, dst: str, gpk):
-    if not (call_id and responses):
+def decrypt(call_ids: List[bytes], responses: List[dict], src: str, dst: str, gpk):
+    if not (call_ids and responses):
         return None
     
     for res in responses:
         if '_error' in res or not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=gpk):
             continue
         try:
+            call_id = call_ids[res['cid_idx']]
             c_0, c_1 = res['ctx'].split(':')
             kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_id))
             msg: bytes = Ciphering.dec(kenc, Utils.from_base64(c_1))

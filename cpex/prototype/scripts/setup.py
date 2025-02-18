@@ -70,9 +70,9 @@ def get_node_hosts():
                 nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{str(int(config.CPS_PORT) + 1)}'))
             else:
                 node = create_node(ip_addr)
-                if '-ev-' in ip_addr:
+                if '-ev-' in ip_addr or 'evaluator' in ip_addr:
                     nodes[config.EVALS_KEY].append(node)
-                elif '-ms-' in ip_addr:
+                elif '-ms-' in ip_addr or 'message-store' in ip_addr:
                     nodes[config.STORES_KEY].append(node)
                 elif '-cps-' in ip_addr:
                     nodes[config.CPS_KEY].append(node)

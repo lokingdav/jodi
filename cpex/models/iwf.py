@@ -26,7 +26,7 @@ class CpexIWF:
         self.publish_ms_time = 0
         self.retrieve_ms_time = 0
         
-    async def cpex_generate_call_id(self, src: str, dst: str, req_type: str) -> str:
+    async def cpex_generate_call_ids(self, src: str, dst: str, req_type: str) -> str:
         call_details: str = libcpex.normalize_call_details(src=src, dst=dst)
         
         self.log_msg(f'--> Generates Call Details: {call_details}')
@@ -48,19 +48,21 @@ class CpexIWF:
             self.retrieve_ev_time = ev_avg_time
             self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         
-        call_id = libcpex.create_call_id(responses=responses, mask=mask)
-        if call_id and type(call_id) == bytes:
-            self.log_msg(f"---> Call ID: {Utils.to_base64(call_id)}")
-        return call_id
+        call_ids = libcpex.create_call_ids(responses=responses, mask=mask, req_type=req_type)
+
+        if call_ids:
+            self.log_msg(f"---> Call ID: {[Utils.to_base64(cid) for cid in call_ids if cid]}")
+
+        return call_ids
     
     async def cpex_publish(self, src, dst, token):
-        call_id = await self.cpex_generate_call_id(src=src, dst=dst, req_type='publish')
+        call_ids = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='publish')
         
-        if not call_id:
+        if not call_ids:
             return
         
         reqs = libcpex.create_storage_requests(
-            call_id=call_id, 
+            call_id=call_ids[0], # Only publish the recent call ID
             msg=token,
             n_ms=self.n_ms,
             gsk=self.gsk,
@@ -78,25 +80,26 @@ class CpexIWF:
         # self.log_msg(f'--> Responses: {responses}')
 
     async def cpex_retrieve(self, src: str, dst: str) -> str:
-        call_id = await self.cpex_generate_call_id(src=src, dst=dst, req_type='retrieve')
+        call_ids = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='retrieve')
         
-        if not call_id:
+        if not call_ids:
             return None
         
-        reqs = libcpex.create_retrieve_requests(call_id=call_id, n_ms=self.n_ms, gsk=self.gsk, gpk=self.gpk)
-        self.log_msg(f'--> Created Retrieve Requests for the Following MSs: {[r["nodeId"] for r in reqs]}')
+        requests = libcpex.create_retrieve_requests(call_ids=call_ids, n_ms=self.n_ms, gsk=self.gsk, gpk=self.gpk)
+        # self.log_msg(f'--> Retrieve Requests: {requests}')
+        self.log_msg(f'--> Created Retrieve Requests for the Following MSs: {[r["nodeId"] for r in requests]}')
         
         req_time_start = time.perf_counter()
-        responses = await self.make_request('retrieve', requests=reqs)
+        responses = await self.make_request('retrieve', requests=requests)
         req_time_taken = time.perf_counter() - req_time_start
         # self.log_msg(f'--> Responses: {responses}')
         
         self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         
-        self.retrieve_ms_time = req_time_taken / len(reqs) # Average time taken to store a message by a single store
+        self.retrieve_ms_time = req_time_taken / len(requests) # Average time taken to store a message by a single store
         
-        responses = [r for r in responses if '_error' not in r]
-        token = libcpex.decrypt(call_id=call_id, responses=responses, src=src, dst=dst, gpk=self.gpk)
+        responses = [{**res, 'cid_idx': requests[i]['cid_idx']} for i, res in enumerate(responses) if '_error' not in res]
+        token = libcpex.decrypt(call_ids=call_ids, responses=responses, src=src, dst=dst, gpk=self.gpk)
         return token
     
     async def make_request(self, req_type: str, requests: List[dict]):

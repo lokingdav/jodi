@@ -134,6 +134,7 @@ services:
       - ./docker/data/mongo:/data/db
     networks:
       - net
+    profiles: [experiment]
 
 networks:
   net:

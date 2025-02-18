@@ -18,10 +18,26 @@ def get_nodes(nodes: List[dict], key: bytes, count: int) -> dict:
         heapq.heappush(heap, (distance, node))
     return [heapq.heappop(heap)[1] for _ in range(min(count, len(heap)))]
 
-def get_stores(key: bytes, count: int, nodes: List[dict] = None):
+def get_stores(keys, count: int, nodes: List[dict] = None):
     stores = nodes if nodes else cache.find(key=config.STORES_KEY, dtype=dict)
-    return get_nodes(stores, key, count)
+
+    if type(keys) == bytes:
+        return get_nodes(stores, keys, count)
     
-def get_evals(key: bytes, count: int, nodes: List[dict] = None):
+    data = []
+    for key in keys:
+        data.append(get_nodes(stores, key, count))
+
+    return data
+
+def get_evals(keys, count: int, nodes: List[dict] = None):
     evals = nodes if nodes else cache.find(key=config.EVALS_KEY, dtype=dict)
-    return get_nodes(evals, key, count)
+
+    if type(keys) == bytes:
+        return get_nodes(evals, keys, count)
+    
+    data = []
+    for key in keys:
+        data.append(get_nodes(evals, key, count))
+
+    return data

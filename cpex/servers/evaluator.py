@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from cpex.crypto import groupsig, oprf
 from cpex.models import cache
 from cpex.helpers import mylogging
+from cpex import config
 
 mylogging.init_mylogger('evaluator', 'logs/evaluator.log')
 cache.set_client(cache.connect())
@@ -26,12 +27,12 @@ async def evaluate(req: EvaluateRequest):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
     
-    # mylogging.mylogger.debug(f"\n{os.getpid()} --> Received request to evaluate {req.x} with index {req.i_k}")
-    sk, pk = oprf.KeyRotation.get_key(req.i_k)
-    # mylogging.mylogger.debug(f"{os.getpid()} --> Using key with index {req.i_k}, \n\tsk: {oprf.Utils.to_base64(sk)}\n\tpk: {oprf.Utils.to_base64(pk)}")
+    # mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Received request to evaluate {req.x} with index {req.i_k}")
+    keypairs = oprf.KeyRotation.get_keys(req.i_k)
+    # mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Using key with index {req.i_k}, keypairs: {keypairs}")
     
     return JSONResponse(
-        content=oprf.evaluate(sk=sk, pk=pk, x=req.x), 
+        content=oprf.evaluate(keypairs, req.x), 
         status_code=status.HTTP_201_CREATED
     )
 

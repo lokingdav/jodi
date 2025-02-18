@@ -4,21 +4,37 @@ from cpex.models import cache
 import time
 from typing import Tuple
 
-def evaluate(sk: bytes, pk: bytes, x: str) -> dict:
-    fx, vk = Oprf.evaluate(sk, pk, Utils.from_base64(x))
-    return { "fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk) }
+EXP_PREFIX = 'rexp'
+
+def evaluate(keypairs: list, x: str) -> dict:
+    evaluations = []
+    for (sk, pk) in keypairs:
+        fx, vk = Oprf.evaluate(sk, pk, Utils.from_base64(x))
+        evaluations.append({ "fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk) })
+    return evaluations
 
 class KeyRotation:
     @staticmethod
-    def get_key(i: int) -> Tuple[bytes, bytes]:
+    def get_keys(i: int) -> Tuple[bytes, bytes]:
         if i < 0 or i >= config.KEYLIST_SIZE:
             raise ValueError('Index out of bounds')
-        sk, pk = cache.find(key=KeyRotation.get_record_label(i)).split('.')
-        return Utils.from_base64(sk), Utils.from_base64(pk)
+        
+        rkeys = [KeyRotation.get_record_label(i), KeyRotation.get_record_label(f'{EXP_PREFIX}.{i}')]
+        items = cache.find_all(rkeys)
+        
+        keypairs = []
+        for item in items:
+            if not item:
+                continue
+            
+            sk, pk = item.split('.')
+            keypairs.append((Utils.from_base64(sk), Utils.from_base64(pk)))
+        
+        return keypairs
 
     @staticmethod
-    def get_record_label(i: int) -> str:
-        return f'{config.KEY_ROTATION_LABEL}.{i}'
+    def get_record_label(suffix: str) -> str:
+        return f'{config.KEY_ROTATION_LABEL}.{suffix}'
     
     @staticmethod
     def initialize_keys():
@@ -37,7 +53,7 @@ class KeyRotation:
     def save_recently_expired(exp_idx: int):
         keypair = cache.find(key=KeyRotation.get_record_label(exp_idx))
         cache.cache_for_seconds(
-            key=f'{config.KEY_ROTATION_LABEL}.recently_expired',
+            key=KeyRotation.get_record_label(f'{EXP_PREFIX}.{exp_idx}'),
             value=keypair,
             seconds=config.LIVENESS_WINDOW_SECONDS
         )
