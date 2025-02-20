@@ -1,12 +1,12 @@
 import jwt, time
 from uuid import uuid4
-from pydantic import BaseModel
 from cpex.helpers import misc
 
-class AuthService(BaseModel):
-    ownerId: str
-    private_key_pem: str
-    x5u: str
+class AuthService:
+    def __init__(self, ownerId: str, private_key_pem: str, x5u: str):
+        self.x5u = x5u
+        self.ownerId = ownerId
+        self.private_key_pem = private_key_pem
     
     def create_passport(self, orig: str, dest: str, attest: str) -> str: 
         header = { 'alg': 'ES256', 'x5u': self.x5u, 'ppt': 'shaken', 'typ': 'passport' }

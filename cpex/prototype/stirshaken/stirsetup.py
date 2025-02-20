@@ -72,7 +72,7 @@ def create_credential(name: str, caprivk: str, cacert: str):
 def setup():
     if not files.is_empty(certs_file):
         print("[SKIPPING] Root and intermediate CAs have already been generated.")
-        return True
+        return files.read_json(certs_file)
     
     root_ca = create_root_ca()
     data = {constants.ROOT_CA_KEY: root_ca}
@@ -87,6 +87,8 @@ def setup():
     files.override_json(certs_file, data)
 
     print(f"Certificates have been generated and stored in {certs_file}")
+
+    return data
 
 def load_certs():
     if files.is_empty(certs_file):

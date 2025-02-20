@@ -103,7 +103,7 @@ compose_down() {
   fi
 
   echo "Stopping Docker Compose services..."
-  docker compose --profile cpex --profile atis --profile experiment --profile db down
+  docker compose --profile cpex --profile atis --profile experiment --profile db down --remove-orphans
 }
 
 dockerps() {

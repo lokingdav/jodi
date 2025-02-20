@@ -12,7 +12,9 @@ configure() {
 
 create() {
     terraform apply
-    echo "Pinging all instances..."
+    
+    # create sample loads based on hosts.yml created by terraform
+    python cpex/prototype/scripts/setup.py --loads
 }
 
 destroy() {

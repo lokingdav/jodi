@@ -1,9 +1,10 @@
 import docker, os, argparse, json
-from cpex import config
+from cpex import config, constants
 from cpex.models import cache
 from pylibcpex import Utils
 from multiprocessing import Pool
 from typing import Tuple
+from cpex.prototype.scripts import setup
 from cpex.helpers import dht, files
 import yaml
 
@@ -56,7 +57,10 @@ def save_hosts(mode: str):
     # Dictionary that holds just the container-related hosts
     container_hosts = {}
     for container in containers:
-        if container.name.startswith(config.get_container_prefix(mode)):
+        cpex_prefix = config.get_container_prefix(constants.MODE_CPEX)
+        atis_prefix = config.get_container_prefix(constants.MODE_ATIS)
+        
+        if container.name.startswith(atis_prefix) or container.name.startswith(cpex_prefix):
             container_hosts[container.name] = {
                 'ansible_host': container.name,
                 'ansible_user': 'ubuntu',
@@ -72,6 +76,7 @@ def save_hosts(mode: str):
     with open(hosts_file, 'w') as file:
         yaml.dump(inventory, file)
 
+    setup.setup_sample_loads()
 
 def remove_repositories(mode: str):
     client = get_client()
@@ -101,6 +106,9 @@ def add_nodes(count: int, mode: str, ntype: str = None):
         pool.map(add_node, names)
     
 def main(args):
+    if not files.is_empty('automation/hosts.yml'):
+        raise Exception("automation/hosts.yml is not empty. Delete and run the command again\n")
+        
     if config.is_atis_mode(args.mode):
         add_nodes(args.count, args.mode)
     else:

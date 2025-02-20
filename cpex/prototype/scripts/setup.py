@@ -1,11 +1,11 @@
 from argparse import ArgumentParser
-from cpex.crypto import groupsig
-from cpex.helpers import files
-import cpex.config as config
-import yaml, re
-from pylibcpex import Utils
+from cpex.crypto import groupsig, libcpex
+from cpex.helpers import files, misc
+from cpex import config, constants
+import yaml, re, random
+from pylibcpex import Utils, Oprf
 from collections import defaultdict
-from cpex.prototype.stirshaken import stirsetup
+from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service, certs
 
 def groupsig_setup():
     if config.TGS_GPK and config.TGS_GSK and config.TGS_GML and config.TGS_MSK:
@@ -79,7 +79,94 @@ def get_node_hosts():
     return nodes
 
 def setup_certificates():
-    stirsetup.setup()
+    return stirsetup.setup()
+
+def setup_sample_loads(certs=None):
+    if not certs:
+        certs = setup_certificates()
+    gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
+    num_loads = config.LOAD_TEST_COUNT
+    attests = ['A', 'B', 'C']
+    nodes = get_node_hosts()
+
+    if not nodes[config.CPS_KEY]:
+        raise Exception("No CPS nodes found")
+    
+    num_certs = config.NO_OF_INTERMEDIATE_CAS * config.NUM_CREDS_PER_ICA
+    loads = []
+    progress = 1
+    for cps in nodes[config.CPS_KEY]:
+        for i in range(num_loads):
+            print(f"Creating load {progress}/{num_loads * len(nodes[config.CPS_KEY])}")
+            progress += 1
+            p_ocrt = certs[f"{constants.OTHER_CREDS_KEY}-{random.randint(0, num_certs - 1)}"]
+            iss = f'P{random.randint(0, 1000)}'
+            authService = auth_service.AuthService(
+                ownerId=iss,
+                private_key_pem=p_ocrt['sk'],
+                x5u=f"{nodes[config.CPS_KEY][random.randint(0, len(nodes[config.CPS_KEY]) - 1)]['url']}/certs/{p_ocrt['id']}",
+            )
+            orig, dest, attest = misc.fake_number(), misc.fake_number(), random.choice(attests)
+            rand_cps = nodes[config.CPS_KEY][random.randint(0, len(nodes[config.CPS_KEY]) - 1)]
+            data = {}
+            data['passport'] = authService.create_passport(orig=orig, dest=dest, attest=attest)
+            # data['x5u'] = authService.x5u
+            data['atis'] = {
+                'pub_url': f"{cps['url']}/publish/{dest}/{orig}",
+                'pub_name': cps['fqdn'],
+                'pub_bearer': authService.authenticate_request(
+                    action='publish',
+                    orig=orig,
+                    dest=dest,
+                    passports=[data['passport']],
+                    iss=iss,
+                    aud=cps['fqdn']
+                ),
+                'ret_url': f"{rand_cps['url']}/retrieve/{dest}/{orig}",
+                'ret_name': rand_cps['fqdn'],
+                'ret_bearer': authService.authenticate_request(
+                    action='retrieve',
+                    orig=orig,
+                    dest=dest,
+                    passports=[],
+                    iss=iss,
+                    aud=rand_cps['fqdn']
+                )
+            }
+
+            calldetails = libcpex.normalize_call_details(src=orig, dst=dest)
+            x, mask = Oprf.blind(calldetails)
+            x = Utils.to_base64(x)
+            i_k = libcpex.get_index_from_call_details(calldetails)
+            
+            cid = Utils.random_bytes(32)
+            idx = Utils.to_base64(Utils.hash256(cid))
+            ctx = libcpex.encrypt_and_mac(call_id=cid, plaintext=data['passport'])
+
+            mss, evs = [], []
+            if nodes[config.STORES_KEY]:
+                mss = random.choices(nodes[config.STORES_KEY], k=config.n_ms)
+                mss = [{'url': ms['url'], 'name': ms['fqdn']} for ms in mss]
+            if nodes[config.EVALS_KEY]:
+                evs = random.choices(nodes[config.EVALS_KEY], k=config.n_ev)
+                evs = [{'url': ev['url'], 'name': ev['fqdn']} for ev in evs]
+
+            data['cpex'] = {
+                'idx': idx, 
+                'ctx': ctx, 
+                'oprf': {
+                    'x': x, 
+                    'i_k': i_k, 
+                    'sig': groupsig.sign(msg=str(i_k)+x, gsk=gsk, gpk=gpk)
+                },
+                'pub_sig': groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk),
+                'ret_sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk),
+                'mss': mss,
+                'evs': evs
+            }
+            loads.append(data)
+    random.shuffle(loads)
+    files.override_json(config.CONF_DIR + '/loads.json', loads)
     
 def main(args):
     if args.all or args.groupsig:
@@ -90,11 +177,14 @@ def main(args):
             groupsig_setup()
         elif args.certs:
             setup_certificates()
+        elif args.loads:
+            setup_sample_loads()
 
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--groupsig', action='store_true', help='Setup group signature')
     parser.add_argument('--certs', action='store_true', help='Setup STIR/SHAKEN certificates')
+    parser.add_argument('--loads', action='store_true', help='Setup sample loads')
     parser.add_argument('--all', action='store_true', help='Setup everything')
     args = parser.parse_args()
     # if no arguments, print help
