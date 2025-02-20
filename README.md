@@ -14,9 +14,7 @@ To Kill the experiment, run:
 kill -9 $(cat exp1.pid)
 ```
 
-Run Locust load test
+Run Grafana k6 load test
 ```bash
-locust --host "hosturl" <type> # replace <type> with MS or EV
+k6 run --config cpex/prototype/experiments/k6/options.json cpex/prototype/experiments/k6/<protocol>.js # replace <protocol> with cpex or atis
 ```
-
-base memory = 61 MiB
