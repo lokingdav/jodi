@@ -53,5 +53,7 @@ def cache_for_seconds(key: str, value: str, seconds: int):
     return client.setex(key, seconds, value)
 
 def get_other_cpses(key):
+    # print("Finding other CPSes except", key, flush=True)
     repos = find(key=key, dtype=dict)
+    # print("Found other CPSes", repos, flush=True)
     return [repo for repo in repos if repo.get('fqdn') != NODE_FQDN]

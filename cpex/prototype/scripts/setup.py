@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from cpex.crypto import groupsig, libcpex
-from cpex.helpers import files, misc
+from cpex.helpers import files, misc, dht
 from cpex import config, constants
 import yaml, re, random
 from pylibcpex import Utils, Oprf
@@ -145,11 +145,11 @@ def setup_sample_loads(certs=None):
 
             mss, evs = [], []
             if nodes[config.STORES_KEY]:
-                mss = random.choices(nodes[config.STORES_KEY], k=config.n_ms)
-                mss = [{'url': ms['url'], 'name': ms['fqdn']} for ms in mss]
+                mss = dht.get_stores(keys=cid, count=config.n_ms, nodes=nodes[config.STORES_KEY])
+                mss = [ms['url'] for ms in mss]
             if nodes[config.EVALS_KEY]:
-                evs = random.choices(nodes[config.EVALS_KEY], k=config.n_ev)
-                evs = [{'url': ev['url'], 'name': ev['fqdn']} for ev in evs]
+                evs = dht.get_evals(keys=cid, count=config.n_ev, nodes=nodes[config.EVALS_KEY])
+                evs = [ev['url'] for ev in evs]
 
             data['cpex'] = {
                 'idx': idx, 
