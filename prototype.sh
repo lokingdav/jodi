@@ -56,8 +56,8 @@ build_image() {
       echo "Building CPEX Image"
       docker build -f Dockerfile -t "$CPEX_DOCKER_IMAGE" .
       ;;
-    automation)
-      echo "Building Image for Automation"
+    experiment)
+      echo "Building Image for Experimentation"
       docker build -f automation/Dockerfile -t "$CPEX_AUTOMATION_DOCKER_IMAGE" .
       ;;
     *)
