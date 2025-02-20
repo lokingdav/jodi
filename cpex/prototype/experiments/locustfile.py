@@ -1,7 +1,7 @@
 from locust import task, FastHttpUser, between
 from pylibcpex import Utils, Oprf
 from cpex.crypto import groupsig, libcpex
-from cpex.helpers import misc, files
+from cpex.helpers import misc, files, mylogging
 import random, gevent
 from cpex.models import cache
 from cpex.prototype.simulations import local
@@ -11,7 +11,10 @@ size = random.randint(32, 128)
 cache.set_client(cache.connect())
 local.LocalSimulator.create_cpex_nodes(20, 20)
 default_wait_time = between(0.5, 1.5)
-loads = files.read_json(config.CONF_DIR + "/loads.json", default=[])
+items = files.read_json(config.CONF_DIR + "/loads.json", default=[])
+mylogging.init_mylogger(name='locust', filename='logs/locust.log')
+
+mylogging.mylogger.debug(f'Loaded {len(items)} items from loads.json')
 
 class EV(FastHttpUser):
     wait_time = default_wait_time
@@ -88,29 +91,34 @@ class CPSLoad(FastHttpUser):
 
     @task
     def publish(self):
-        load = random.choice(loads)
-        headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer ' + load['atis']['pub_bearer']}
-        data = {'passports': [load['passport']]}
-        with self.rest("POST", load['atis']['pub_url'], name=load['atis']['pub_name'], json=data, headers=headers) as res:
+        mylogging.mylogger.debug(f'Publishing')
+        item = random.choice(items)
+        mylogging.mylogger.debug(f'Publishing item {item}')
+        headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer ' + item['atis']['pub_bearer']}
+        data = {'passports': [item['passport']]}
+        with self.rest("POST", item['atis']['pub_url'], name=item['atis']['pub_name'], json=data, headers=headers) as res:
             if res.js is None:
                 pass
+        mylogging.mylogger.debug(f'Published Done')
     
     @task
     def retrieve(self):
-        load = random.choice(loads)
-        get_headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer ' + load['atis']['ret_bearer']}
-        with self.rest("GET", load['atis']['ret_url'], name=load['atis']['ret_name'], headers=get_headers) as res:
+        item = random.choice(items)
+        mylogging.mylogger.debug(f'Retrieving item {item}')
+        get_headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer ' + item['atis']['ret_bearer']}
+        with self.rest("GET", item['atis']['ret_url'], name=item['atis']['ret_name'], headers=get_headers) as res:
             if res.status_code == 404:
                 res.success() # Possibly no data to retrieve
             if res.js is None:
                 pass
+        mylogging.mylogger.debug(f'Retrieved Done')
 
 class CPeXLoad(FastHttpUser):
     wait_time = default_wait_time
 
     @task(2) # 2 times more likely to generate cid for each call
     def cidgeneration(self):
-        load = random.choice(loads)
+        load = random.choice(items)
         tasks = [
             gevent.spawn(self.rest, "POST", f'{ev_url}/evaluate', name=ev_url, json=load['cpex']['oprf']) for ev_url in load['cpex']['evs']
         ]
@@ -118,7 +126,7 @@ class CPeXLoad(FastHttpUser):
     
     @task
     def publish(self):
-        load = random.choice(loads)
+        load = random.choice(items)
         data = {
             'idx': load['cpex']['idx'], 
             'ctx': load['cpex']['ctx'], 
@@ -131,12 +139,12 @@ class CPeXLoad(FastHttpUser):
         
     @task
     def retrieve(self):
-        load = random.choice(loads)
+        item = random.choice(items)
         data = {
-            'idx': load['cpex']['idx'], 
-            'sig': load['cpex']['ret_sig']
+            'idx': item['cpex']['idx'], 
+            'sig': item['cpex']['ret_sig']
         }
         tasks = [
-            gevent.spawn(self.rest, "POST", f'{ms_url}/retrieve', name=ms_url, json=data) for ms_url in load['cpex']['mss']
+            gevent.spawn(self.rest, "POST", f'{ms_url}/retrieve', name=ms_url, json=data) for ms_url in item['cpex']['mss']
         ]
         gevent.joinall(tasks)
