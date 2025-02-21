@@ -39,12 +39,16 @@ class MessageStore:
     
     def publish(self, request: dict):
         if not self.available:
-            self.log_msg("Error -- node not available")
-            return {'_error': 'node not available'}
+            res = {'_error': 'node not available'}
+            self.log_msg(res)
+            return res
+        
+        start_time = time.perf_counter()
         
         if not groupsig.verify(sig=request['sig'], msg=request['idx'] + request['ctx'], gpk=self.gpk):
-            self.log_msg("Error -- invalid signature")
-            return {'_error': 'invalid signature'}
+            res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
+            self.log_msg(res)
+            return res
          
         value = request['idx'] + '.' + request['ctx'] + '.' + request['sig']
 
@@ -53,26 +57,30 @@ class MessageStore:
             value=value, 
             seconds=config.T_MAX_SECONDS
         )
-
-        return {'_success': 'message stored'}
+        
+        return {'_success': 'message stored', 'time_taken': time.perf_counter() - start_time}
     
     def retrieve(self, request: dict):
         if not self.available:
-            self.log_msg("Error -- node not available")
-            return {'_error': 'node not available'}
+            res = {'_error': 'node not available'}
+            self.log_msg(res)
+            return res
+        
+        start_time = time.perf_counter()
         
         if not groupsig.verify(sig=request['sig'], msg=request['idx'], gpk=self.gpk):
-            self.log_msg("Error -- invalid signature")
-            return {'_error': 'invalid signature'}
+            res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
+            self.log_msg(res)
+            return res
 
         value = cache.find(key=self.get_content_key(request['idx']))
         
         if not value:
-            return {'_error': 'message not found'}
+            return {'_error': 'message not found', 'time_taken': time.perf_counter() - start_time}
         
         (msidx, msctx, mssig) = value.split('.')
-
-        return {'idx': msidx, 'ctx': msctx, 'sig': mssig}
+        
+        return {'idx': msidx, 'ctx': msctx, 'sig': mssig, 'time_taken': time.perf_counter() - start_time}
 
 class Evaluator:
     @staticmethod
@@ -95,21 +103,23 @@ class Evaluator:
             self.logger.debug(f"--> {self.nodeId}: {msg}")
 
     def evaluate(self, request: dict):
-        start_time = time.perf_counter()
         if not self.available:
-            self.log_msg("Error -- node not available")
-            return {'_error': 'node not available'}
+            res = {'_error': 'node not available'}
+            self.log_msg(res)
+            return res
+        
+        start_time = time.perf_counter()
         
         if not groupsig.verify(sig=request['sig'], msg=str(request['i_k']) + request['x'], gpk=self.gpk):
-            self.log_msg("Error -- invalid signature")
-            return {'_error': 'invalid signature'}
+            res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
+            self.log_msg(res)
+            return res
         
         self.log_msg(f"Receives i_k={request['i_k']}, x={request['x']}")
         self.log_msg(f"Uses sk={Utils.to_base64(self.keys[request['i_k']][0])}, pk={Utils.to_base64(self.keys[request['i_k']][1])}")
         
         (fx, vk) = Oprf.evaluate(self.keys[request['i_k']][0], self.keys[request['i_k']][1], Utils.from_base64(request['x']))
-        time_taken = time.perf_counter() - start_time
-        return {"fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk), 'time_taken': time_taken}
+        return [{"fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk), 'time_taken': time.perf_counter() - start_time}]
     
 
 class Provider(BaseProvider):

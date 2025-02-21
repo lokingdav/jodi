@@ -84,7 +84,7 @@ def main():
     start = time.perf_counter()
     params = []
 
-    with Pool(processes=min(5, os.cpu_count()), initializer=init_worker) as pool:
+    with Pool(processes=os.cpu_count(), initializer=init_worker) as pool:
         for _ in range(numIters):
             for n_ev in n_evs:
                 for n_ms in n_mss:

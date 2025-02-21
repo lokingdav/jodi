@@ -17,7 +17,7 @@ EXPERIMENT_PART = ''
 EXPERIMENT_PARAMS = {
     '1': {
         'node_groups': [(20, 20)],
-        'provider_groups': [100],
+        'provider_groups': [50],
     },
     '3': {
         'node_groups': [(10, 10)],

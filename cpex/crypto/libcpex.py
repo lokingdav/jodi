@@ -48,7 +48,7 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
 
 def create_call_ids(responses: List[dict], mask: bytes, req_type: str) -> bytes:
     cids = []
-    responses = [reslist for reslist in responses if '_error' not in reslist or len(reslist) > 0]
+    responses = [reslist for reslist in responses if type(reslist) == list and len(reslist) > 0]
     if req_type == 'publish': # Only consider the first response from each evaluator
         responses = [reslist[0:1] for reslist in responses]
 

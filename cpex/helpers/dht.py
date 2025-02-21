@@ -26,7 +26,7 @@ def get_stores(keys, count: int, nodes: List[dict] = None):
     
     data = []
     for key in keys:
-        data.append(get_nodes(stores, key, count))
+        data.append(get_nodes(stores, key, config.STORES_PER_MULTI_CID))
 
     return data
 

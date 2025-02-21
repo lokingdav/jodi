@@ -4,6 +4,7 @@ from cpex.helpers import misc, http
 from typing import List
 from cpex.crypto import libcpex, groupsig
 from pylibcpex import Utils, Oprf
+import numpy as np
 
 class CpexIWF:
     def __init__(self, params: dict):
@@ -13,10 +14,12 @@ class CpexIWF:
         self.gsk = params['gsk']
         self.logger = params.get('logger')
         self.fake_proxy = params.get('fake_proxy', False)
+        self.sim_overhead = []
         
         self.reset()
         
     def reset(self):
+        """Resets compute times which does not include wait times"""
         self.publish_provider_time = 0
         self.retrieve_provider_time = 0
         
@@ -25,6 +28,8 @@ class CpexIWF:
         
         self.publish_ms_time = 0
         self.retrieve_ms_time = 0
+        
+        self.sim_overhead = []
         
     async def cpex_generate_call_ids(self, src: str, dst: str, req_type: str) -> str:
         call_details: str = libcpex.normalize_call_details(src=src, dst=dst)
@@ -38,15 +43,27 @@ class CpexIWF:
         responses = await self.make_request('evaluate', requests=requests)
         req_time_taken = time.perf_counter() - req_time_start
         
-        times_taken = [r['time_taken'] for r in responses if 'time_taken' in r]
-        ev_avg_time = sum(times_taken) / len(times_taken) if len(times_taken) else 0 # Average time taken to evaluate a single request by an EV
+        # Average time taken to evaluate a single request by an EV
+        sim_ovrhd = time.perf_counter()
+        flattened = []
+        for reslist in responses:
+            if type(reslist) == dict:
+                flattened.append(reslist.get('time_taken', 0))
+            elif type(reslist) == list:
+                flattened.extend([res.get('time_taken', 0) for res in reslist])
+        ev_avg_time = np.sum(flattened) / len(flattened) if len(flattened) > 0 else 0
+        sim_ovrhd = time.perf_counter() - sim_ovrhd
         
         if req_type == 'publish':
             self.publish_ev_time = ev_avg_time
             self.publish_provider_time -= req_time_taken # Subtract wait time from compute time
+            self.publish_provider_time -= sim_ovrhd # Subtract simulation overhead
         if req_type == 'retrieve':
             self.retrieve_ev_time = ev_avg_time
             self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
+            self.retrieve_provider_time -= sim_ovrhd # Subtract simulation overhead
+            
+        self.sim_overhead.append(sim_ovrhd)
         
         call_ids = libcpex.create_call_ids(responses=responses, mask=mask, req_type=req_type)
 
@@ -74,9 +91,12 @@ class CpexIWF:
         responses = await self.make_request('publish', requests=reqs)
         req_time_taken = time.perf_counter() - req_time_start
         
-        self.publish_provider_time -= req_time_taken # Subtract wait time from compute time
-        self.publish_ms_time = req_time_taken / len(reqs) # Average time taken to store a message by a single store
-        
+        sim_ovrhd = time.perf_counter()
+        # Subtract wait time from compute time
+        self.publish_provider_time -= req_time_taken
+        # Average time taken to store a message by a single store
+        self.publish_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(reqs)
+        self.sim_overhead.append(time.perf_counter() - sim_ovrhd)
         # self.log_msg(f'--> Responses: {responses}')
 
     async def cpex_retrieve(self, src: str, dst: str) -> str:
@@ -96,7 +116,7 @@ class CpexIWF:
         
         self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         
-        self.retrieve_ms_time = req_time_taken / len(requests) # Average time taken to store a message by a single store
+        self.retrieve_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(requests) # Average time taken to store a message by a single store
         
         responses = [{**res, 'cid_idx': requests[i]['cid_idx']} for i, res in enumerate(responses) if '_error' not in res]
         token = libcpex.decrypt(call_ids=call_ids, responses=responses, src=src, dst=dst, gpk=self.gpk)
