@@ -21,7 +21,7 @@ def compute_statistics(file_path, columns):
 
     # Compute summary statistics
     # .describe() returns many stats; we'll keep only min/max for illustration
-    summary_stats = df_filtered.describe().T[['min', 'max', 'mean']]
+    summary_stats = df_filtered.describe().T[['min', 'max']]
 
     # Add median
     summary_stats['median'] = df_filtered.median()

@@ -15,7 +15,7 @@ fi
 CMD="$1"
 SUBCMD="$2"
 
-VALID_CMDS=(build up down restart ps bash runexp cpex atis)
+VALID_CMDS=(build up down restart ps bash runexp cpex atis k6)
 
 # Docker images (adjust names as needed)
 CPEX_DOCKER_IMAGE="cpex"
@@ -177,6 +177,31 @@ compose_down_all_apps() {
   manage_prod_app atis down
 }
 
+runk6() {
+  local name="$1"
+  local allowed=(ev ms cpex atis)
+  
+  case "$name" in
+    ev)
+      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-ev.json cpex/prototype/experiments/k6/ev.js
+      ;;
+    ms)
+      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-ms.json cpex/prototype/experiments/k6/ms.js
+      ;;
+    cpex)
+      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-cpex.json cpex/prototype/experiments/k6/cpex.js
+      ;;
+    atis)
+      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-atis.json cpex/prototype/experiments/k6/atis.js
+      ;;
+    *)
+      echo "Invalid experiment name '$name'. Allowed values: ${allowed[*]}"
+      exit 1
+      ;;
+  esac
+
+}
+
 ###############################################################################
 # Main Script
 ###############################################################################
@@ -210,6 +235,9 @@ case "$CMD" in
     ;;
   atis)
     manage_prod_app atis "$SUBCMD"
+    ;;
+  k6)
+    runk6 $SUBCMD
     ;;
   *)
     echo "Unknown command: $CMD"
