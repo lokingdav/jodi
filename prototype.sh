@@ -79,13 +79,13 @@ compose_up() {
 
   case "$profile" in
     cpex)
-      docker compose --profile cpex up -d
+      docker compose --profile cpex --profile experiment up -d
       ;;
     atis)
-      docker compose --profile atis up -d
+      docker compose --profile atis --profile experiment up -d
       ;;
     all)
-      docker compose --profile cpex --profile atis --profile experiment cpex up -d
+      docker compose --profile cpex --profile atis --profile experiment up -d
       ;;
     *)
       docker compose --profile experiment up -d
