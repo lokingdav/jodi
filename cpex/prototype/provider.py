@@ -52,10 +52,10 @@ class Provider(iwf.CpexIWF):
         return config.is_atis_mode(self.mode)
     
     def get_latency(self):
-        return round(sum(self.latencies) - sum(self.sim_overhead), 4)
+        return sum(self.latencies) - sum(self.sim_overhead)
     
     def get_latency_ms(self):
-        return misc.toMs(self.get_latency())
+        return self.get_latency() * 1000
     
     def next_prov_is_capable(self):
         return self.next_prov and self.next_prov[1] == 1

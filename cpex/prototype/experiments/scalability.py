@@ -21,7 +21,7 @@ EXPERIMENT_PARAMS = {
     },
     '3': {
         'node_groups': [(10, 10)],
-        'provider_groups': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+        'provider_groups': [50]
     }
 }
 
@@ -105,7 +105,9 @@ def simulate(resultsloc: str, mode: str, params: dict = {}):
                 result=result,
                 nodes_count=sum(node_groups[i])
             )
-            print(result)
+            if params.get('summarize'):
+                print(result)
+                
             print("Results written to", resultsloc)
             save_checkpoint({
                 **params,
@@ -130,18 +132,9 @@ def save_result(**kwargs):
     result = kwargs.get('result')
     
     if EXPERIMENT_NUM == '3':
-        result = [
-            result[0], # mode
-            result[1], # calls_count
-            kwargs.get('nodes_count'), # nodes_count
-            result[6], # lat_min
-            result[7], # lat_max
-            result[8], # lat_mean
-            result[9], # lat_std
-            result[10], # success_rate
-            result[11] # calls_per_sec
-        ]
-    files.append_csv(resultsloc, [result])
+        files.append_csv(resultsloc, result)
+    else:
+        files.append_csv(resultsloc, [result])
 
 def prepare_results_file():
     if EXPERIMENT_NUM not in ['1', '3']:
@@ -156,7 +149,7 @@ def prepare_results_file():
     if EXPERIMENT_NUM == '1':
         headers = ['mode','Num_Provs','Num_EVs','Num_MSs','n_ev','n_ms'] + statsheader
     else:
-        headers = ['mode','calls_count','nodes_count'] + statsheader
+        headers = ['protocol','latency','hops', 'oob_interaction', 'correct']
 
     files.write_csv(resultsloc, [headers])
 
@@ -196,12 +189,16 @@ def run_experiment_1(resultsloc):
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
 def run_experiment_3(resultsloc):
-    conf = {'resultsloc': resultsloc, 'mode': constants.MODE_CPEX}
+    conf = {
+        'resultsloc': resultsloc, 
+        'mode': constants.MODE_CPEX, 
+        'params': {'summarize': False}
+    }
     
     if EXPERIMENT_PART == 'a':
         conf['mode'] = constants.MODE_ATIS
     else:
-        conf['params'] = {'n_ev': 3, 'n_ms': 3}
+        conf['params'].update({'n_ev': 3, 'n_ms': 3})
     
     simulate(**conf)
     

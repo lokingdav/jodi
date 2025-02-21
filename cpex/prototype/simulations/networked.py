@@ -98,7 +98,7 @@ class NetworkedSimulator:
         logger = mylogging.create_stream_logger('simulator')
         logger.debug(f"Simulating call with route: {route}")
         
-        signal, start_token, final_token, latency = None, None, None, 0
+        signal, start_token, final_token, latency, oob = None, None, None, 0, 0
 
         for i, (idx, impl) in enumerate(route):
             provider = self.create_provider_instance(
@@ -117,10 +117,12 @@ class NetworkedSimulator:
             else: # Intermediate provider
                 signal = await provider.receive(signal)
 
-            latency += provider.get_latency_ms()
+            lat = provider.get_latency_ms()
+            latency += lat
+            oob += 1 if lat > 0 else 0
             provider.reset()
             
-        is_correct = start_token == final_token
+        is_correct = int(start_token == final_token)
                 
         logger.debug(f"Total latency for call = {latency} ms")
 
@@ -129,7 +131,7 @@ class NetworkedSimulator:
             
         mylogging.close_logger(logger)
 
-        return (latency, len(route), is_correct)
+        return (mode, round(latency, 3), len(route), oob, is_correct)
 
     def get_route_from_bitstring(self, path: str):
         if not path.isdigit() or set(path) > {'0', '1'}:
@@ -188,6 +190,9 @@ class NetworkedSimulator:
         num_provs = params.get('Num_Provs')
         mode = params.get('mode')
         
+        unsummarized_results = []
+        should_summarize = params.get('summarize', True)
+        
         self.validate_node_counts(
             num_evs=params.get('Num_EVs'),
             num_mss=params.get('Num_MSs'),
@@ -219,32 +224,38 @@ class NetworkedSimulator:
                 total_time += time.perf_counter() - start_time
                 total_calls += len(results)
                 
-                for (latency_ms, len_routes, is_correct) in results:
-                    if latency_ms == 0: # filter out routes that do not involve oob
-                        continue
-                    statistics.update_x(latency_ms)
-                    if is_correct:
-                        statistics.update_correct()
-                
-            dp = 2
+                if should_summarize:
+                    for (md, latency_ms, len_routes, oob, is_correct) in results:
+                        if latency_ms == 0: # filter out routes that do not involve oob
+                            continue
+                        statistics.update_x(latency_ms)
+                        if is_correct:
+                            statistics.update_correct()
+                else:
+                    unsummarized_results.extend(results)
+                    
+            dp = 3
 
             print('time taken', total_time)
             print('total calls', total_calls)
             
-            return [
-                mode, # 0
-                total_calls, # 1
-                params.get('Num_EVs'), # 2
-                params.get('Num_MSs'), # 3 
-                params.get('n_ev'), # 4
-                params.get('n_ms'), # 5
-                round(statistics.min, dp), # 6
-                round(statistics.max, dp), # 7
-                round(statistics.mean, dp), # 8
-                round(statistics.population_stddev, dp), # 9
-                round(statistics.success_rate, dp),  # 10
-                math.ceil(total_calls / total_time) if total_time > 0 else 0 # 11
-            ]
+            if should_summarize:
+                return [
+                    mode, # 0
+                    total_calls, # 1
+                    params.get('Num_EVs'), # 2
+                    params.get('Num_MSs'), # 3 
+                    params.get('n_ev'), # 4
+                    params.get('n_ms'), # 5
+                    round(statistics.min, dp), # 6
+                    round(statistics.max, dp), # 7
+                    round(statistics.mean, dp), # 8
+                    round(statistics.population_stddev, dp), # 9
+                    round(statistics.success_rate, dp),  # 10
+                    math.ceil(total_calls / total_time) if total_time > 0 else 0 # 11
+                ]
+            else:
+                return unsummarized_results
 
     def create_nodes(self, **kwargs):
         nodes = setup.get_node_hosts()
