@@ -155,7 +155,7 @@ class Provider(iwf.CpexIWF):
         url = f'{url}/publish/{signal.To}/{signal.From}'
         self.log_msg(f'--> PUBLISH URL: {url}')
         responses = await http.posts(reqs=[{'url': url, 'data': payload, 'headers': headers}])
-        print("ATIS PUBLISH Responses: ", responses)
+        self.log_msg(f"ATIS PUBLISH Responses: {responses}")
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
         self.log_msg(f'--> Executes RETRIEVE')
@@ -191,9 +191,9 @@ class Provider(iwf.CpexIWF):
         headers: dict = {'Authorization': 'Bearer ' + authorization }
         url: str = self.cps['url']
         url = f'{url}/retrieve/{signal.To}/{signal.From}'
-        print(f'--> RETRIEVE URL: {url}')
+        self.log_msg(f'--> RETRIEVE URL: {url}')
         response = await http.get(url=url, params={}, headers=headers)
-        print("ATIS RETRIEVE Response: ", response)
+        self.log_msg(f"ATIS RETRIEVE Response: {response}")
         if type(response) == list and len(response) > 0:
             return response[0]
         return response
