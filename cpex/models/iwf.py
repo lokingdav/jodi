@@ -145,7 +145,7 @@ def fake_ev_evaluate(requests: List[dict], gsk: str, gpk: str):
     sk, pk = Oprf.keygen()
     for request in requests:
         fx, vk = Oprf.evaluate(sk, pk, Utils.from_base64(request['data']['x']))
-        responses.append({ "fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk) })
+        responses.append([{ "fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk) }])
     return responses
 
 def fake_ms_publish(requests: List[dict], gsk: str, gpk: str):

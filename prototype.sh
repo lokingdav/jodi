@@ -79,7 +79,7 @@ compose_up() {
 
   case "$profile" in
     cpex)
-      docker compose --profile cpex --profile experiment up -d
+      docker compose --profile cpex --profile proxy --profile experiment up -d
       ;;
     atis)
       docker compose --profile atis --profile experiment up -d
@@ -103,7 +103,7 @@ compose_down() {
   fi
 
   echo "Stopping Docker Compose services..."
-  docker compose --profile cpex --profile atis --profile experiment --profile db down --remove-orphans
+  docker compose --profile cpex --profile proxy --profile atis --profile experiment --profile db down --remove-orphans
 }
 
 dockerps() {
@@ -187,6 +187,9 @@ runk6() {
       ;;
     ms)
       k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-ms.json cpex/prototype/experiments/k6/ms.js
+      ;;
+    p)
+      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-p.json cpex/prototype/experiments/k6/p.js
       ;;
     cpex)
       k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-cpex.json cpex/prototype/experiments/k6/cpex.js

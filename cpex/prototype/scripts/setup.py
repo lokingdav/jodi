@@ -108,7 +108,7 @@ def setup_sample_loads(certs=None):
             )
             orig, dest, attest = misc.fake_number(), misc.fake_number(), random.choice(attests)
             rand_cps = nodes[config.CPS_KEY][random.randint(0, len(nodes[config.CPS_KEY]) - 1)]
-            data = {}
+            data = {'orig': orig, 'dest': dest}
             data['passport'] = authService.create_passport(orig=orig, dest=dest, attest=attest)
             # data['x5u'] = authService.x5u
             data['atis'] = {

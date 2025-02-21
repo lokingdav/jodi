@@ -67,9 +67,9 @@ services:
       - 10431:80
     profiles: [cpex]
 
-  iwf-proxy:
+  provider-iwf:
     <<: *cpex-service
-    container_name: cpex-proxy
+    container_name: provider-iwf
     command: >
       gunicorn cpex.servers.cpex_proxy:app 
       --bind 0.0.0.0:80 

@@ -1,12 +1,12 @@
+import json
 from pydantic import BaseModel
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, Request
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-from typing import Optional, Literal
 
 from cpex.crypto import groupsig
 from cpex.models import cache, iwf
 from cpex import config
+from cpex.prototype.scripts import setup
 
 cache.set_client(cache.connect())
 
@@ -18,7 +18,13 @@ proxy_params = {
     'fake_proxy': config.FAKE_PROXY
 }
 
-app = FastAPI(title="CPEX Proxy API")
+def init_server():
+    nodes = setup.get_node_hosts()
+    cache.save(key=config.EVALS_KEY, value=json.dumps(nodes.get(config.EVALS_KEY)))
+    cache.save(key=config.STORES_KEY, value=json.dumps(nodes.get(config.STORES_KEY)))
+    return FastAPI(title="CPEX Proxy API")
+
+app = init_server()
 
 def success_response(content = {"message": "OK"}):
     return JSONResponse(
@@ -39,10 +45,10 @@ async def oob_proxy_publish(req: Publish):
     await proxy.cpex_publish(src=req.src, dst=req.dst, token=req.passport)
     return success_response()
 
-@app.get("/retrieve")
-async def oob_proxy_retrieve(req: Retrieve):
+@app.get("/retrieve/{src}/{dst}")
+async def oob_proxy_retrieve(src: str, dst: str, req: Request):
     proxy = iwf.CpexIWF(proxy_params)
-    token = await proxy.cpex_retrieve(src=req.src, dst=req.dst)
+    token = await proxy.cpex_retrieve(src=src, dst=dst)
     return success_response(content={"token": token})
 
 @app.get("/health")
