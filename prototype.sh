@@ -192,10 +192,10 @@ runk6() {
       k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-p.json cpex/prototype/experiments/k6/p.js
       ;;
     cpex)
-      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-cpex.json cpex/prototype/experiments/k6/cpex.js
+      k6 run --config cpex/prototype/experiments/k6/prod.json --summary-export k6-cpex.json cpex/prototype/experiments/k6/cpex.js
       ;;
     atis)
-      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-atis.json cpex/prototype/experiments/k6/atis.js
+      k6 run --config cpex/prototype/experiments/k6/prod.json --summary-export k6-atis.json cpex/prototype/experiments/k6/atis.js
       ;;
     *)
       echo "Invalid experiment name '$name'. Allowed values: ${allowed[*]}"

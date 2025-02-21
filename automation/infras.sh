@@ -14,7 +14,7 @@ create() {
     terraform apply
     
     # create sample loads based on hosts.yml created by terraform
-    python cpex/prototype/scripts/setup.py --loads
+    cd /app && python cpex/prototype/scripts/setup.py --loads
 }
 
 destroy() {
