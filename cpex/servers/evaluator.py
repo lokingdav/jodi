@@ -1,4 +1,4 @@
-import os
+import os, time
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -21,6 +21,7 @@ class EvaluateRequest(BaseModel):
     
 @app.post("/evaluate")
 async def evaluate(req: EvaluateRequest):
+    start_time = time.perf_counter()
     if not groupsig.verify(sig=req.sig, msg=str(req.i_k) + str(req.x), gpk=gpk):
         return JSONResponse(
             content={"message": "Invalid Signature"}, 
@@ -31,8 +32,11 @@ async def evaluate(req: EvaluateRequest):
     keypairs = oprf.KeyRotation.get_keys(req.i_k)
     # mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Using key with index {req.i_k}, keypairs: {keypairs}")
     
+    content = oprf.evaluate(keypairs, req.x)
+    mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Evaluated {req.x} with index {req.i_k} in {round((time.perf_counter() - start_time)*1000, 2)} seconds")
+
     return JSONResponse(
-        content=oprf.evaluate(keypairs, req.x), 
+        content=content, 
         status_code=status.HTTP_201_CREATED
     )
 
@@ -41,5 +45,5 @@ async def health():
     return { 
         "Status": 200,
         "Message": "OK", 
-        "Type": "Evaluator", 
+        "Type": "Evaluator",
     }
