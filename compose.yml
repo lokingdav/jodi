@@ -40,7 +40,7 @@ services:
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --log-level debug
-      --keep-alive 5
+      --keep-alive 30
       --timeout 120
     ports:
       - 10430:80
@@ -65,7 +65,7 @@ services:
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --log-level debug
-      --keep-alive 5
+      --keep-alive 30
       --timeout 120
     ports:
       - 10431:80
@@ -91,7 +91,7 @@ services:
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --keep-alive 5
+      --keep-alive 30
     ports:
       - 10433:80
     environment:
@@ -107,7 +107,7 @@ services:
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --keep-alive 5
+      --keep-alive 30
     ports:
       - 10434:80
     environment:
