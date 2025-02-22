@@ -180,22 +180,32 @@ compose_down_all_apps() {
 runk6() {
   local name="$1"
   local allowed=(ev ms cpex atis)
+  local config="options.json"
+  local summary=""
+  local test_file=""
   
   case "$name" in
     ev)
-      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-ev.json cpex/prototype/experiments/k6/ev.js
+      summary="k6-ev.json"
+      test_file="ev.js"
       ;;
     ms)
-      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-ms.json cpex/prototype/experiments/k6/ms.js
+      summary="k6-ms.json"
+      test_file="ms.js"
       ;;
     p)
-      k6 run --config cpex/prototype/experiments/k6/options.json --summary-export k6-p.json cpex/prototype/experiments/k6/p.js
+      summary="k6-p.json"
+      test_file="p.js"
       ;;
     cpex)
-      k6 run --config cpex/prototype/experiments/k6/prod.json --summary-export k6-cpex.json cpex/prototype/experiments/k6/cpex.js
+      config="prod.json"
+      summary="k6-cpex.json"
+      test_file="cpex.js"
       ;;
     atis)
-      k6 run --config cpex/prototype/experiments/k6/prod.json --summary-export k6-atis.json cpex/prototype/experiments/k6/atis.js
+      config="prod.json"
+      summary="k6-atis.json"
+      test_file="atis.js"
       ;;
     *)
       echo "Invalid experiment name '$name'. Allowed values: ${allowed[*]}"
@@ -203,6 +213,9 @@ runk6() {
       ;;
   esac
 
+  k6 run --log-output=stdout \
+    --config "cpex/prototype/experiments/k6/$config" \
+    --summary-export "$summary" cpex/prototype/experiments/k6/$test_file
 }
 
 ###############################################################################

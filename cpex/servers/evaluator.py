@@ -33,7 +33,7 @@ async def evaluate(req: EvaluateRequest):
     # mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Using key with index {req.i_k}, keypairs: {keypairs}")
     
     content = oprf.evaluate(keypairs, req.x)
-    mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Evaluated {req.x} with index {req.i_k} in {round((time.perf_counter() - start_time)*1000, 2)} ms")
+    # mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Evaluated {req.x} with index {req.i_k} in {round((time.perf_counter() - start_time)*1000, 2)} ms")
 
     return JSONResponse(
         content=content, 

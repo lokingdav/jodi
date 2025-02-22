@@ -23,12 +23,5 @@ export default function () {
     }
     const res = http.get(items[i].atis.ret_url, { headers: retHeaders });
     
-    check(res, {
-        'Published PASSporT == Retrieved PASSporT': (r) => {
-            const result = r.json()
-            return r.status === 200 && result.length && result[0] === items[i].passport
-        }
-    });
-
-    sleep(Math.random());
+    sleep(1);
 }

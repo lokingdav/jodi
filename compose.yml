@@ -39,7 +39,6 @@ services:
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --log-level debug
       --keep-alive 30
       --timeout 120
     ports:
@@ -64,7 +63,6 @@ services:
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --log-level debug
       --keep-alive 30
       --timeout 120
     ports:

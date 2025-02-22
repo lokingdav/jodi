@@ -53,6 +53,5 @@ export default function () {
     const pubres = http.batch(pubReqs);
 
     const retres = http.batch(retReqs);
-
-    sleep(Math.random());
+    sleep(1);
 }
