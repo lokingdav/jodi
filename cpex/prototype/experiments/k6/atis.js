@@ -23,5 +23,5 @@ export default function () {
     }
     const res = http.get(items[i].atis.ret_url, { headers: retHeaders });
     
-    sleep(1);
+    sleep(0.15);
 }

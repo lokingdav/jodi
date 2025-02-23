@@ -14,14 +14,19 @@ def combine_k6():
                 data = json.load(f)
                 (prot, _) = file.split('-')
                 rows.append([
-                    prot, 
-                    data['metrics']['vus']['max'], 
-                    round(data['metrics']['http_req_duration']['med'], dp),
-                    round(data['metrics']['iterations']['rate'], dp),
+                    prot, # Protocol
+                    data['metrics']['vus']['max'], # VUs
+                    round(data['metrics']['http_req_duration']['min'], dp), # Min
+                    round(data['metrics']['http_req_duration']['max'], dp), # Max
+                    round(data['metrics']['http_req_duration']['med'], dp), # Median
+                    round(data['metrics']['http_req_duration']['avg'], dp), # Avg
+                    round(data['metrics']['iterations']['rate'], dp), # Calls/s
+                    round(data['metrics']['http_reqs']['rate'], dp), # Requests/s
+                    round(data['metrics']['http_req_failed']['value'] / data['metrics']['http_reqs']['count'], dp) # Requests Failed
                 ])
 
     rows.sort(key=lambda x: (x[1], x[0]))
-    rows = [['Protocol', 'VUs', 'Median']] + rows
+    rows = [['Protocol', 'VUs', 'Min', 'Max', 'Median', 'Avg', 'Calls/s', 'Requests/s', 'Requests Failed']] + rows
     files.write_csv('cpex/prototype/experiments/results/k6.csv', rows)
     
 def combine_lat():

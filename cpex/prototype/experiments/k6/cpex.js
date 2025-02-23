@@ -53,5 +53,5 @@ export default function () {
     const pubres = http.batch(pubReqs);
 
     const retres = http.batch(retReqs);
-    sleep(1);
+    sleep(0.15);
 }
