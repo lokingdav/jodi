@@ -1,0 +1,8 @@
+{
+  "scenarios": {
+    "constant_call_rate": {
+      "executor": "constant-vus",
+      "duration": "5s"
+    }
+  }
+}
