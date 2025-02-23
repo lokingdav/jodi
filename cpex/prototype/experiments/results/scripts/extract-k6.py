@@ -19,7 +19,7 @@ def main():
                     round(data['metrics']['iterations']['rate'], dp),
                 ])
 
-    rows.sort(key=lambda x: x[0])
+    rows.sort(key=lambda x: (x[1], x[0]))
     rows = [['Protocol', 'VUs', 'Median']] + rows
     files.write_csv('cpex/prototype/experiments/results/k6.csv', rows)
 
