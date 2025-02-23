@@ -139,11 +139,13 @@ def save_result(**kwargs):
 def prepare_results_file():
     if EXPERIMENT_NUM not in ['1', '3']:
         raise ValueError('Invalid experiment number')
-    
-    resultsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-{EXPERIMENT_NUM}.csv"
 
-    if not files.is_empty(resultsloc):
-        return resultsloc
+    filename = f'experiment-{EXPERIMENT_NUM}'
+    if EXPERIMENT_NUM == '3':
+        filename += f'{EXPERIMENT_PART}'
+    filename += '.csv'
+    
+    resultsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/{filename}"
 
     statsheader = ['lat_min', 'lat_max','lat_mean','lat_std','success_rate','calls_per_sec']
     if EXPERIMENT_NUM == '1':
