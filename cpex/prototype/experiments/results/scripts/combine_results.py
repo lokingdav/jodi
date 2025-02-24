@@ -20,13 +20,15 @@ def combine_k6():
                     round(data['metrics']['http_req_duration']['max'], dp), # Max
                     round(data['metrics']['http_req_duration']['med'], dp), # Median
                     round(data['metrics']['http_req_duration']['avg'], dp), # Avg
+                    round(data['metrics']['http_req_duration']['p(90)'], dp), # p90
+                    round(data['metrics']['http_req_duration']['p(95)'], dp), # p95
                     round(data['metrics']['iterations']['rate'], dp), # Calls/s
                     round(data['metrics']['http_reqs']['rate'], dp), # Requests/s
-                    round(data['metrics']['http_req_failed']['value'] / data['metrics']['http_reqs']['count'], dp) # Requests Failed
+                    round(data['metrics']['http_req_failed']['value'], 5) # Requests Failed
                 ])
 
     rows.sort(key=lambda x: (x[1], x[0]))
-    rows = [['Protocol', 'VUs', 'Min', 'Max', 'Median', 'Avg', 'Calls/s', 'Requests/s', 'Requests Failed']] + rows
+    rows = [['Protocol', 'VUs', 'Min', 'Max', 'Median', 'Avg', 'P(90)', 'P(95)', 'Calls/s', 'Requests/s', 'Requests Failed']] + rows
     files.write_csv('cpex/prototype/experiments/results/k6.csv', rows)
     
 def combine_lat():
