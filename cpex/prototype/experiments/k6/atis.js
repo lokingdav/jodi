@@ -1,11 +1,14 @@
 import http from 'k6/http';
 import { SharedArray } from 'k6/data';
 import { sleep, check } from 'k6';
+import { Counter } from 'k6/metrics';
 
 const items = new SharedArray('items', function () {
   const content = JSON.parse(open('../../../../conf/loads.json'));
   return content;
 });
+
+const successfulCallsCounter = new Counter('successful_calls');
 
 const commonHeaders = { 'Content-Type': 'application/json' };
 
@@ -15,7 +18,9 @@ const PublishProtocol = (record) => {
         'Authorization': `Bearer ${record.atis.pub_bearer}`
     };
 
-    return http.post(record.atis.pub_url, JSON.stringify({ passports: [record.passport] }), { headers });
+    const res = http.post(record.atis.pub_url, JSON.stringify({ passports: [record.passport] }), { headers });
+
+    return res.status === 200;
 }
 
 const RetrieveProtocol = (record) => {
@@ -24,14 +29,20 @@ const RetrieveProtocol = (record) => {
         'Authorization': `Bearer ${record.atis.ret_bearer}`
     };
 
-    return http.get(record.atis.ret_url, { headers });
+    const res = http.get(record.atis.ret_url, { headers });
+
+    return res.status === 200;
 }
 
 export default function () {
     const i = Math.floor(Math.random() * items.length);
     
-    PublishProtocol(items[i]);
-    RetrieveProtocol(items[i]);
+    const isPublished = PublishProtocol(items[i]);
+    const isRetrieved = RetrieveProtocol(items[i]);
+
+    if (isPublished && isRetrieved) {
+        successfulCallsCounter.add(1);
+    }
 
     sleep(0.15);
 }
