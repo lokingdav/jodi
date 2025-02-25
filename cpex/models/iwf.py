@@ -112,14 +112,17 @@ class CpexIWF:
         req_time_start = time.perf_counter()
         responses = await self.make_request('retrieve', requests=requests)
         req_time_taken = time.perf_counter() - req_time_start
-        # self.log_msg(f'--> Responses: {responses}')
+        # self.log_msg(f'--> Responses from Stores: {responses}')
         
         self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         
         self.retrieve_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(requests) # Average time taken to store a message by a single store
         
-        responses = [{**res, 'cid_idx': requests[i]['cid_idx']} for i, res in enumerate(responses) if '_error' not in res]
+        # responses = [{**res, 'cid_idx': requests[i]['cid_idx']} for i, res in enumerate(responses) if '_error' not in res]
+        # self.log_msg(f"\n--> Filtered Responses: {responses}")
+        # self.log_msg(f"--> Call IDs: {call_ids}\n")
         token = libcpex.decrypt(call_ids=call_ids, responses=responses, src=src, dst=dst, gpk=self.gpk)
+        # self.log_msg(f'--> Retrieved Token: {token}')
         return token
     
     async def make_request(self, req_type: str, requests: List[dict]):
@@ -131,7 +134,10 @@ class CpexIWF:
                 gpk=self.gpk
             )
         else:
-            return await http.posts(reqs=requests)
+            if req_type == 'retrieve':
+                return await http.posts_race(reqs=requests)
+            else:
+                return await http.posts(reqs=requests)
     
     def get_publish_compute_times(self):
         return {

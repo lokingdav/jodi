@@ -85,21 +85,23 @@ def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, store
 
     return requests
 
-def create_retrieve_requests(call_ids: List[bytes], n_ms: int, gsk, gpk, stores=None) -> List[dict]:
+def create_retrieve_requests(call_ids: List[bytes], n_ms: int, gsk, gpk) -> List[dict]:
     requests = []
-    stores_per_cid = dht.get_stores(keys=call_ids, count=n_ms, nodes=stores)
+    stores_per_cid = dht.get_stores(keys=call_ids, count=n_ms)
 
     assert len(call_ids) == len(stores_per_cid)
 
     for i, stores in enumerate(stores_per_cid):
         idx = Utils.to_base64(Utils.hash256(call_ids[i]))
+        sig = groupsig.sign(msg=idx, gsk=gsk, gpk=gpk)
+
         for store in stores:
             requests.append({
                 'cid_idx': i,
                 'nodeId': store['id'],
                 'avail': store.get('avail', None),
                 'url': store['url'] + '/retrieve',
-                'data': { 'idx': idx, 'sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk) }
+                'data': { 'idx': idx, 'sig': sig }
             })
 
     return requests
