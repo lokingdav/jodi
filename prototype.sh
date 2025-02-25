@@ -15,10 +15,10 @@ fi
 CMD="$1"
 SUBCMD="$2"
 
-VALID_CMDS=(build up down restart ps bash runexp cpex atis k6)
+VALID_CMDS=(build push-img up down restart ps bash runexp cpex atis k6)
 
 # Docker images (adjust names as needed)
-CPEX_DOCKER_IMAGE="cpex"
+CPEX_DOCKER_IMAGE="kofidahmed/cpex"
 CPEX_AUTOMATION_DOCKER_IMAGE="cpex-experiment"
 
 # Optional container naming conventions
@@ -48,8 +48,14 @@ validate_cmds() {
   exit 1
 }
 
+push_image() {
+  echo "Pushing $CPEX_DOCKER_IMAGE to Docker Hub..."
+  docker push "$CPEX_DOCKER_IMAGE"
+}
+
 build_image() {
   local image="$1"
+  local push="$2"
 
   case "$image" in
     cpex)
@@ -66,6 +72,10 @@ build_image() {
       docker build -f automation/Dockerfile -t "$CPEX_AUTOMATION_DOCKER_IMAGE" .
       ;;
   esac
+
+  if [[ "$push" == "--push" ]]; then
+    push_image
+  fi
 }
 
 initial_setup() {
@@ -225,7 +235,10 @@ validate_cmds
 
 case "$CMD" in
   build)
-    build_image "$SUBCMD"
+    build_image "$SUBCMD" "$3"
+    ;;
+  push-img)
+    push_image
     ;;
   up)
     compose_up "$SUBCMD"

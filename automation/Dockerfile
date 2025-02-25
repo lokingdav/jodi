@@ -1,4 +1,4 @@
-FROM cpex
+FROM kofidahmed/cpex
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ANSIBLE_VERSION=2.18
