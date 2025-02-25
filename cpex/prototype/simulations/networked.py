@@ -248,11 +248,12 @@ class NetworkedSimulator:
                     params.get('n_ev'), # 4
                     params.get('n_ms'), # 5
                     round(statistics.min, dp), # 6
-                    round(statistics.max, dp), # 7
-                    round(statistics.mean, dp), # 8
-                    round(statistics.population_stddev, dp), # 9
-                    round(statistics.success_rate, dp),  # 10
-                    math.ceil(total_calls / total_time) if total_time > 0 else 0 # 11
+                    round(statistics.median, dp), # 7
+                    round(statistics.max, dp), # 8
+                    round(statistics.mean, dp),
+                    round(statistics.population_stddev, dp),
+                    round(statistics.success_rate, dp),
+                    math.ceil(total_calls / total_time) if total_time > 0 else 0
                 ]
             else:
                 return unsummarized_results
@@ -268,55 +269,40 @@ class NetworkedSimulator:
             
 class RunningStats:
     def __init__(self):
-        self.count = 0
-        self._mean = 0.0
-        self._M2 = 0.0
-        self._min = float('inf')
-        self._max = float('-inf')
         self.correct = 0
+        self.values = []
         
     def update_correct(self):
         self.correct += 1
             
     def update_x(self, x):
-        self.count += 1
+        self.values.append(x)
 
-        # Update min and max
-        if x < self._min:
-            self._min = x
-        if x > self._max:
-            self._max = x
+    @property
+    def median(self):
+        return np.median(self.values)
 
-        # Update mean and M2 using Welford's algorithm
-        delta = x - self._mean
-        self._mean += delta / self.count
-        delta2 = x - self._mean
-        self._M2 += delta * delta2
-        
     @property
     def success_rate(self):
-        if self.count == 0:
+        if len(self.values) == 0:
             return 0
-        print(f"Correct: {self.correct}, Count: {self.count}")
-        return (self.correct / self.count) * 100
+        return (self.correct / len(self.values)) * 100
 
     @property
     def mean(self):
-        return self._mean
+        return np.mean(self.values)
 
     @property
     def min(self):
-        return self._min if self.count > 0 else None
+        return np.min(self.values)
 
     @property
     def max(self):
-        return self._max if self.count > 0 else None
+        return np.max(self.values)
 
     @property
     def sample_variance(self):
-        if self.count < 2:
-            return 0.0
-        return self._M2 / (self.count - 1)
+        return np.var(self.values)
 
     @property
     def sample_stddev(self):
@@ -324,9 +310,7 @@ class RunningStats:
 
     @property
     def population_variance(self):
-        if self.count == 0:
-            return 0.0
-        return self._M2 / self.count
+        return np.var(self.values)
 
     @property
     def population_stddev(self):

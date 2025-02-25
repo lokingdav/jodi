@@ -79,10 +79,10 @@ def simulate(resultsloc: str, mode: str, params: dict = {}):
         )
         
         # Handle network churn simulation
-        if EXPERIMENT_NUM == '1':
-            stop_churning = threading.Event()
-            network_churning = threading.Thread(target=local.network_churn, args=(stop_churning,))
-            network_churning.start()
+        # if EXPERIMENT_NUM == '1':
+        #     stop_churning = threading.Event()
+        #     network_churning = threading.Thread(target=local.network_churn, args=(stop_churning,))
+        #     network_churning.start()
         
         for j in range(j_start, len(provider_groups)):
             num_provs = provider_groups[j]
@@ -119,9 +119,9 @@ def simulate(resultsloc: str, mode: str, params: dict = {}):
             })
         j_start = 0
 
-        if EXPERIMENT_NUM == '1':
-            stop_churning.set()
-            network_churning.join()
+        # if EXPERIMENT_NUM == '1':
+        #     stop_churning.set()
+        #     network_churning.join()
 
         save_checkpoint({'NP_idx': -1}) # Reset NP_idx
     i_start = 0
@@ -147,7 +147,7 @@ def prepare_results_file():
     
     resultsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/{filename}"
 
-    statsheader = ['lat_min', 'lat_max','lat_mean','lat_std','success_rate','calls_per_sec']
+    statsheader = ['lat_min', 'lat_med', 'lat_max', 'lat_mean', 'lat_std','success_rate','calls_per_sec']
     if EXPERIMENT_NUM == '1':
         headers = ['mode','Num_Provs','Num_EVs','Num_MSs','n_ev','n_ms'] + statsheader
     else:
