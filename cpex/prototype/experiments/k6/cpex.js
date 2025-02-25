@@ -7,51 +7,70 @@ const items = new SharedArray('items', function () {
   return content;
 });
 
-export default function () {
-    const i = Math.floor(Math.random() * items.length);
+const headers = { 'Content-Type': 'application/json' };
 
-    const headers = {'Content-Type': 'application/json'};
-
+const CidGenerationProtocol = (record) => {
     const cidGenReqs = []
-    for (const ev of items[i].cpex.evs) {
+
+    for (const ev of record.cpex.evs) {
         cidGenReqs.push({
             method: 'POST',
             url: `${ev}/evaluate`,
-            body: JSON.stringify(items[i].cpex.oprf),
+            body: JSON.stringify(record.cpex.oprf),
             params: { headers }
         });
     }
     
-    const cidsres = http.batch(cidGenReqs);
+    return http.batch(cidGenReqs);
+}
 
+const PublishProtocol = (record) => {
+    // Generate CID for the record
+    CidGenerationProtocol(record);
+
+    // Publish the record
     const pubReqs = []
-    const retReqs = []
-    
-    for (const ms of items[i].cpex.mss) {
+    for (const ms of record.cpex.mss) {
         pubReqs.push({
             method: 'POST',
             url: `${ms}/publish`,
             body: JSON.stringify({
-                idx: items[i].cpex.idx, 
-                ctx: items[i].cpex.ctx, 
-                sig: items[i].cpex.pub_sig
-            }),
-            params: { headers }
-        });
-
-        retReqs.push({
-            method: 'POST',
-            url: `${ms}/retrieve`,
-            body: JSON.stringify({
-                idx: items[i].cpex.idx, 
-                sig: items[i].cpex.ret_sig
+                idx: record.cpex.idx, 
+                ctx: record.cpex.ctx, 
+                sig: record.cpex.pub_sig
             }),
             params: { headers }
         });
     }
 
-    const pubres = http.batch(pubReqs);
+    return http.batch(pubReqs);
+}
 
-    const retres = http.batch(retReqs);
+const RetrieveProtocol = (record) => {
+    // Generate CID for the record
+    CidGenerationProtocol(record);
+
+    const retReqs = []
+    for (const ms of record.cpex.mss) {
+        retReqs.push({
+            method: 'POST',
+            url: `${ms}/retrieve`,
+            body: JSON.stringify({
+                idx: record.cpex.idx, 
+                sig: record.cpex.ret_sig
+            }),
+            params: { headers }
+        });
+    }
+
+    return http.batch(retReqs);
+}
+
+export default function () {
+    const i = Math.floor(Math.random() * items.length);
+
+    PublishProtocol(items[i]);
+    RetrieveProtocol(items[i]);
+    
     sleep(0.15);
 }

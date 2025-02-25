@@ -7,21 +7,31 @@ const items = new SharedArray('items', function () {
   return content;
 });
 
-export default function () {
-    const i = Math.floor(Math.random() * items.length);
+const commonHeaders = { 'Content-Type': 'application/json' };
 
-    const pubHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${items[i].atis.pub_bearer}`
+const PublishProtocol = (record) => {
+    const headers = {
+        ...commonHeaders,
+        'Authorization': `Bearer ${record.atis.pub_bearer}`
     };
 
-    http.post(items[i].atis.pub_url, JSON.stringify({ passports: [items[i].passport] }), { headers: pubHeaders });
+    return http.post(record.atis.pub_url, JSON.stringify({ passports: [record.passport] }), { headers });
+}
 
-    const retHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${items[i].atis.ret_bearer}`
-    }
-    const res = http.get(items[i].atis.ret_url, { headers: retHeaders });
+const RetrieveProtocol = (record) => {
+    const headers = {
+        ...commonHeaders,
+        'Authorization': `Bearer ${record.atis.ret_bearer}`
+    };
+
+    return http.get(record.atis.ret_url, { headers });
+}
+
+export default function () {
+    const i = Math.floor(Math.random() * items.length);
     
+    PublishProtocol(items[i]);
+    RetrieveProtocol(items[i]);
+
     sleep(0.15);
 }
