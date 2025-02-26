@@ -39,8 +39,10 @@ def init_server():
     return FastAPI()    
 
 def authorize_request(authorization: str, passports: List[str] = None) -> dict:
+    mylogging.mylogger.debug(f"{os.getpid()}: Authorizing request")
     authorization = authorization.replace("Bearer ", "")
     decoded = verify_service.verify_token(authorization)
+    mylogging.mylogger.debug(f"{os.getpid()}: Decoded token: {decoded}")
     if not decoded or 'passports' not in decoded:
         return None
     if passports and decoded['passports'] != 'sha256-' + misc.base64encode(misc.hash256(passports)):
