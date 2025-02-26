@@ -57,25 +57,30 @@ def get_node_hosts():
     
     with open(hosts_file, 'r') as file:
         data = yaml.safe_load(file)
-        if not data or 'all' not in data or 'hosts' not in data['all']:
+        if not data or 'all' not in data or 'children' not in data['all']:
             raise Exception("Invalid hosts.yml format")
         
-        for i, name in enumerate(data['all']['hosts'].keys()):
-            ip_addr = data['all']['hosts'][name]['ansible_host']
-            
-            if is_valid_ipv4(ip_addr):
-                nodes[config.EVALS_KEY].append(create_node(f'{ip_addr}:{config.EV_PORT}'))
-                nodes[config.STORES_KEY].append(create_node(f'{ip_addr}:{config.MS_PORT}'))
-                nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_PORT}'))
-                nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{str(int(config.CPS_PORT) + 1)}'))
-            else:
-                node = create_node(ip_addr)
-                if '-ev-' in ip_addr or 'evaluator' in ip_addr:
-                    nodes[config.EVALS_KEY].append(node)
-                elif '-ms-' in ip_addr or 'message-store' in ip_addr:
-                    nodes[config.STORES_KEY].append(node)
-                elif '-cps-' in ip_addr:
-                    nodes[config.CPS_KEY].append(node)
+        for child in data['all']['children']:
+            print("Processing child", child)
+
+            for i, name in enumerate(data['all']['children'][child]['hosts'].keys()):
+                ip_addr = data['all']['children'][child]['hosts'][name]['ansible_host']
+                
+                if is_valid_ipv4(ip_addr):
+                    if child == 'evaluators':
+                        nodes[config.EVALS_KEY].append(create_node(f'{ip_addr}:{config.EV_PORT}'))
+                    elif child == 'stores':
+                        nodes[config.STORES_KEY].append(create_node(f'{ip_addr}:{config.MS_PORT}'))
+
+                    nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_PORT}'))
+                else:
+                    node = create_node(ip_addr)
+                    if '-ev-' in ip_addr or 'evaluator' in ip_addr:
+                        nodes[config.EVALS_KEY].append(node)
+                    elif '-ms-' in ip_addr or 'message-store' in ip_addr:
+                        nodes[config.STORES_KEY].append(node)
+                    elif '-cps-' in ip_addr:
+                        nodes[config.CPS_KEY].append(node)
     return nodes
 
 def setup_certificates():

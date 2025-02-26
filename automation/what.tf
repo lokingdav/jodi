@@ -35,19 +35,19 @@ variable "key_name" {
 }
 
 variable "us_east_1_count" {
-  default = 5
+  default = 2
 }
 
 variable "us_east_2_count" {
-  default = 5
+  default = 2
 }
 
 variable "us_west_1_count" {
-  default = 5
+  default = 2
 }
 
 variable "us_west_2_count" {
-  default = 5
+  default = 2
 }
 
 variable "sg_start_port" {
@@ -330,17 +330,32 @@ resource "local_file" "ansible_hosts" {
 
   content = <<-EOT
 all:
-  hosts:
-${join("\n", [
-  for i, node_id in random_shuffle.cpex_node_ids.result : format(
-    "    %s:\n      ansible_host: %s\n      ansible_user: ubuntu\n      label: %s",
+  children:
+    stores:
+      hosts:
+${join("\n", compact([
+  for i, node_id in random_shuffle.cpex_node_ids.result : 
+  i < floor(local.node_count / 2) ? format(
+    "        %s:\n          ansible_host: %s\n          ansible_user: ubuntu",
     local.cpex_nodes_map[node_id].name,
-    local.cpex_nodes_map[node_id].ip,
-    i < floor(local.node_count / 2) ? "store" : "evaluator"
-  )
-])}
+    local.cpex_nodes_map[node_id].ip
+  ) : null
+]))}
+
+    evaluators:
+      hosts:
+${join("\n", compact([
+  for i, node_id in random_shuffle.cpex_node_ids.result : 
+  i >= floor(local.node_count / 2) ? format(
+    "        %s:\n          ansible_host: %s\n          ansible_user: ubuntu",
+    local.cpex_nodes_map[node_id].name,
+    local.cpex_nodes_map[node_id].ip
+  ) : null
+]))}
 EOT
 }
+
+
 
 # You can still output the final line-based hosts if desired:
 output "hosts_file" {

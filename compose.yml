@@ -43,7 +43,7 @@ services:
       --timeout 120
     ports:
       - 10430:80
-    profiles: [cpex]
+    profiles: [cpex, ev]
     depends_on:
       - ev-keyrotation
       - cache
@@ -52,7 +52,7 @@ services:
     <<: *cpex-service
     container_name: ev-keyrotation
     command: python cpex/servers/keyrotation.py
-    profiles: [cpex]
+    profiles: [cpex, ev]
 
   message-store:
     <<: *cpex-service
@@ -67,7 +67,7 @@ services:
       --timeout 120
     ports:
       - 10431:80
-    profiles: [cpex]
+    profiles: [cpex, ms]
 
   provider-iwf:
     <<: *cpex-service
@@ -80,9 +80,9 @@ services:
       --log-file=-
     profiles: [proxy]
 
-  sti-cps-0:
+  sti-cps:
     <<: *cpex-service
-    container_name: sti-cps-0
+    container_name: sti-cps
     command: > 
       gunicorn cpex.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 
@@ -90,27 +90,12 @@ services:
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --keep-alive 30
+      --timeout 120
     ports:
       - 10433:80
     environment:
       - NODE_PORT=10433
-    profiles: [atis]
-
-  sti-cps-1:
-    <<: *cpex-service
-    container_name: sti-cps-1
-    command:  > 
-      gunicorn cpex.prototype.stirshaken.cps_server:app 
-      --bind 0.0.0.0:80 
-      --workers 4
-      --worker-class uvicorn.workers.UvicornWorker 
-      --log-file=-
-      --keep-alive 30
-    ports:
-      - 10434:80
-    environment:
-      - NODE_PORT=10434
-    profiles: [atis]
+    profiles: [cps]
 
 # Cache and Database
   cache:
