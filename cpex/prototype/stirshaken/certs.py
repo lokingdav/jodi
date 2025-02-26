@@ -89,6 +89,7 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
 
 
 def download(url: str) -> str:
+    print(f"\nDownloading certificate\n\tMy FQDN: {config.NODE_FQDN}\n\tURL: {url}", flush=True)
     if config.NODE_FQDN in url:
         key = url.split('/')[-1]
         return credentials[key]['cert']
