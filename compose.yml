@@ -36,7 +36,7 @@ services:
     command: > 
       gunicorn cpex.servers.evaluator:app 
       --bind 0.0.0.0:80 
-      --workers 4
+      --workers 5
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --keep-alive 30
@@ -60,7 +60,7 @@ services:
     command: >
       gunicorn cpex.servers.message_store:app 
       --bind 0.0.0.0:80 
-      --workers 4
+      --workers 5
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --keep-alive 30
@@ -86,7 +86,7 @@ services:
     command: > 
       gunicorn cpex.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 
-      --workers 4
+      --workers 5
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --keep-alive 30

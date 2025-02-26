@@ -20,16 +20,25 @@
       args:
         chdir: "{{ repo_dest }}"
 
-    - name: Start CPEX Services
+    - name: Start CPEX Message Stores
       tags:
-        - start_cpex
-      command: "./prototype.sh cpex up"
+        - start_ms
+      command: "./prototype.sh ms up"
       args:
         chdir: "{{ repo_dest }}"
+      when: "'stores' in group_names"
+
+    - name: Start CPEX Evaluators
+      tags:
+        - start_ev
+      command: "./prototype.sh ev up"
+      args:
+        chdir: "{{ repo_dest }}"
+      when: "'evaluators' in group_names"
 
     - name: Start ATIS Services
       tags:
-        - start_atis
-      command: "./prototype.sh atis up"
+        - start_cps
+      command: "./prototype.sh cps up"
       args:
         chdir: "{{ repo_dest }}"

@@ -40,10 +40,10 @@ runapp() {
 
     case "$app" in
         cpex)
-            tags="$tags,start_cpex"
+            tags="$tags,start_ms,start_ev"
             ;;
         atis)
-            tags="$tags,start_atis"
+            tags="$tags,start_cps"
             ;;
         *)
             echo "Unknown app: $app"

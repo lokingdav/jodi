@@ -61,8 +61,6 @@ def get_node_hosts():
             raise Exception("Invalid hosts.yml format")
         
         for child in data['all']['children']:
-            print("Processing child", child)
-
             for i, name in enumerate(data['all']['children'][child]['hosts'].keys()):
                 ip_addr = data['all']['children'][child]['hosts'][name]['ansible_host']
                 

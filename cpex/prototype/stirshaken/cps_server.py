@@ -114,6 +114,8 @@ async def handle_publish_req(dest: str, orig: str, request: PublishRequest, auth
         mylogging.mylogger.error(f"{os.getpid()}: Unauthorized request")
         return unauthorized_response()
     
+    mylogging.mylogger.debug(f"{os.getpid()}: Caching Passports")
+
     cache.cache_for_seconds(
         key=get_record_key(dest=dest, orig=orig), 
         value=request.passports, 
