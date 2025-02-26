@@ -90,24 +90,24 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
 
 def download(url: str) -> str:
     if config.NODE_FQDN in url:
-        mylogging.mylogger.debug(f"Using local certificate repository for {url}")
+        # mylogging.mylogger.debug(f"Using local certificate repository for {url}")
         key = url.split('/')[-1]
-        mylogging.mylogger.debug(f"Key: {key}, exists: {key in credentials}")
+        # mylogging.mylogger.debug(f"Key: {key}, exists: {key in credentials}")
         return credentials[key]['cert']
     
-    mylogging.mylogger.debug(f"Downloading certificate from {url}")
+    # mylogging.mylogger.debug(f"Downloading certificate from {url}")
 
     if not validators.url(url) and not url.startswith('http'):
-        mylogging.mylogger.error(f'Cert url must be a valid URL: {url}')
+        # mylogging.mylogger.error(f'Cert url must be a valid URL: {url}')
         raise ValueError(f'Cert url must be a valid URL: {url}')
     try:
-        mylogging.mylogger.debug('Downloading certificate...')
+        # mylogging.mylogger.debug('Downloading certificate...')
         res = requests.get(url=url)
-        mylogging.mylogger.debug(f'Certificate downloaded: {res.text}')
+        # mylogging.mylogger.debug(f'Certificate downloaded: {res.text}')
         res.raise_for_status()
         return res.text
     except Exception as e:
-        mylogging.mylogger.error(f'Error getting certificate: {e}')
+        # mylogging.mylogger.error(f'Error getting certificate: {e}')
         return None
 
 

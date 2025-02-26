@@ -39,10 +39,10 @@ def init_server():
     return FastAPI()    
 
 def authorize_request(authorization: str, passports: List[str] = None) -> dict:
-    mylogging.mylogger.debug(f"{os.getpid()}: Authorizing request")
+    # mylogging.mylogger.debug(f"{os.getpid()}: Authorizing request")
     authorization = authorization.replace("Bearer ", "")
     decoded = verify_service.verify_token(authorization)
-    mylogging.mylogger.debug(f"{os.getpid()}: Decoded token: {decoded}")
+    # mylogging.mylogger.debug(f"{os.getpid()}: Decoded token: {decoded}")
     if not decoded or 'passports' not in decoded:
         return None
     if passports and decoded['passports'] != 'sha256-' + misc.base64encode(misc.hash256(passports)):
@@ -77,7 +77,7 @@ async def do_republish(dest: str, orig: str, request: PublishRequest, authorizat
         private_key_pem=MY_CRED[constants.PRIV_KEY],
         x5u=f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
     )
-    mylogging.mylogger.debug(f"{os.getpid()}: AuthService initialized")
+    # mylogging.mylogger.debug(f"{os.getpid()}: AuthService initialized")
 
     reqs = []
         
@@ -113,10 +113,10 @@ async def handle_publish_req(dest: str, orig: str, request: PublishRequest, auth
     
     decoded = authorize_request(authorization, request.passports)
     if not decoded:
-        mylogging.mylogger.error(f"{os.getpid()}: Unauthorized request")
+        # mylogging.mylogger.error(f"{os.getpid()}: Unauthorized request")
         return unauthorized_response()
     
-    mylogging.mylogger.debug(f"{os.getpid()}: Caching Passports")
+    # mylogging.mylogger.debug(f"{os.getpid()}: Caching Passports")
 
     cache.cache_for_seconds(
         key=get_record_key(dest=dest, orig=orig), 
@@ -140,7 +140,7 @@ async def handle_republish_req(dest: str, orig: str, request: RepublishRequest, 
     
     decoded = authorize_request(authorization, request.passports)
     if not decoded:
-        mylogging.mylogger.error(f"{os.getpid()}: REPUBLISH request unauthorized")
+        # mylogging.mylogger.error(f"{os.getpid()}: REPUBLISH request unauthorized")
         return unauthorized_response()
     
     cache.cache_for_seconds(
@@ -148,7 +148,7 @@ async def handle_republish_req(dest: str, orig: str, request: RepublishRequest, 
         value=request.passports, 
         seconds=config.T_MAX_SECONDS
     )
-    mylogging.mylogger.debug(f"{os.getpid()}: Passports cached")
+    # mylogging.mylogger.debug(f"{os.getpid()}: Passports cached")
     
     return success_response()
 
