@@ -90,24 +90,16 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
 
 def download(url: str) -> str:
     if config.NODE_FQDN in url:
-        # mylogging.mylogger.debug(f"Using local certificate repository for {url}")
         key = url.split('/')[-1]
-        # mylogging.mylogger.debug(f"Key: {key}, exists: {key in credentials}")
         return credentials[key]['cert']
     
-    # mylogging.mylogger.debug(f"Downloading certificate from {url}")
-
     if not validators.url(url) and not url.startswith('http'):
-        # mylogging.mylogger.error(f'Cert url must be a valid URL: {url}')
         raise ValueError(f'Cert url must be a valid URL: {url}')
     try:
-        # mylogging.mylogger.debug('Downloading certificate...')
         res = requests.get(url=url)
-        # mylogging.mylogger.debug(f'Certificate downloaded: {res.text}')
         res.raise_for_status()
         return res.text
     except Exception as e:
-        # mylogging.mylogger.error(f'Error getting certificate: {e}')
         return None
 
 
@@ -133,3 +125,63 @@ def get_private_key(key_str: str):
         password=None,
     )
     return private_key
+
+
+def verify_chain_of_trust(certificate_pem: str) -> bool:
+    try:
+        leaf_cert = x509.load_pem_x509_certificate(certificate_pem.encode("utf-8"))
+        cert_chain = [leaf_cert]
+
+        while True:
+            current_cert = cert_chain[-1]
+
+            # 1) Detect root by subject == issuer (self-signed).
+            if current_cert.issuer == current_cert.subject:
+                # Check if that root is in credentials
+                # (and optionally verify it's truly self-signed).
+                for key, cred_obj in credentials.items():
+                    candidate_root = x509.load_pem_x509_certificate(cred_obj["cert"].encode("utf-8"))
+                    if (candidate_root.subject == current_cert.subject and 
+                        candidate_root.issuer == current_cert.issuer):
+                        candidate_root.public_key().verify(
+                            candidate_root.signature,
+                            candidate_root.tbs_certificate_bytes,
+                            ec.ECDSA(candidate_root.signature_hash_algorithm),
+                        )
+                        _check_certificate_time(candidate_root)
+                        return True  # Chain is fully trusted
+                raise ValueError("Reached a self-signed cert not in credentials. Chain not trusted.")
+
+            # 2) Otherwise, find issuer in credentials
+            issuer_cert = _find_issuer_in_credentials(current_cert.issuer)
+            if issuer_cert is None:
+                raise ValueError(f"Issuer {current_cert.issuer} not found in credentials. Chain incomplete.")
+
+            issuer_cert.public_key().verify(
+                current_cert.signature,
+                current_cert.tbs_certificate_bytes,
+                ec.ECDSA(current_cert.signature_hash_algorithm)
+            )
+            _check_certificate_time(current_cert)
+            cert_chain.append(issuer_cert)
+
+    except Exception as e:
+        traceback.print_exc()
+        raise
+
+
+
+def _find_issuer_in_credentials(issuer_name: x509.Name):
+    cn = issuer_name.rfc4514_string().split(',')[0].split('=')[1]
+    cred = credentials.get(cn)
+    if not cred:
+        return None
+    cert_pem = x509.load_pem_x509_certificate(cred["cert"].encode("utf-8"))
+    return cert_pem
+
+
+def _check_certificate_time(cert: x509.Certificate) -> None:
+    now = datetime.now(timezone.utc)
+    if now < cert.not_valid_before_utc or now > cert.not_valid_after_utc:
+        raise ValueError(f"Certificate {cert.subject} has expired or is not yet valid.")
+

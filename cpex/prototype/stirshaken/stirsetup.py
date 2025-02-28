@@ -44,7 +44,7 @@ def create_root_ca():
         x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
         x509.NameAttribute(NameOID.LOCALITY_NAME, u"San Francisco"),
         x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"My Company"),
-        x509.NameAttribute(NameOID.COMMON_NAME, u"Root CA"),
+        x509.NameAttribute(NameOID.COMMON_NAME, u"rca"),
     ])
     return {
         'id': constants.ROOT_CA_KEY,

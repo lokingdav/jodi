@@ -117,13 +117,13 @@ class TestCPeXStirShakenCerts(unittest.TestCase):
         data = b"test data"
         signature = private_key.sign(
             data,
-            ec.ECDSA(hashes.SHA256())
+            ec.ECDSA(ec.ECDSA())
         )
         self.assertIsNotNone(signature)
         # Verify the signature
         public_key = private_key.public_key()
         try:
-            public_key.verify(signature, data, ec.ECDSA(hashes.SHA256()))
+            public_key.verify(signature, data, ec.ECDSA(ec.ECDSA()))
         except Exception as e:
             self.fail(f"Signature verification failed: {e}")
 
