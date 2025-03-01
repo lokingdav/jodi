@@ -34,7 +34,7 @@ def init_server():
 
     MY_CRED, allcerts = stirsetup.load_certs()
     certs.set_certificate_repository(allcerts)
-    X5U = f'{config.NODE_FQDN}/certs/' + MY_CRED['id']
+    X5U = f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
 
     if config.USE_LOCAL_CERT_REPO:
         cache.save_certificates(allcerts)
