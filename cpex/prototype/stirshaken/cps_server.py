@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, Header, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
-import json, os
+import json, os, random
 
 import cpex.config as config
 import cpex.constants as constants
@@ -12,6 +12,7 @@ from cpex.prototype.scripts import setup
 from cpex.helpers import misc, http, mylogging
 
 MY_CRED = None
+CR_URL = None
 BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
 
@@ -24,13 +25,13 @@ class RepublishRequest(PublishRequest):
     token: str
 
 def init_server():
-    global MY_CRED
+    global MY_CRED, CR_URL
     
     cache.set_client(cache.connect())
     
     nodes = setup.get_node_hosts()
-    if nodes and nodes.get(config.CPS_KEY):
-        cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
+    cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
+    CR_URL = random.choice(nodes.get(config.CERT_REPOS_KEY))['url']
 
     MY_CRED, allcerts = stirsetup.load_certs()
     certs.set_certificate_repository(allcerts)
@@ -74,7 +75,7 @@ async def do_republish(dest: str, orig: str, request: PublishRequest, authorizat
     authService = auth_service.AuthService(
         ownerId=config.NODE_FQDN,
         private_key_pem=MY_CRED[constants.PRIV_KEY],
-        x5u=f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
+        x5u=f'{CR_URL}/certs/' + MY_CRED['id']
     )
     # mylogging.mylogger.debug(f"{os.getpid()}: AuthService initialized")
 
