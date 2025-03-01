@@ -15,7 +15,7 @@ fi
 CMD="$1"
 SUBCMD="$2"
 
-VALID_CMDS=(build push-img up down restart ps bash runexp ev ms cps k6)
+VALID_CMDS=(build push-img up down restart ps bash runexp ev ms cps cr k6)
 
 # Docker images (adjust names as needed)
 CPEX_DOCKER_IMAGE="kofidahmed/cpex"
@@ -186,6 +186,7 @@ compose_down_all_apps() {
   manage_prod_app ev down
   manage_prod_app ms down
   manage_prod_app cps down
+  manage_prod_app cr down
 }
 
 runk6() {
@@ -268,6 +269,9 @@ case "$CMD" in
     ;;
   cps)
     manage_prod_app cps "$SUBCMD"
+    ;;
+  cr)
+    manage_prod_app cr "$SUBCMD"
     ;;
   k6)
     runk6 $SUBCMD

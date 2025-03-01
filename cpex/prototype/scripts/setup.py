@@ -69,8 +69,15 @@ def get_node_hosts():
                         nodes[config.EVALS_KEY].append(create_node(f'{ip_addr}:{config.EV_PORT}'))
                     elif child == 'stores':
                         nodes[config.STORES_KEY].append(create_node(f'{ip_addr}:{config.MS_PORT}'))
+                    elif child == 'certrepos':
+                        base_port = int(config.CR_BASE_PORT)
+                        nodes[config.CERT_REPOS_KEY].append(create_node(f'{ip_addr}:{base_port}'))
+                        nodes[config.CERT_REPOS_KEY].append(create_node(f'{ip_addr}:{base_port+1}'))
+                        nodes[config.CERT_REPOS_KEY].append(create_node(f'{ip_addr}:{base_port+2}'))
+                        nodes[config.CERT_REPOS_KEY].append(create_node(f'{ip_addr}:{base_port+3}'))
 
-                    nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_PORT}'))
+                    if child != 'certrepos':
+                        nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_PORT}'))
                 else:
                     node = create_node(ip_addr)
                     if '-ev-' in ip_addr or 'evaluator' in ip_addr:

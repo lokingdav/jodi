@@ -92,10 +92,78 @@ services:
       --keep-alive 30
       --timeout 120
     ports:
+      - 10432:80
+    environment:
+      - NODE_PORT=10432
+    profiles: [cps]
+
+  sti-cr-0:
+    <<: *cpex-service
+    container_name: sti-cr-0
+    command: > 
+      gunicorn cpex.prototype.stirshaken.cert_repo:app 
+      --bind 0.0.0.0:80 
+      --workers 2
+      --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
+      --keep-alive 30
+      --timeout 120
+    ports:
       - 10433:80
     environment:
       - NODE_PORT=10433
-    profiles: [cps]
+    profiles: [cr]
+
+  sti-cr-1:
+    <<: *cpex-service
+    container_name: sti-cr-1
+    command: > 
+      gunicorn cpex.prototype.stirshaken.cert_repo:app 
+      --bind 0.0.0.0:80 
+      --workers 2
+      --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
+      --keep-alive 30
+      --timeout 120
+    ports:
+      - 10434:80
+    environment:
+      - NODE_PORT=10434
+    profiles: [cr]
+
+  sti-cr-2:
+    <<: *cpex-service
+    container_name: sti-cr-2
+    command: > 
+      gunicorn cpex.prototype.stirshaken.cert_repo:app 
+      --bind 0.0.0.0:80 
+      --workers 2
+      --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
+      --keep-alive 30
+      --timeout 120
+    ports:
+      - 10435:80
+    environment:
+      - NODE_PORT=10435
+    profiles: [cr]
+
+  sti-cr-3:
+    <<: *cpex-service
+    container_name: sti-cr-3
+    command: > 
+      gunicorn cpex.prototype.stirshaken.cert_repo:app 
+      --bind 0.0.0.0:80 
+      --workers 2
+      --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
+      --keep-alive 30
+      --timeout 120
+    ports:
+      - 10436:80
+    environment:
+      - NODE_PORT=10436
+    profiles: [cr]
 
 # Cache and Database
   cache:

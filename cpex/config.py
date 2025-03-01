@@ -27,6 +27,7 @@ CPEX_DOCKER_IMAGE = "cpex"
 STORES_KEY = 'cpex.nodes.ms'
 EVALS_KEY = 'cpex.nodes.ev'
 CPS_KEY = 'sti.nodes.cps'
+CERT_REPOS_KEY = 'sti.nodes.cr'
 EVAL_KEYSETS_KEY = 'cpex.evals.keysets'
 
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)
@@ -54,8 +55,8 @@ NODE_FQDN = env('NODE_FQDN', f'{NODE_IP}:{NODE_PORT}')
 
 EV_PORT = env('EV_PORT', '10430')
 MS_PORT = env('MS_PORT', '10431')
-CR_PORT = env('CR_PORT', '10432')
-CPS_PORT = env('CPS_PORT', '10433')
+CPS_PORT = env('CPS_PORT', '10432')
+CR_BASE_PORT = env('CR_PORT', '10433')
 
 SS_DEPLOY_RATE = env('SS_DEPLOY_RATE', 55.96, dtype=float)
 
