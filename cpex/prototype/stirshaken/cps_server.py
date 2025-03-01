@@ -12,7 +12,7 @@ from cpex.prototype.scripts import setup
 from cpex.helpers import misc, http, mylogging
 
 MY_CRED = None
-CR_URL = None
+X5U = None
 BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
 
@@ -25,7 +25,7 @@ class RepublishRequest(PublishRequest):
     token: str
 
 def init_server():
-    global MY_CRED, CR_URL
+    global MY_CRED, X5U
     
     cache.set_client(cache.connect())
     
@@ -34,13 +34,10 @@ def init_server():
 
     MY_CRED, allcerts = stirsetup.load_certs()
     certs.set_certificate_repository(allcerts)
+    X5U = f'{config.NODE_FQDN}/certs/' + MY_CRED['id']
 
     if config.USE_LOCAL_CERT_REPO:
-        cache.save_certificates(allcerts) # cache certs for use
-        CR_URL = f'http://dummy' # dummy url because it doesn't matter
-    else: 
-        CR_URL = random.choice(nodes.get(config.CERT_REPOS_KEY))['url']
-        mylogging.mylogger.debug(f"{os.getpid()}: \nCR_URL: {CR_URL}\n")
+        cache.save_certificates(allcerts)
 
     return FastAPI()
 
@@ -81,7 +78,7 @@ async def do_republish(dest: str, orig: str, request: PublishRequest, authorizat
     authService = auth_service.AuthService(
         ownerId=config.NODE_FQDN,
         private_key_pem=MY_CRED[constants.PRIV_KEY],
-        x5u=f'{CR_URL}/certs/' + MY_CRED['id']
+        x5u=X5U
     )
     # mylogging.mylogger.debug(f"{os.getpid()}: AuthService initialized")
 
@@ -175,9 +172,13 @@ async def handle_retrieve_req(dest: str, orig: str, authorization: str = Header(
     if not passports:
         mylogging.mylogger.error(f"{os.getpid()}: Passports not found for RETRIEVE request")
         return not_found_response()
-    
+
     mylogging.mylogger.debug(f"{os.getpid()}: Passports sent for RETRIEVE request")
     return success_response(content=passports)
+
+@app.get("/certs/{key}")
+async def handle_get_certificate_req(key: str):
+    return MY_CRED['cert']
 
 @app.get("/health")
 async def handle_health_req():
