@@ -111,16 +111,19 @@ def setup_sample_loads(certs=None):
             progress += 1
             p_ocrt = certs[f"{constants.OTHER_CREDS_KEY}-{random.randint(0, num_certs - 1)}"]
             iss = f'P{random.randint(0, 1000)}'
+            if config.USE_LOCAL_CERT_REPO:
+                prov_cr = 'http://dummy'
+            else:
+                prov_cr = random.choice(nodes[config.CERT_REPOS_KEY])['url']
             authService = auth_service.AuthService(
                 ownerId=iss,
                 private_key_pem=p_ocrt['sk'],
-                x5u=f"{nodes[config.CPS_KEY][random.randint(0, len(nodes[config.CPS_KEY]) - 1)]['url']}/certs/{p_ocrt['id']}",
+                x5u=f"{prov_cr}/certs/{p_ocrt['id']}",
             )
             orig, dest, attest = misc.fake_number(), misc.fake_number(), random.choice(attests)
             rand_cps = nodes[config.CPS_KEY][random.randint(0, len(nodes[config.CPS_KEY]) - 1)]
             data = {'orig': orig, 'dest': dest}
             data['passport'] = authService.create_passport(orig=orig, dest=dest, attest=attest)
-            # data['x5u'] = authService.x5u
             data['atis'] = {
                 'pub_url': f"{cps['url']}/publish/{dest}/{orig}",
                 'pub_name': cps['fqdn'],
