@@ -27,6 +27,7 @@ app = init_server()
 
 @app.get("/certs/{key}")
 async def handle_get_certificate_req(key: str):
+    mylogging.mylogger.debug(f"GET /certs/{key}")
     cert = certificates.get(key)
     if not cert or 'cert' not in cert:
         return JSONResponse(
