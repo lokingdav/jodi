@@ -11,6 +11,7 @@ def load_public_key(x5u: str):
     else:
         certificate = cache.find(x5u)
         if not certificate:
+            print("Downloading certificate from x5u:", x5u, flush=True)
             certificate = certs.download(x5u)
             if certificate:
                 try:
