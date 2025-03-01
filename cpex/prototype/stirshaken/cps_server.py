@@ -17,7 +17,7 @@ BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
 
 mylogging.init_mylogger(name='cps_logs', filename=f'logs/cps_server.log')
-        
+
 class PublishRequest(BaseModel):
     passports: List[str]
     
@@ -40,6 +40,7 @@ def init_server():
         CR_URL = f'http://dummy' # dummy url because it doesn't matter
     else: 
         CR_URL = random.choice(nodes.get(config.CERT_REPOS_KEY))['url']
+        mylogging.mylogger.debug(f"{os.getpid()}: \nCR_URL: {CR_URL}\n")
 
     return FastAPI()
 
@@ -121,7 +122,7 @@ async def handle_publish_req(dest: str, orig: str, request: PublishRequest, auth
         # mylogging.mylogger.error(f"{os.getpid()}: Unauthorized request")
         return unauthorized_response()
     
-    # mylogging.mylogger.debug(f"{os.getpid()}: Caching Passports")
+    mylogging.mylogger.debug(f"{os.getpid()}: Caching Passports")
 
     cache.cache_for_seconds(
         key=get_record_key(dest=dest, orig=orig), 
