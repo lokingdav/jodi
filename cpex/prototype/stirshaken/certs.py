@@ -89,10 +89,6 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
 
 
 def download(url: str) -> str:
-    if config.NODE_FQDN in url:
-        key = url.split('/')[-1]
-        return credentials[key]['cert']
-    
     if not validators.url(url) and not url.startswith('http'):
         raise ValueError(f'Cert url must be a valid URL: {url}')
     try:
@@ -100,6 +96,7 @@ def download(url: str) -> str:
         res.raise_for_status()
         return res.text
     except Exception as e:
+        print(f'Error downloading certificate: {e}')
         return None
 
 

@@ -12,7 +12,6 @@ from cpex.prototype.scripts import setup
 from cpex.helpers import misc, http, mylogging
 
 MY_CRED = None
-CERTS_REPO = None
 BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
 
@@ -25,7 +24,7 @@ class RepublishRequest(PublishRequest):
     token: str
 
 def init_server():
-    global MY_CRED, CERTS_REPO
+    global MY_CRED
     
     cache.set_client(cache.connect())
     
@@ -33,8 +32,8 @@ def init_server():
     if nodes and nodes.get(config.CPS_KEY):
         cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
 
-    MY_CRED, CERTS_REPO = stirsetup.load_certs()
-    certs.set_certificate_repository(CERTS_REPO)
+    MY_CRED, allcerts = stirsetup.load_certs()
+    certs.set_certificate_repository(allcerts)
 
     return FastAPI()    
 
@@ -172,13 +171,6 @@ async def handle_retrieve_req(dest: str, orig: str, authorization: str = Header(
     
     mylogging.mylogger.debug(f"{os.getpid()}: Passports sent for RETRIEVE request")
     return success_response(content=passports)
-
-@app.get("/certs/{key}")
-async def handle_get_certificate_req(key: str):
-    cert = CERTS_REPO.get(key)
-    if not cert or 'cert' not in cert:
-        return not_found_response()
-    return cert['cert']
 
 @app.get("/health")
 async def handle_health_req():
