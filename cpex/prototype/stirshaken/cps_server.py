@@ -31,12 +31,17 @@ def init_server():
     
     nodes = setup.get_node_hosts()
     cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
-    CR_URL = random.choice(nodes.get(config.CERT_REPOS_KEY))['url']
 
     MY_CRED, allcerts = stirsetup.load_certs()
     certs.set_certificate_repository(allcerts)
 
-    return FastAPI()    
+    if config.USE_LOCAL_CERT_REPO:
+        cache.save_certificates(allcerts) # cache certs for use
+        CR_URL = f'http://dummy' # dummy url because it doesn't matter
+    else: 
+        CR_URL = random.choice(nodes.get(config.CERT_REPOS_KEY))['url']
+
+    return FastAPI()
 
 def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     # mylogging.mylogger.debug(f"{os.getpid()}: Authorizing request")

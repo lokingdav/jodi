@@ -57,3 +57,7 @@ def get_other_cpses(key):
     repos = find(key=key, dtype=dict)
     # print("Found other CPSes", repos, flush=True)
     return [repo for repo in repos if repo.get('fqdn') != NODE_FQDN]
+
+def save_certificates(certificates: dict):
+    for key, cred in certificates.items():
+        save(key=key, value=cred['cert'])
