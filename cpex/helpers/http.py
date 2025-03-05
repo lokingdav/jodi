@@ -23,7 +23,6 @@ async def posts(reqs: List[dict]) -> List[dict]:
     
 async def posts_race(reqs: List[Dict]) -> Dict:
     async with aiohttp.ClientSession() as session:
-        idx_indices = {r['data']['idx']: r['cid_idx'] for r in reqs}
         tasks = {asyncio.create_task(post(session, req["url"], req["data"], req.get("headers", {}))): req for req in reqs}
         failures = []
         while tasks:
@@ -35,7 +34,6 @@ async def posts_race(reqs: List[Dict]) -> Dict:
                     for p in pending:
                         p.cancel()
                     await asyncio.gather(*pending, return_exceptions=True)
-                    result['cid_idx'] = idx_indices[result['idx']]
                     return [result]
                 else:
                     failures.append(result)

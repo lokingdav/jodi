@@ -3,7 +3,7 @@ import cpex.config as config
 from cpex.crypto import groupsig
 from cpex.helpers import dht
 from typing import List
-import re
+import re, time
 from datetime import datetime
 from itertools import product
 
@@ -97,7 +97,6 @@ def create_retrieve_requests(call_ids: List[bytes], n_ms: int, gsk, gpk) -> List
 
         for store in stores:
             requests.append({
-                'cid_idx': i,
                 'nodeId': store['id'],
                 'avail': store.get('avail', None),
                 'url': store['url'] + '/retrieve',
@@ -112,17 +111,18 @@ def encrypt_and_mac(call_id: bytes, plaintext: str) -> str:
     c_1 = Ciphering.enc(kenc, plaintext.encode('utf-8'))
     return Utils.to_base64(c_0) + ':' + Utils.to_base64(c_1)
 
-def decrypt(call_ids: List[bytes], responses: List[dict], src: str, dst: str, gpk):
+def decrypt(call_ids: List[bytes], responses: List[dict], gpk):
     if not (call_ids and responses):
         return None
+    
+    call_ids = { Utils.to_base64(Utils.hash256(cid)): cid for cid in call_ids }
     
     for res in responses:
         if '_error' in res or not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=gpk):
             continue
         try:
-            call_id = call_ids[res['cid_idx']]
             c_0, c_1 = res['ctx'].split(':')
-            kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_id))
+            kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_ids[res['idx']]))
             msg: bytes = Ciphering.dec(kenc, Utils.from_base64(c_1))
             
             if msg:

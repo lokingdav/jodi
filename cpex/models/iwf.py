@@ -118,10 +118,9 @@ class CpexIWF:
         
         self.retrieve_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(requests) # Average time taken to store a message by a single store
         
-        # responses = [{**res, 'cid_idx': requests[i]['cid_idx']} for i, res in enumerate(responses) if '_error' not in res]
         # self.log_msg(f"\n--> Filtered Responses: {responses}")
         # self.log_msg(f"--> Call IDs: {call_ids}\n")
-        token = libcpex.decrypt(call_ids=call_ids, responses=responses, src=src, dst=dst, gpk=self.gpk)
+        token = libcpex.decrypt(call_ids=call_ids, responses=responses, gpk=self.gpk)
         # self.log_msg(f'--> Retrieved Token: {token}')
         return token
     

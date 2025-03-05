@@ -8,9 +8,19 @@ const items = new SharedArray('items', function () {
   return content;
 });
 
-const successfulCallsCounter = new Counter('successful_calls');
+const numVUs = parseInt(__ENV.VUS, 10);
 
+if (isNaN(numVUs)) {
+    throw new Error('VUS must be a number');
+}
+
+const successfulCallsCounter = new Counter('successful_calls');
 const headers = { 'Content-Type': 'application/json' };
+const globalParams = {};
+
+if (__ENV.TIMEOUT) {
+    globalParams.timeout = __ENV.TIMEOUT;
+}
 
 const CidGenerationProtocol = (record) => {
     const cidGenReqs = []
@@ -20,7 +30,7 @@ const CidGenerationProtocol = (record) => {
             method: 'POST',
             url: `${ev}/evaluate`,
             body: JSON.stringify(record.cpex.oprf),
-            params: { headers }
+            params: { ...globalParams, headers }
         });
     }
     
@@ -44,7 +54,7 @@ const PublishProtocol = (record) => {
                 ctx: record.cpex.ctx, 
                 sig: record.cpex.pub_sig
             }),
-            params: { headers }
+            params: { ...globalParams, headers }
         });
     }
 
@@ -59,30 +69,26 @@ const PublishProtocol = (record) => {
 const RetrieveProtocol = (record) => {
     // Generate CID for retrieving
     const cidRess = CidGenerationProtocol(record);
-
-    const retReqs = []
-    for (const ms of record.cpex.mss) {
-        retReqs.push({
-            method: 'POST',
-            url: `${ms}/retrieve`,
-            body: JSON.stringify({
-                idx: record.cpex.idx, 
-                sig: record.cpex.ret_sig
-            }),
-            params: { headers }
-        });
-    }
-
-    const responses = http.batch(retReqs);
+    
+    // usually, only one request is okay. We may use Promise.race()
+    const ms = record.cpex.mss[Math.floor(Math.random() * record.cpex.mss.length)];
+    const res = http.post(`${ms}/retrieve`, JSON.stringify({
+        idx: record.cpex.idx, 
+        sig: record.cpex.ret_sig
+    }), { ...globalParams, headers });
 
     return {
         cidRess,
-        success: responses.some(res => res.status === 200) // only 1 success is enough (replication factor)
+        success: res.status === 200 
     }
 }
 
+export function setup() {
+    console.log(`VUs: ${numVUs}, Items: ${items.length}`);
+};
+
 export default function () {
-    const i = Math.floor(Math.random() * items.length);
+    const i = ((__VU - 1) + __ITER * numVUs) % items.length;
 
     const pres = PublishProtocol(items[i]);
     const rres = RetrieveProtocol(items[i]);

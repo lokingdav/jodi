@@ -1,8 +1,6 @@
 import random, asyncio, os, time, math, json
 import numpy as np
-from cpex.prototype import compose
 from multiprocessing import Pool
-from typing import Tuple
 from cpex.crypto import groupsig
 from cpex.prototype import network
 from cpex.models import cache, persistence
@@ -16,6 +14,7 @@ from cpex.prototype.scripts import setup
 gsk, gpk = None, None
 credentials = None
 call_placement_services = []
+certificate_repos = []
 
 cache_client = None
 
@@ -24,13 +23,11 @@ def set_cache_client(client):
     cache_client = client
 
 def init_worker():
-    global gsk, gpk, call_placement_services, credentials
+    global gsk, gpk, call_placement_services, certificate_repos, credentials
     cache.set_client(cache_client)
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
-    call_placement_services = cache.find(
-        key=config.CPS_KEY, 
-        dtype=dict
-    ) or []
+    call_placement_services = cache.find(key=config.CPS_KEY, dtype=dict) or []
+    certificate_repos = cache.find(key=config.CR_KEY, dtype=dict) or []
     _, credentials = stirsetup.load_certs()
     entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
     
@@ -40,21 +37,18 @@ class NetworkedSimulator:
         return res
     
     def create_prov_params(self, pid, impl, mode, options, next_prov):
-        if len(call_placement_services) >= 2:
-            [cps, cr] = random.choices(call_placement_services, k=2)
-        else:
-            # Put dummy values
-            if config.is_atis_mode(mode):
-                raise Exception("ATIS mode requires at least 2 CPS")
-            
-            cps = {'url': 'http://example2.com', 'fqdn': 'example2.com'}
-            cr = {'url': 'http://example2.com', 'fqdn': 'example2.com'}
-            
-        ica = random.randint(0, config.NO_OF_INTERMEDIATE_CAS - 1)
-        ocrt = random.randint(0, config.NUM_CREDS_PER_ICA - 1)
-        idx = f"{constants.OTHER_CREDS_KEY}-{ica * config.NUM_CREDS_PER_ICA + ocrt}" 
-        cred = credentials[idx]
+        if not call_placement_services:
+            raise Exception("No call placement services found")
         
+        if not certificate_repos:
+            raise Exception("No certificate repositories found")
+        
+        cps = random.choice(call_placement_services)
+        cr = random.choice(certificate_repos)
+            
+        i = random.randint(0, config.NO_OF_INTERMEDIATE_CAS * config.NUM_CREDS_PER_ICA - 1)
+        ck = f"{constants.OTHER_CREDS_KEY}-{i}" 
+        cred = credentials[ck]
         return {
             'pid': pid,
             'impl': bool(int(impl)),
@@ -65,7 +59,7 @@ class NetworkedSimulator:
             'n_ms': options.get('n_ms'),
             'next_prov': next_prov,
             'cps': { 'url': cps['url'], 'fqdn': cps['fqdn'] } if cps else None,
-            'cr': {'x5u': cr['url'] + f'/certs/{idx}', 'sk': cred['sk']},
+            'cr': {'x5u': cr['url'] + f'/certs/{ck}', 'sk': cred['sk']},
         }
         
     def create_provider_instance(self, pid, impl, mode, options, next_prov):
@@ -263,6 +257,7 @@ class NetworkedSimulator:
         cache.save(key=config.CPS_KEY, value=json.dumps(nodes.get(config.CPS_KEY)))
         cache.save(key=config.EVALS_KEY, value=json.dumps(nodes.get(config.EVALS_KEY)))
         cache.save(key=config.STORES_KEY, value=json.dumps(nodes.get(config.STORES_KEY)))
+        cache.save(key=config.CR_KEY, value=json.dumps(nodes.get(config.CR_KEY)))
         # print("EV", nodes[config.EVALS_KEY])
         # print("MS", nodes[config.STORES_KEY])
         # print("CPS", nodes[config.CPS_KEY])
