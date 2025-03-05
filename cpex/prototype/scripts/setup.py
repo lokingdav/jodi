@@ -107,8 +107,6 @@ def setup_sample_loads(creds=None):
         
         cr = nodes[config.CR_KEY][i % len(nodes[config.CR_KEY])]
         pub_cps = nodes[config.CPS_KEY][i % len(nodes[config.CPS_KEY])]
-        ret_cps = nodes[config.CPS_KEY][(i + 1) % len(nodes[config.CPS_KEY])]
-    
         
         authService = auth_service.AuthService(
             ownerId=iss,
@@ -134,10 +132,13 @@ def setup_sample_loads(creds=None):
                 passports=[data['passport']],
                 iss=iss,
                 aud=pub_cps['fqdn']
-            ),
-            'ret_url': f"{ret_cps['url']}/retrieve/{dest}/{orig}",
-            'ret_name': ret_cps['fqdn'],
-            'ret_bearer': authService.authenticate_request(
+            )
+        }
+
+        rets = random.choices(nodes[config.CPS_KEY], k=3)
+        data['atis']['rets'] = [] 
+        for ret_cps in rets:
+            bearer = authService.authenticate_request(
                 action='retrieve',
                 orig=orig,
                 dest=dest,
@@ -145,7 +146,11 @@ def setup_sample_loads(creds=None):
                 iss=iss,
                 aud=ret_cps['fqdn']
             )
-        }
+            data['atis']['rets'].append({
+                'name': ret_cps['fqdn'],
+                'url': f"{ret_cps['url']}/retrieve/{dest}/{orig}",
+                'bearer': bearer
+            })
 
         calldetails = libcpex.normalize_call_details(src=orig, dst=dest)
         x, mask = Oprf.blind(calldetails)

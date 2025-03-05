@@ -19,7 +19,6 @@ def env(envname, default="", dtype=None):
     return value
 
 DEBUG = env('APP_DEBUG', True, dtype=bool)
-LOAD_TEST_COUNT = env('LOAD_TEST_COUNT', 10, dtype=int)
 
 COMPOSE_NETWORK_ID = "cpex_net"
 CPEX_DOCKER_IMAGE = "cpex"

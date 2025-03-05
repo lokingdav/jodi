@@ -70,17 +70,24 @@ const RetrieveProtocol = (record) => {
     // Generate CID for retrieving
     const cidRess = CidGenerationProtocol(record);
     
-    // usually, only one request is okay. We may use Promise.race()
-    const ms = record.cpex.mss[Math.floor(Math.random() * record.cpex.mss.length)];
-    
-    const res = http.post(`${ms}/retrieve`, JSON.stringify({
-        idx: record.cpex.idx, 
-        sig: record.cpex.ret_sig
-    }), { ...globalParams, headers });
+    const retReqs = []
+    for (const ms of record.cpex.mss) {
+        retReqs.push({
+            method: 'POST',
+            url: `${ms}/retrieve`,
+            body: JSON.stringify({
+                idx: record.cpex.idx, 
+                sig: record.cpex.ret_sig
+            }),
+            params: { ...globalParams, headers }
+        });
+    }
+
+    const responses = http.batch(retReqs);
 
     return {
         cidRess,
-        success: res.status === 200 
+        success: responses.some(res => res.status === 200)
     }
 }
 

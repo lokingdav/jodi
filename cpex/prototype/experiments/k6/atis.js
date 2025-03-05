@@ -34,14 +34,29 @@ const PublishProtocol = (record) => {
 }
 
 const RetrieveProtocol = (record) => {
-    const headers = {
-        ...commonHeaders,
-        'Authorization': `Bearer ${record.atis.ret_bearer}`
-    };
+    /**
+     * NB: While the protocol doesn't explicitly mention multiple parallel requests, 
+     * it's just reasonable to retry a few times to retrieve the passport. 
+     * This allows fair comparison with the CPEX protocol when measuring success rate.
+    */
+    const retReqs = []
+    for (const cps of record.atis.rets) {
+        retReqs.push({
+            method: 'GET',
+            url: cps.url,
+            params: { 
+                ...globalParams, 
+                headers: {
+                    ...commonHeaders,
+                    'Authorization': `Bearer ${cps.bearer}`
+                } 
+            }
+        });
+    }
 
-    const res = http.get(record.atis.ret_url, { ...globalParams, headers });
+    const responses = http.batch(retReqs);
 
-    return res.status === 200;
+    return responses.some(res => res.status === 200);
 }
 
 export function setup() {
