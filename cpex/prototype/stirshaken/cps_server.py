@@ -11,8 +11,8 @@ from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service, c
 from cpex.prototype.scripts import setup
 from cpex.helpers import misc, http, mylogging
 
-MY_CRED = None
 X5U = None
+MY_CRED = None
 BASE_CACHE_KEY = f'cps:{config.NODE_FQDN}'
 OTHER_CPSs = f'{BASE_CACHE_KEY}:{config.CPS_KEY}'
 
@@ -34,7 +34,7 @@ def init_server():
 
     MY_CRED, allcerts = stirsetup.load_certs()
     certs.set_certificate_repository(allcerts)
-    X5U = f'http://{config.NODE_FQDN}/certs/' + MY_CRED['id']
+    X5U = f'http://{config.NODE_IP}:/{config.CR_PORT}/certs/' + MY_CRED['id']
 
     if config.USE_LOCAL_CERT_REPO:
         cache.save_certificates(allcerts)
@@ -176,10 +176,6 @@ async def handle_retrieve_req(dest: str, orig: str, authorization: str = Header(
     mylogging.mylogger.debug(f"{os.getpid()}: Passports sent for RETRIEVE request")
     return success_response(content=passports)
 
-@app.get("/certs/{key}")
-async def handle_get_certificate_req(key: str):
-    return MY_CRED['cert']
-
 @app.get("/health")
 async def handle_health_req():
     return {
@@ -189,6 +185,7 @@ async def handle_health_req():
             "IP": config.NODE_IP,
             "PORT": config.NODE_PORT,
             "FQDN": config.NODE_FQDN,
+            "X5U": X5U
         },
         "Config": {
             "T_MAX_SECONDS": config.T_MAX_SECONDS,

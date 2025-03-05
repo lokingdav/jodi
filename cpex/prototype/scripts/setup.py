@@ -5,7 +5,7 @@ from cpex import config, constants
 import yaml, re, random
 from pylibcpex import Utils, Oprf
 from collections import defaultdict
-from cpex.prototype.stirshaken import stirsetup, verify_service, auth_service, certs
+from cpex.prototype.stirshaken import stirsetup, auth_service
 
 def groupsig_setup():
     if config.TGS_GPK and config.TGS_GSK and config.TGS_GML and config.TGS_MSK:
@@ -57,45 +57,40 @@ def get_node_hosts():
     
     with open(hosts_file, 'r') as file:
         data = yaml.safe_load(file)
-        if not data or 'all' not in data or 'children' not in data['all']:
+        if not data or 'all' not in data or 'hosts' not in data['all']:
             raise Exception("Invalid hosts.yml format")
         
-        for child in data['all']['children']:
-            for i, name in enumerate(data['all']['children'][child]['hosts'].keys()):
-                ip_addr = data['all']['children'][child]['hosts'][name]['ansible_host']
+        for i, name in enumerate(data['all']['hosts'].keys()):
+            ip_addr = data['all']['hosts'][name]['ansible_host']
+            
+            if is_valid_ipv4(ip_addr):
+                nodes[config.EVALS_KEY].append(create_node(f'{ip_addr}:{config.EV_PORT}'))
+                nodes[config.STORES_KEY].append(create_node(f'{ip_addr}:{config.MS_PORT}'))
                 
-                if is_valid_ipv4(ip_addr):
-                    if child == 'evaluators':
-                        nodes[config.EVALS_KEY].append(create_node(f'{ip_addr}:{config.EV_PORT}'))
-                    elif child == 'stores':
-                        nodes[config.STORES_KEY].append(create_node(f'{ip_addr}:{config.MS_PORT}'))
-                    elif child == 'certrepos':
-                        base_port = int(config.CR_BASE_PORT)
-                        nodes[config.CERT_REPOS_KEY].append(create_node(f'{ip_addr}:{base_port}'))
-                        nodes[config.CERT_REPOS_KEY].append(create_node(f'{ip_addr}:{base_port+1}'))
-                        nodes[config.CERT_REPOS_KEY].append(create_node(f'{ip_addr}:{base_port+2}'))
-                        nodes[config.CERT_REPOS_KEY].append(create_node(f'{ip_addr}:{base_port+3}'))
-
-                    if child != 'certrepos':
-                        nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_PORT}'))
-                else:
-                    node = create_node(ip_addr)
-                    if '-ev-' in ip_addr or 'evaluator' in ip_addr:
-                        nodes[config.EVALS_KEY].append(node)
-                    elif '-ms-' in ip_addr or 'message-store' in ip_addr:
-                        nodes[config.STORES_KEY].append(node)
-                    elif '-cps-' in ip_addr:
-                        nodes[config.CPS_KEY].append(node)
+                nodes[config.CR_KEY].append(create_node(f'{ip_addr}:{config.CR_PORT}'))
+                
+                nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_0_PORT}'))
+                nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_1_PORT}'))
+            else:
+                node = create_node(ip_addr)
+                if '-ev-' in ip_addr or 'evaluator' in ip_addr:
+                    nodes[config.EVALS_KEY].append(node)
+                elif '-ms-' in ip_addr or 'message-store' in ip_addr:
+                    nodes[config.STORES_KEY].append(node)
+                elif '-cps-' in ip_addr:
+                    nodes[config.CPS_KEY].append(node)
+                elif '-cr' in ip_addr:
+                    nodes[config.CR_KEY].append(node)
     return nodes
 
 def setup_certificates():
     return stirsetup.setup()
 
-def setup_sample_loads(certs=None):
-    if not certs:
-        certs = setup_certificates()
+def setup_sample_loads(creds=None):
+    if not creds:
+        creds = setup_certificates()
+        
     gsk, gpk = groupsig.get_gsk(), groupsig.get_gpk()
-    num_loads = config.LOAD_TEST_COUNT
     attests = ['A', 'B', 'C']
     nodes = get_node_hosts()
 
@@ -104,81 +99,85 @@ def setup_sample_loads(certs=None):
     
     num_certs = config.NO_OF_INTERMEDIATE_CAS * config.NUM_CREDS_PER_ICA
     loads = []
-    progress = 1
-    for cps in nodes[config.CPS_KEY]:
-        for i in range(num_loads):
-            print(f"Creating load {progress}/{num_loads * len(nodes[config.CPS_KEY])}")
-            progress += 1
-            p_ocrt = certs[f"{constants.OTHER_CREDS_KEY}-{random.randint(0, num_certs - 1)}"]
-            iss = f'P{random.randint(0, 1000)}'
-            if config.USE_LOCAL_CERT_REPO:
-                prov_cr = 'http://dummy'
-            else:
-                prov_cr = random.choice(nodes[config.CERT_REPOS_KEY])['url']
-            authService = auth_service.AuthService(
-                ownerId=iss,
-                private_key_pem=p_ocrt['sk'],
-                x5u=f"{prov_cr}/certs/{p_ocrt['id']}",
+    
+    for i in range(num_certs):
+        print(f"Creating load {i+1}/{num_certs}")
+        ck = f"{constants.OTHER_CREDS_KEY}-{i}"
+        iss = f'P{random.randint(0, 1000)}'
+        
+        cr = nodes[config.CR_KEY][i % len(nodes[config.CR_KEY])]
+        pub_cps = nodes[config.CPS_KEY][i % len(nodes[config.CPS_KEY])]
+        ret_cps = nodes[config.CPS_KEY][(i + 1) % len(nodes[config.CPS_KEY])]
+    
+        
+        authService = auth_service.AuthService(
+            ownerId=iss,
+            private_key_pem=creds[ck]['sk'],
+            x5u=f"{cr['url']}/certs/{creds[ck]['id']}",
+        )
+        
+        orig, dest, attest = misc.fake_number(), misc.fake_number(), random.choice(attests)
+        data = {
+            'orig': orig, 
+            'dest': dest, 
+            'x5u': authService.x5u,
+            'passport': authService.create_passport(orig=orig, dest=dest, attest=attest)
+        }
+        
+        data['atis'] = {
+            'pub_url': f"{pub_cps['url']}/publish/{dest}/{orig}",
+            'pub_name': pub_cps['fqdn'],
+            'pub_bearer': authService.authenticate_request(
+                action='publish',
+                orig=orig,
+                dest=dest,
+                passports=[data['passport']],
+                iss=iss,
+                aud=pub_cps['fqdn']
+            ),
+            'ret_url': f"{ret_cps['url']}/retrieve/{dest}/{orig}",
+            'ret_name': ret_cps['fqdn'],
+            'ret_bearer': authService.authenticate_request(
+                action='retrieve',
+                orig=orig,
+                dest=dest,
+                passports=[],
+                iss=iss,
+                aud=ret_cps['fqdn']
             )
-            orig, dest, attest = misc.fake_number(), misc.fake_number(), random.choice(attests)
-            rand_cps = nodes[config.CPS_KEY][random.randint(0, len(nodes[config.CPS_KEY]) - 1)]
-            data = {'orig': orig, 'dest': dest}
-            data['passport'] = authService.create_passport(orig=orig, dest=dest, attest=attest)
-            data['atis'] = {
-                'pub_url': f"{cps['url']}/publish/{dest}/{orig}",
-                'pub_name': cps['fqdn'],
-                'pub_bearer': authService.authenticate_request(
-                    action='publish',
-                    orig=orig,
-                    dest=dest,
-                    passports=[data['passport']],
-                    iss=iss,
-                    aud=cps['fqdn']
-                ),
-                'ret_url': f"{rand_cps['url']}/retrieve/{dest}/{orig}",
-                'ret_name': rand_cps['fqdn'],
-                'ret_bearer': authService.authenticate_request(
-                    action='retrieve',
-                    orig=orig,
-                    dest=dest,
-                    passports=[],
-                    iss=iss,
-                    aud=rand_cps['fqdn']
-                )
-            }
+        }
 
-            calldetails = libcpex.normalize_call_details(src=orig, dst=dest)
-            x, mask = Oprf.blind(calldetails)
-            x = Utils.to_base64(x)
-            i_k = libcpex.get_index_from_call_details(calldetails)
-            
-            cid = Utils.random_bytes(32)
-            idx = Utils.to_base64(Utils.hash256(cid))
-            ctx = libcpex.encrypt_and_mac(call_id=cid, plaintext=data['passport'])
+        calldetails = libcpex.normalize_call_details(src=orig, dst=dest)
+        x, mask = Oprf.blind(calldetails)
+        x = Utils.to_base64(x)
+        i_k = libcpex.get_index_from_call_details(calldetails)
+        
+        cid = Utils.random_bytes(32)
+        idx = Utils.to_base64(Utils.hash256(cid))
+        ctx = libcpex.encrypt_and_mac(call_id=cid, plaintext=data['passport'])
 
-            mss, evs = [], []
-            if nodes[config.STORES_KEY]:
-                mss = dht.get_stores(keys=cid, count=config.n_ms, nodes=nodes[config.STORES_KEY])
-                mss = [ms['url'] for ms in mss]
-            if nodes[config.EVALS_KEY]:
-                evs = dht.get_evals(keys=cid, count=config.n_ev, nodes=nodes[config.EVALS_KEY])
-                evs = [ev['url'] for ev in evs]
+        mss, evs = [], []
+        if nodes[config.STORES_KEY]:
+            mss = dht.get_stores(keys=cid, count=config.n_ms, nodes=nodes[config.STORES_KEY])
+            mss = [ms['url'] for ms in mss]
+        if nodes[config.EVALS_KEY]:
+            evs = dht.get_evals(keys=cid, count=config.n_ev, nodes=nodes[config.EVALS_KEY])
+            evs = [ev['url'] for ev in evs]
 
-            data['cpex'] = {
-                'idx': idx, 
-                'ctx': ctx, 
-                'oprf': {
-                    'x': x, 
-                    'i_k': i_k, 
-                    'sig': groupsig.sign(msg=str(i_k)+x, gsk=gsk, gpk=gpk)
-                },
-                'pub_sig': groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk),
-                'ret_sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk),
-                'mss': mss,
-                'evs': evs
-            }
-            loads.append(data)
-    random.shuffle(loads)
+        data['cpex'] = {
+            'idx': idx, 
+            'ctx': ctx, 
+            'oprf': {
+                'x': x, 
+                'i_k': i_k, 
+                'sig': groupsig.sign(msg=str(i_k)+x, gsk=gsk, gpk=gpk)
+            },
+            'pub_sig': groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk),
+            'ret_sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk),
+            'mss': mss,
+            'evs': evs
+        }
+        loads.append(data)
     files.override_json(config.CONF_DIR + '/loads.json', loads)
     
 def main(args):

@@ -4,10 +4,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.16"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = ">= 3.4"
-    }
   }
   required_version = ">= 1.2.0"
 }
@@ -35,11 +31,11 @@ variable "key_name" {
 }
 
 variable "us_east_1_count" {
-  default = 2
+  default = 3
 }
 
 variable "us_east_2_count" {
-  default = 2
+  default = 3
 }
 
 variable "us_west_1_count" {
@@ -258,7 +254,6 @@ resource "aws_instance" "cpex_nodes_usw2" {
   }
 }
 
-# Combine all public or private IPs if desired:
 output "public_ips" {
   value = concat(
     aws_instance.cpex_nodes_use1[*].public_ip,
@@ -277,87 +272,36 @@ output "private_ips" {
   )
 }
 
-# ---------------------------------------------------------------------
-# 1) Create a random shuffle of all instance IDs to randomize the grouping
-# ---------------------------------------------------------------------
-resource "random_shuffle" "cpex_node_ids" {
-  input = [
+output "hosts_file" {
+  value = join(
+    "\n",
+    [
+      for instance in concat(
+        aws_instance.cpex_nodes_use1,
+        aws_instance.cpex_nodes_use2,
+        aws_instance.cpex_nodes_usw1,
+        aws_instance.cpex_nodes_usw2
+      ) : "${instance.tags.Name} ansible_host=${instance.public_ip} ansible_user=ubuntu"
+    ]
+  )
+}
+
+resource "local_file" "ansible_hosts" {
+  content = <<EOT
+all:
+  hosts:
+${join(
+  "\n",
+  [
     for instance in concat(
       aws_instance.cpex_nodes_use1,
       aws_instance.cpex_nodes_use2,
       aws_instance.cpex_nodes_usw1,
       aws_instance.cpex_nodes_usw2
-    ) : instance.id
+    ) : "    ${instance.tags.Name}:\n      ansible_host: ${instance.public_ip}\n      ansible_user: ubuntu"
   ]
-
-  result_count = length(concat(
-    aws_instance.cpex_nodes_use1,
-    aws_instance.cpex_nodes_use2,
-    aws_instance.cpex_nodes_usw1,
-    aws_instance.cpex_nodes_usw2
-  ))
-}
-
-# ---------------------------------------------------------------------
-# 2) Build a local map of instance_id => { name, public_ip }
-# ---------------------------------------------------------------------
-locals {
-  all_instances = concat(
-    aws_instance.cpex_nodes_use1,
-    aws_instance.cpex_nodes_use2,
-    aws_instance.cpex_nodes_usw1,
-    aws_instance.cpex_nodes_usw2
-  )
-
-  # Create a map of ID => object containing name, public IP
-  cpex_nodes_map = {
-    for inst in local.all_instances :
-    inst.id => {
-      name = inst.tags.Name
-      ip   = inst.public_ip
-    }
-  }
-
-  node_count = length(local.all_instances)
-}
-
-# ---------------------------------------------------------------------
-# 3) In the final hosts.yml, half of the instances are “stores”
-#    and the other half are “evaluators,” in a random order
-# ---------------------------------------------------------------------
-resource "local_file" "ansible_hosts" {
-  filename = "./hosts.yml"
-
-  content = <<-EOT
-all:
-  children:
-    stores:
-      hosts:
-${join("\n", compact([
-  for i, node_id in random_shuffle.cpex_node_ids.result : 
-  i < floor(local.node_count / 2) ? format(
-    "        %s:\n          ansible_host: %s\n          ansible_user: ubuntu",
-    local.cpex_nodes_map[node_id].name,
-    local.cpex_nodes_map[node_id].ip
-  ) : null
-]))}
-
-    evaluators:
-      hosts:
-${join("\n", compact([
-  for i, node_id in random_shuffle.cpex_node_ids.result : 
-  i >= floor(local.node_count / 2) ? format(
-    "        %s:\n          ansible_host: %s\n          ansible_user: ubuntu",
-    local.cpex_nodes_map[node_id].name,
-    local.cpex_nodes_map[node_id].ip
-  ) : null
-]))}
+)}
 EOT
-}
 
-
-
-# You can still output the final line-based hosts if desired:
-output "hosts_file" {
-  value = local_file.ansible_hosts.content
+  filename = "./hosts.yml"
 }

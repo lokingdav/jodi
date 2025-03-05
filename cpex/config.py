@@ -27,11 +27,11 @@ CPEX_DOCKER_IMAGE = "cpex"
 STORES_KEY = 'cpex.nodes.ms'
 EVALS_KEY = 'cpex.nodes.ev'
 CPS_KEY = 'sti.nodes.cps'
-CERT_REPOS_KEY = 'sti.nodes.cr'
+CR_KEY = 'sti.nodes.cr'
 EVAL_KEYSETS_KEY = 'cpex.evals.keysets'
 
 NO_OF_INTERMEDIATE_CAS = env("NO_OF_INTERMEDIATE_CAS", 11)
-NUM_CREDS_PER_ICA = env("NO_CREDS_PER_ICA", 20)
+NUM_CREDS_PER_ICA = env("NO_CREDS_PER_ICA", 680)
 CONF_DIR = env("CONF_DIR", "conf")
 
 DB_HOST = env("DB_HOST", "mongo")
@@ -55,8 +55,9 @@ NODE_FQDN = env('NODE_FQDN', f'{NODE_IP}:{NODE_PORT}')
 
 EV_PORT = env('EV_PORT', '10430')
 MS_PORT = env('MS_PORT', '10431')
-CPS_PORT = env('CPS_PORT', '10432')
-CR_BASE_PORT = env('CR_PORT', '10433')
+CR_PORT = env('CR_PORT', '10432')
+CPS_0_PORT = env('CPS_0_PORT', '10433')
+CPS_1_PORT = env('CPS_1_PORT', '10434')
 
 SS_DEPLOY_RATE = env('SS_DEPLOY_RATE', 55.96, dtype=float)
 

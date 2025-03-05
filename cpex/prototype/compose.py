@@ -26,7 +26,7 @@ def add_node(name: str):
     
     if 'atis-' in name:
         command = command.replace('[app]', 'cpex.prototype.stirshaken.cps_server:app')
-        command = command.replace('[port]', config.CPS_PORT)
+        command = command.replace('[port]', config.CPS_0_PORT)
     elif '-ev' in name:
         command = command.replace('[app]', 'cpex.servers.evaluator:app')
         command = command.replace('[port]', config.EV_PORT)

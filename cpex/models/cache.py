@@ -56,6 +56,8 @@ def get_other_cpses(key):
     # print("Finding other CPSes except", key, flush=True)
     repos = find(key=key, dtype=dict)
     # print("Found other CPSes", repos, flush=True)
+    if not repos:
+        return []
     return [repo for repo in repos if repo.get('fqdn') != NODE_FQDN]
 
 def save_certificates(certificates: dict):
