@@ -72,6 +72,7 @@ const RetrieveProtocol = (record) => {
     
     // usually, only one request is okay. We may use Promise.race()
     const ms = record.cpex.mss[Math.floor(Math.random() * record.cpex.mss.length)];
+    
     const res = http.post(`${ms}/retrieve`, JSON.stringify({
         idx: record.cpex.idx, 
         sig: record.cpex.ret_sig

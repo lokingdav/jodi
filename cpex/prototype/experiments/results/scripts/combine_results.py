@@ -2,32 +2,48 @@ import os, json, argparse
 from cpex.helpers import files
 import pandas as pd
 
-def combine_k6():
+def combine_k6(prefix):
     folder = 'cpex/prototype/experiments/results/k6'
     filenames = os.listdir(folder)
     rows = []
     dp = 3
     
     for file in filenames:
-        if file.endswith('.json'):
+        if file.startswith(prefix) and file.endswith('.json'):
             with open(f'{folder}/{file}', 'r') as f:
                 data = json.load(f)
-                (prot, _) = file.split('-')
-                rows.append([
-                    prot, # Protocol
-                    data['metrics']['vus']['max'], # VUs
-                    round(data['metrics']['http_req_duration']['min'], dp), # Min
-                    round(data['metrics']['http_req_duration']['max'], dp), # Max
-                    round(data['metrics']['http_req_duration']['med'], dp), # Median
-                    round(data['metrics']['http_req_duration']['avg'], dp), # Avg
-                    round(data['metrics']['http_req_duration']['p(90)'], dp), # p90
-                    round(data['metrics']['http_req_duration']['p(95)'], dp), # p95
-                    round(data['metrics']['successful_calls']['count']/data['metrics']['iterations']['count']*100, dp), # Success Rate
-                ])
+                (proto, _) = file.split('-')
+
+                if 'cpex' in proto:
+                    proto = 'CPeX'
+                else:
+                    proto = 'ATIS'
+
+                row = [proto, data['metrics']['vus']['max']]
+
+                if prefix == 'rt':
+                    row.append(round(data['metrics']['http_req_duration']['min'], dp))
+                    row.append(round(data['metrics']['http_req_duration']['max'], dp))
+                    row.append(round(data['metrics']['http_req_duration']['med'], dp))
+                    row.append(round(data['metrics']['http_req_duration']['avg'], dp))
+                    row.append(round(data['metrics']['http_req_duration']['p(90)'], dp))
+                    row.append(round(data['metrics']['http_req_duration']['p(95)'], dp))
+
+                row.append(round(data['metrics']['successful_calls']['count']/data['metrics']['iterations']['count']*100, dp))
+
+                rows.append(row)
 
     rows.sort(key=lambda x: (x[1], x[0]))
-    rows = [['Protocol', 'VUs', 'Min', 'Max', 'Median', 'Avg', 'P(90)', 'P(95)', 'Success-Rate']] + rows
-    files.write_csv('cpex/prototype/experiments/results/k6.csv', rows)
+
+    header = ['Protocol', 'VUs']
+    if prefix == 'rt':
+        header += ['Min', 'Max', 'Median', 'Avg', 'P(90)', 'P(95)']
+    header.append('Success-Rate')
+
+    rows = [header] + rows
+    filename = f'cpex/prototype/experiments/results/k6-{prefix}.csv'
+    files.write_csv(filename, rows)
+    print(f'Combined results saved to {filename}')
     
 def combine_lat():
     folder = 'cpex/prototype/experiments/results'
@@ -61,14 +77,20 @@ def combine_lat():
 
 
 def main(args):
-    if args.type == 'k6':
-        combine_k6()
+    if args.type == 'rt':
+        combine_k6(prefix='rt')
+    if args.type == 'sr':
+        combine_k6(prefix='sr')
     elif args.type == 'lat':
+        combine_lat()
+    elif args.type == 'all':
+        combine_k6(prefix='rt')
+        combine_k6(prefix='sr')
         combine_lat()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Combine results from multiple files into a CSV file.')
-    parser.add_argument('--type', type=str, choices=['k6', 'lat'], required=True, help='load or latency')
+    parser.add_argument('--type', type=str, choices=['sr', 'rt', 'lat', 'all'], required=True, help='load or latency')
     args = parser.parse_args()
     
     if not any(vars(args).values()):
