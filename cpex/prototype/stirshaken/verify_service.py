@@ -19,7 +19,7 @@ def load_public_key(x5u: str):
                 except Exception as e:
                     mylogging.mylogger.error(f'Error verifying certificate {x5u}: {e}')
                     return None
-                cache.cache_for_seconds(key=x5u, value=certificate, seconds=5)
+                cache.cache_for_seconds(key=x5u, value=certificate, seconds=10)
             else:
                 return None
         
