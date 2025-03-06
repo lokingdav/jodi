@@ -30,7 +30,11 @@ const CidGenerationProtocol = (record) => {
             method: 'POST',
             url: `${ev}/evaluate`,
             body: JSON.stringify(record.cpex.oprf),
-            params: { ...globalParams, headers }
+            params: { 
+                ...globalParams, 
+                headers,
+                tags: { name: 'CidGenerationProtocol' },
+            }
         });
     }
     
@@ -54,7 +58,11 @@ const PublishProtocol = (record) => {
                 ctx: record.cpex.ctx, 
                 sig: record.cpex.pub_sig
             }),
-            params: { ...globalParams, headers }
+            params: { 
+                ...globalParams, 
+                headers,
+                tags: { name: 'PublishProtocol' }
+            }
         });
     }
 
@@ -79,7 +87,11 @@ const RetrieveProtocol = (record) => {
                 idx: record.cpex.idx, 
                 sig: record.cpex.ret_sig
             }),
-            params: { ...globalParams, headers }
+            params: { 
+                ...globalParams, 
+                headers,
+                tags: { name: 'RetrieveProtocol' }
+            }
         });
     }
 
