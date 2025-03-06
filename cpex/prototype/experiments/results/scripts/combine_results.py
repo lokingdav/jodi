@@ -29,7 +29,12 @@ def combine_k6(prefix):
                     row.append(round(data['metrics']['http_req_duration']['p(90)'], dp))
                     row.append(round(data['metrics']['http_req_duration']['p(95)'], dp))
 
-                row.append(round(data['metrics']['successful_calls']['count']/data['metrics']['iterations']['count']*100, dp))
+                if 'successful_calls' in data['metrics']:
+                    success_rate = round(data['metrics']['successful_calls']['count']/data['metrics']['iterations']['count']*100, dp)
+                else:
+                    success_rate = 0
+                    
+                row.append(success_rate)
 
                 rows.append(row)
 
