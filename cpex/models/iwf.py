@@ -32,27 +32,32 @@ class CpexIWF:
         self.sim_overhead = []
         
     async def cpex_generate_call_ids(self, src: str, dst: str, req_type: str) -> str:
+        self.log_msg(f'==================== CALL ID GENERATION')
+        self.log_msg(f'--> This is call id generation for {req_type} request')
         call_details: str = libcpex.normalize_call_details(src=src, dst=dst)
-        
         self.log_msg(f'--> Generates Call Details: {call_details}')
         requests, mask = libcpex.create_evaluation_requests(call_details, n_ev=self.n_ev, gsk=self.gsk, gpk=self.gpk)
         self.log_msg(f'--> Created Requests for the Following EVs: {[r["nodeId"]+":::"+str(r["data"]["i_k"]) for r in requests]}')
-        self.log_msg(f'--> Request Type: {req_type}')
         
         req_time_start = time.perf_counter()
         responses = await self.make_request('evaluate', requests=requests)
         req_time_taken = time.perf_counter() - req_time_start
         
+        self.log_msg(f'--> Responses from Evaluators: {responses}')
+        
         # Average time taken to evaluate a single request by an EV
-        sim_ovrhd = time.perf_counter()
-        flattened = []
-        for reslist in responses:
-            if type(reslist) == dict:
-                flattened.append(reslist.get('time_taken', 0))
-            elif type(reslist) == list:
-                flattened.extend([res.get('time_taken', 0) for res in reslist])
-        ev_avg_time = np.sum(flattened) / len(flattened) if len(flattened) > 0 else 0
-        sim_ovrhd = time.perf_counter() - sim_ovrhd
+        try:
+            sim_ovrhd = time.perf_counter()
+            flattened = []
+            for reslist in responses:
+                if type(reslist) == dict:
+                    flattened.append(reslist.get('time_taken', 0))
+                elif type(reslist) == list:
+                    flattened.extend([res.get('time_taken', 0) for res in reslist])
+            ev_avg_time = np.sum(flattened) / len(flattened) if len(flattened) > 0 else 0
+            sim_ovrhd = time.perf_counter() - sim_ovrhd
+        except Exception as e:
+            pass
         
         if req_type == 'publish':
             self.publish_ev_time = ev_avg_time
@@ -70,12 +75,15 @@ class CpexIWF:
         if call_ids:
             self.log_msg(f"---> Call ID: {[Utils.to_base64(cid) for cid in call_ids if cid]}")
 
+        self.log_msg(f'==================== END CALL ID GENERATION')
         return call_ids
     
     async def cpex_publish(self, src, dst, token):
+        self.log_msg(f'===== START PUBLISH PROTOCOL =====')
         call_ids = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='publish')
         
         if not call_ids:
+            self.log_msg(f'===== END PUBLISH because no call id generated =====')
             return
         
         reqs = libcpex.create_storage_requests(
@@ -90,19 +98,25 @@ class CpexIWF:
         req_time_start = time.perf_counter()
         responses = await self.make_request('publish', requests=reqs)
         req_time_taken = time.perf_counter() - req_time_start
-        
-        sim_ovrhd = time.perf_counter()
-        # Subtract wait time from compute time
-        self.publish_provider_time -= req_time_taken
-        # Average time taken to store a message by a single store
-        self.publish_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(reqs)
-        self.sim_overhead.append(time.perf_counter() - sim_ovrhd)
         self.log_msg(f'--> Responses From MS: {responses}')
+        
+        try:
+            sim_ovrhd = time.perf_counter()
+            # Subtract wait time from compute time
+            self.publish_provider_time -= req_time_taken
+            # Average time taken to store a message by a single store
+            self.publish_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(reqs)
+            self.sim_overhead.append(time.perf_counter() - sim_ovrhd)
+        except:
+            pass
+        self.log_msg(f'===== END PUBLISH PROTOCOL =====\n')
 
     async def cpex_retrieve(self, src: str, dst: str) -> str:
+        self.log_msg(f'===== START RETRIEVE PROTOCOL =====')
         call_ids = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='retrieve')
         
         if not call_ids:
+            self.log_msg(f'===== END RETRIEVE PROTOCOL because no call id generated =====')
             return None
         
         requests = libcpex.create_retrieve_requests(call_ids=call_ids, n_ms=self.n_ms, gsk=self.gsk, gpk=self.gpk)
@@ -112,7 +126,7 @@ class CpexIWF:
         req_time_start = time.perf_counter()
         responses = await self.make_request('retrieve', requests=requests)
         req_time_taken = time.perf_counter() - req_time_start
-        # self.log_msg(f'--> Responses from Stores: {responses}')
+        self.log_msg(f'--> Responses from Stores: {responses}')
         
         self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         
@@ -121,7 +135,8 @@ class CpexIWF:
         # self.log_msg(f"\n--> Filtered Responses: {responses}")
         # self.log_msg(f"--> Call IDs: {call_ids}\n")
         token = libcpex.decrypt(call_ids=call_ids, responses=responses, gpk=self.gpk)
-        # self.log_msg(f'--> Retrieved Token: {token}')
+        self.log_msg(f'--> Retrieved Token: {token}')
+        self.log_msg(f"===== END RETRIEVE PROTOCOL =====\n")
         return token
     
     async def make_request(self, req_type: str, requests: List[dict]):
