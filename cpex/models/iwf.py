@@ -97,7 +97,7 @@ class CpexIWF:
         # Average time taken to store a message by a single store
         self.publish_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(reqs)
         self.sim_overhead.append(time.perf_counter() - sim_ovrhd)
-        # self.log_msg(f'--> Responses: {responses}')
+        self.log_msg(f'--> Responses From MS: {responses}')
 
     async def cpex_retrieve(self, src: str, dst: str) -> str:
         call_ids = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='retrieve')

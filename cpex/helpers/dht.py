@@ -25,8 +25,10 @@ def get_stores(keys, count: int, nodes: List[dict] = None):
         return get_nodes(stores, keys, count)
     
     data = []
+    node_count = config.STORES_PER_MULTI_CID if len(keys) > 1 else count
+    
     for key in keys:
-        data.append(get_nodes(stores, key, config.STORES_PER_MULTI_CID))
+        data.append(get_nodes(stores, key, node_count))
 
     return data
 

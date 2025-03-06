@@ -8,6 +8,9 @@ from cpex.models import cache, iwf
 from cpex import config
 from cpex.prototype.scripts import setup
 
+from cpex.helpers import mylogging
+
+mylogging.init_mylogger('cpex_proxy', 'logs/cpex-proxy.log')
 cache.set_client(cache.connect())
 
 proxy_params = {
@@ -15,7 +18,8 @@ proxy_params = {
     'gpk': groupsig.get_gpk(),
     'n_ev': config.n_ev, 
     'n_ms': config.n_ms,
-    'fake_proxy': config.FAKE_PROXY
+    'fake_proxy': config.FAKE_PROXY,
+    'logger': mylogging.mylogger
 }
 
 def init_server():
