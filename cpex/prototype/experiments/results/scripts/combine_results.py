@@ -28,6 +28,9 @@ def combine_k6(prefix):
                     row.append(round(data['metrics']['http_req_duration']['avg'], dp))
                     row.append(round(data['metrics']['http_req_duration']['p(90)'], dp))
                     row.append(round(data['metrics']['http_req_duration']['p(95)'], dp))
+                elif prefix == 'sr':
+                    row.append(data['metrics']['iterations']['count'])
+                    row.append(data['metrics']['successful_calls']['count'] if 'successful_calls' in data['metrics'] else 0)
 
                 if 'successful_calls' in data['metrics']:
                     success_rate = round(data['metrics']['successful_calls']['count']/data['metrics']['iterations']['count']*100, dp)
@@ -43,6 +46,9 @@ def combine_k6(prefix):
     header = ['Protocol', 'VUs']
     if prefix == 'rt':
         header += ['Min', 'Max', 'Median', 'Avg', 'P(90)', 'P(95)']
+    if prefix == 'sr':
+        header += ['Calls-Sent', 'Calls-Processed']
+        
     header.append('Success-Rate')
 
     rows = [header] + rows
