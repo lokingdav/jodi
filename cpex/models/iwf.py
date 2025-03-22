@@ -14,6 +14,7 @@ class CpexIWF:
         self.gsk = params['gsk']
         self.logger = params.get('logger')
         self.fake_proxy = params.get('fake_proxy', False)
+        self.bt = params['bt']
         self.sim_overhead = []
         
         self.reset()
@@ -36,7 +37,13 @@ class CpexIWF:
         self.log_msg(f'--> This is call id generation for {req_type} request')
         call_details: str = libcpex.normalize_call_details(src=src, dst=dst)
         self.log_msg(f'--> Generates Call Details: {call_details}')
-        requests, mask = libcpex.create_evaluation_requests(call_details, n_ev=self.n_ev, gsk=self.gsk, gpk=self.gpk)
+        requests, mask = libcpex.create_evaluation_requests(
+            call_details, 
+            n_ev=self.n_ev, 
+            gsk=self.gsk, 
+            gpk=self.gpk,
+            bt=self.bt
+        )
         self.log_msg(f'--> Created Requests for the Following EVs: {[r["nodeId"]+":::"+str(r["data"]["i_k"]) for r in requests]}')
         
         req_time_start = time.perf_counter()
@@ -91,7 +98,8 @@ class CpexIWF:
             msg=token,
             n_ms=self.n_ms,
             gsk=self.gsk,
-            gpk=self.gpk
+            gpk=self.gpk,
+            bt=self.bt
         )
         self.log_msg(f'--> Created Requests for the Following MSs: {[r["nodeId"] for r in reqs]}')
         
@@ -119,7 +127,13 @@ class CpexIWF:
             self.log_msg(f'===== END RETRIEVE PROTOCOL because no call id generated =====')
             return None
         
-        requests = libcpex.create_retrieve_requests(call_ids=call_ids, n_ms=self.n_ms, gsk=self.gsk, gpk=self.gpk)
+        requests = libcpex.create_retrieve_requests(
+            call_ids=call_ids, 
+            n_ms=self.n_ms, 
+            gsk=self.gsk, 
+            gpk=self.gpk,
+            bt=self.bt
+        )
         # self.log_msg(f'--> Retrieve Requests: {requests}')
         self.log_msg(f'--> Created Retrieve Requests for the Following MSs: {[r["nodeId"] for r in requests]}')
         

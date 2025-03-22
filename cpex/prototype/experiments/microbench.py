@@ -1,6 +1,6 @@
 import time, os, asyncio, json
 from cpex.helpers import misc, http, files, dht, mylogging
-from cpex.crypto import libcpex, groupsig
+from cpex.crypto import libcpex, groupsig, billing
 from pylibcpex import Oprf, Utils
 from cpex import config, constants
 from cpex.models import cache
@@ -10,12 +10,12 @@ from cpex.prototype.simulations import entities, local
 from cpex.prototype.stirshaken import stirsetup
 
 
-numIters = 1000
+numIters = 1
 cache_client = None
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
-n_evs = [3]#, 3, 4, 5]
-n_mss = [3]#, 3, 4, 5]
+n_evs = [3]
+n_mss = [3]
 
 cred, allcreds = stirsetup.load_certs()
 
@@ -37,6 +37,7 @@ async def bench_async(options):
         'n_ev': n_ev,
         'n_ms': n_ms,
         'cr': {'x5u': 'https://example.com/ev1.crt', 'sk': cred['sk']},
+        'bt': billing.create_endorsed_token(config.VOPRF_SK),
     }
 
     logger = mylogging.create_stream_logger('microbench')
@@ -46,6 +47,9 @@ async def bench_async(options):
     
     signal, initial_token = await originating_provider.originate() # will originate with random src and dst
     final_token = await terminating_provider.terminate(signal)
+    # print(f"Initial token: {initial_token}\n")
+    # print(f"Final token: {final_token}\n")
+    # mylogging.print_logs(logger)
     assert final_token == initial_token, "Tokens do not match"
     pub_compute = originating_provider.get_publish_compute_times()
     ret_compute = terminating_provider.get_retrieve_compute_times()

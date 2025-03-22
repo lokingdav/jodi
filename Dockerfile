@@ -3,14 +3,26 @@ FROM python:3.8-slim
 WORKDIR /app 
 
 RUN apt-get update && \
-    apt-get install -y curl cmake g++ git build-essential libsodium-dev libcurl4-openssl-dev gdb && \
+    apt-get install -y curl cmake g++ git build-essential libsodium-dev libcurl4-openssl-dev gdb libgmp-dev libomp-dev && \
     apt-get autoremove -y && apt-get clean
 
 RUN pip install --upgrade build setuptools wheel
 
-RUN git clone https://github.com/lokingdav/libcpex.git
-RUN cd libcpex && python -m build
-RUN cd libcpex && pip install dist/*.whl
+RUN git clone https://github.com/herumi/mcl.git && \
+    cd mcl && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make && \
+    make install
+
+RUN rm -rf mcl
+
+RUN git clone https://github.com/lokingdav/libcpex.git && \
+    cd libcpex && \
+    python -m build && \
+    pip install dist/*.whl
+    
 RUN rm -rf libcpex
 
 COPY . .

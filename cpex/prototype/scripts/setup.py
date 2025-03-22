@@ -3,7 +3,7 @@ from cpex.crypto import groupsig, libcpex
 from cpex.helpers import files, misc, dht
 from cpex import config, constants
 import yaml, re, random
-from pylibcpex import Utils, Oprf
+from pylibcpex import Utils, Oprf, Voprf
 from collections import defaultdict
 from cpex.prototype.stirshaken import stirsetup, auth_service
 
@@ -22,6 +22,15 @@ def groupsig_setup():
     update_vars_file(gpk)
     
     print("Group signature setup completed")
+    
+def voprt_setup():
+    if config.VOPRF_SK and config.VOPRF_VK:
+        return
+    sk, vk = Voprf.keygen()
+    files.update_env_file('.env', {
+        'VOPRF_SK': Utils.to_base64(sk),
+        'VOPRF_VK': Utils.to_base64(vk)
+    })
 
 def update_vars_file(gpk):
     try:
@@ -187,6 +196,7 @@ def setup_sample_loads(creds=None):
     
 def main(args):
     if args.all or args.groupsig:
+        voprt_setup()
         groupsig_setup()
         setup_certificates()
     else:
@@ -196,10 +206,13 @@ def main(args):
             setup_certificates()
         elif args.loads:
             setup_sample_loads()
+        elif args.voprf:
+            voprt_setup()
 
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--groupsig', action='store_true', help='Setup group signature')
+    parser.add_argument('--voprf', action='store_true', help='Setup VOPRF')
     parser.add_argument('--certs', action='store_true', help='Setup STIR/SHAKEN certificates')
     parser.add_argument('--loads', action='store_true', help='Setup sample loads')
     parser.add_argument('--all', action='store_true', help='Setup everything')

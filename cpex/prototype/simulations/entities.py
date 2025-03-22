@@ -1,6 +1,6 @@
 import json, os, time
 from typing import List
-from cpex.crypto import libcpex, groupsig
+from cpex.crypto import libcpex, groupsig, billing
 from cpex.models import cache
 from cpex import config
 from pylibcpex import Oprf, Utils
@@ -45,12 +45,20 @@ class MessageStore:
         
         start_time = time.perf_counter()
         
-        if not groupsig.verify(sig=request['sig'], msg=request['idx'] + request['ctx'], gpk=self.gpk):
+        if not billing.verify_token(config.VOPRF_VK, request['bt']):
+            res = {'_error': 'invalid billing token', 'time_taken': time.perf_counter() - start_time}
+            self.log_msg(res)
+            return res
+        
+        pp_hash = Utils.to_base64(Utils.hash256(bytes(request['idx'] + request['ctx'], 'utf-8')))
+        bill_hash = billing.get_billing_hash(request['bt'], request['peers'])
+
+        if not groupsig.verify(sig=request['sig'], msg=pp_hash + bill_hash, gpk=self.gpk):
             res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
             self.log_msg(res)
             return res
          
-        value = request['idx'] + '.' + request['ctx'] + '.' + request['sig']
+        value = request['idx'] + '.' + request['ctx'] + '.' + request['sig'] + '.' + bill_hash
 
         cache.cache_for_seconds(
             key=self.get_content_key(request['idx']), 
@@ -67,8 +75,16 @@ class MessageStore:
             return res
         
         start_time = time.perf_counter()
+
+        if not billing.verify_token(config.VOPRF_VK, request['bt']):
+            res = {'_error': 'invalid billing token', 'time_taken': time.perf_counter() - start_time}
+            self.log_msg(res)
+            return res
         
-        if not groupsig.verify(sig=request['sig'], msg=request['idx'], gpk=self.gpk):
+        pp_hash = Utils.to_base64(Utils.hash256(bytes(request['idx'], 'utf-8')))
+        bill_hash = billing.get_billing_hash(request['bt'], request['peers'])
+        
+        if not groupsig.verify(sig=request['sig'], msg=pp_hash + bill_hash, gpk=self.gpk):
             res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
             self.log_msg(res)
             return res
@@ -78,9 +94,9 @@ class MessageStore:
         if not value:
             return {'_error': 'message not found', 'time_taken': time.perf_counter() - start_time}
         
-        (msidx, msctx, mssig) = value.split('.')
+        (msidx, msctx, mssig, bill_h) = value.split('.')
         
-        return {'idx': msidx, 'ctx': msctx, 'sig': mssig, 'time_taken': time.perf_counter() - start_time}
+        return {'idx': msidx, 'ctx': msctx, 'sig': mssig, 'bh': bill_h, 'time_taken': time.perf_counter() - start_time}
 
 class Evaluator:
     @staticmethod
@@ -109,8 +125,16 @@ class Evaluator:
             return res
         
         start_time = time.perf_counter()
+
+        if not billing.verify_token(config.VOPRF_VK, request['bt']):
+            res = {'_error': 'invalid billing token', 'time_taken': time.perf_counter() - start_time}
+            self.log_msg(res)
+            return res
+
+        pp_hash = Utils.to_base64(Utils.hash256(bytes(str(request['i_k']) + request['x'], 'utf-8')))
+        bill_hash = billing.get_billing_hash(request['bt'], request['peers'])
         
-        if not groupsig.verify(sig=request['sig'], msg=str(request['i_k']) + request['x'], gpk=self.gpk):
+        if not groupsig.verify(sig=request['sig'], msg=pp_hash + bill_hash, gpk=self.gpk):
             res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
             self.log_msg(res)
             return res

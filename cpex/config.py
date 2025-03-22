@@ -78,6 +78,10 @@ TGS_GPK = env('TGS_GPK')
 TGS_GML = env('TGS_GML')
 TGS_GSK = env('TGS_GSK')
 
+# VOPRF Parameters
+VOPRF_SK = env('VOPRF_SK')
+VOPRF_VK = env('VOPRF_VK')
+
 # OPRF Parameters
 KEYLIST_SIZE = env('KEYLIST_SIZE', 10, dtype=int)
 ROTATION_INTERVAL_SECONDS = env('ROTATION_INTERVAL_SECONDS', 10, dtype=int)

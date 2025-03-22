@@ -1,11 +1,14 @@
 from pylibcpex import Oprf, Utils, Ciphering
 import cpex.config as config
-from cpex.crypto import groupsig
+from cpex.crypto import groupsig, billing
 from cpex.helpers import dht
 from typing import List
 import re, time
 from datetime import datetime
 from itertools import product
+
+def get_peers(nodes):
+    return ".".join([node.get('id') for node in nodes])
 
 def normalize_ts() -> str:
     return datetime.now().date()
@@ -21,8 +24,9 @@ def get_index_from_call_details(call_details: str) -> int:
     digest: bytes = Utils.hash160(call_details.encode('utf-8'))
     return int(digest.hex(), 16) % config.KEYLIST_SIZE
 
-def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
+def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk, bt) -> bytes:
     i_k: int = get_index_from_call_details(call_details)
+
     calldt_hash = Utils.hash256(bytes(call_details, 'utf-8'))
     evaluators = dht.get_evals(
         keys=calldt_hash, 
@@ -32,7 +36,12 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
     # Blind and sign the call details
     x, mask = Oprf.blind(call_details)
     x_str = Utils.to_base64(x)
-    sig = groupsig.sign(msg=str(i_k) + x_str, gsk=gsk, gpk=gpk)
+    peers = get_peers(evaluators)
+
+    pp_hash = Utils.to_base64(Utils.hash256(bytes(str(i_k) + x_str, 'utf-8')))
+    bill_hash = billing.get_billing_hash(bt, peers)
+
+    sig = groupsig.sign(msg=pp_hash + bill_hash, gsk=gsk, gpk=gpk)
     
     # Create evaluation requests
     requests = []
@@ -41,7 +50,7 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk) -> bytes:
             'nodeId': ev.get('id'),
             'avail': ev.get('avail', None),
             'url': ev.get('url') + '/evaluate', 
-            'data': { 'i_k': i_k, 'x': x_str, 'sig': sig}
+            'data': { 'i_k': i_k, 'x': x_str, 'sig': sig, 'bt': bt, 'peers': peers}
         })
     
     return requests, mask
@@ -66,26 +75,31 @@ def create_call_ids(responses: List[dict], mask: bytes, req_type: str) -> bytes:
 
     return cids
 
-def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, stores = None) -> List[dict]:
+def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, bt, stores = None) -> List[dict]:
+    stores = dht.get_stores(keys=call_id, count=n_ms, nodes=stores)
+
     # Generate the index, encrypt msg and sign request
     idx = Utils.to_base64(Utils.hash256(call_id))
     ctx = encrypt_and_mac(call_id=call_id, plaintext=msg)
-    sig = groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk)
+    peers = get_peers(stores)
+
+    pp_hash = Utils.to_base64(Utils.hash256(bytes(idx + ctx, 'utf-8')))
+    bill_hash = billing.get_billing_hash(bt, peers)
+    sig = groupsig.sign(msg=pp_hash + bill_hash, gsk=gsk, gpk=gpk)
     
     # Create storage requests for closest n_ms stores
     requests = []
-    stores = dht.get_stores(keys=call_id, count=n_ms, nodes=stores)
     for store in stores:
         requests.append({
             'nodeId': store['id'],
             'avail': store.get('avail', None),
             'url': store['url'] + '/publish',
-            'data': {'idx': idx, 'ctx': ctx, 'sig': sig }
+            'data': {'idx': idx, 'ctx': ctx, 'sig': sig, 'bt': bt, 'peers': peers}
         })
 
     return requests
 
-def create_retrieve_requests(call_ids: List[bytes], n_ms: int, gsk, gpk) -> List[dict]:
+def create_retrieve_requests(call_ids: List[bytes], n_ms: int, gsk, gpk, bt) -> List[dict]:
     requests = []
     stores_per_cid = dht.get_stores(keys=call_ids, count=n_ms)
 
@@ -93,14 +107,19 @@ def create_retrieve_requests(call_ids: List[bytes], n_ms: int, gsk, gpk) -> List
 
     for i, stores in enumerate(stores_per_cid):
         idx = Utils.to_base64(Utils.hash256(call_ids[i]))
-        sig = groupsig.sign(msg=idx, gsk=gsk, gpk=gpk)
+        peers = get_peers(stores)
+
+        pp_hash = Utils.to_base64(Utils.hash256(bytes(idx, 'utf-8')))
+        bill_hash = billing.get_billing_hash(bt, peers)
+
+        sig = groupsig.sign(msg=pp_hash + bill_hash, gsk=gsk, gpk=gpk)
 
         for store in stores:
             requests.append({
                 'nodeId': store['id'],
                 'avail': store.get('avail', None),
                 'url': store['url'] + '/retrieve',
-                'data': { 'idx': idx, 'sig': sig }
+                'data': { 'idx': idx, 'sig': sig, 'bt': bt, 'peers': peers }
             })
 
     return requests
@@ -118,7 +137,8 @@ def decrypt(call_ids: List[bytes], responses: List[dict], gpk):
     call_ids = { Utils.to_base64(Utils.hash256(cid)): cid for cid in call_ids }
     
     for res in responses:
-        if '_error' in res or not groupsig.verify(sig=res['sig'], msg=res['idx'] + res['ctx'], gpk=gpk):
+        pp_hash = Utils.to_base64(Utils.hash256(bytes(res['idx'] + res['ctx'], 'utf-8')))
+        if '_error' in res or not groupsig.verify(sig=res['sig'], msg=pp_hash + res['bh'], gpk=gpk):
             continue
         try:
             c_0, c_1 = res['ctx'].split(':')

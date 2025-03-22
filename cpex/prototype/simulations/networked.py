@@ -1,7 +1,7 @@
 import random, asyncio, os, time, math, json
 import numpy as np
 from multiprocessing import Pool
-from cpex.crypto import groupsig
+from cpex.crypto import groupsig, billing
 from cpex.prototype import network
 from cpex.models import cache, persistence
 from cpex.helpers import errors, mylogging
@@ -60,6 +60,7 @@ class NetworkedSimulator:
             'next_prov': next_prov,
             'cps': { 'url': cps['url'], 'fqdn': cps['fqdn'] } if cps else None,
             'cr': {'x5u': cr['url'] + f'/certs/{ck}', 'sk': cred['sk']},
+            'bt': billing.create_endorsed_token(),
         }
         
     def create_provider_instance(self, pid, impl, mode, options, next_prov):
