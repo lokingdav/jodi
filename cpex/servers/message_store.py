@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import cpex.config as config
-from cpex.crypto import groupsig
+from cpex.crypto import groupsig, billing
 from cpex.models import cache
 
 cache.set_client(cache.connect())
@@ -14,14 +14,18 @@ class PublishRequest(BaseModel):
     idx: str
     ctx: str
     sig: str
+    bt: str
+    peers: str
     
 class RetrieveRequest(BaseModel):
     idx: str
     sig: str
+    bt: str
+    peers: str
     
-def unauthorized_response():
+def unauthorized_response(content={"message": "Unauthorized"}):
     return JSONResponse(
-        content={"message": "Unauthorized"},
+        content=content,
         status_code=status.HTTP_401_UNAUTHORIZED
     )
     
@@ -36,10 +40,16 @@ def get_record_key(idx: str):
     
 @app.post("/publish")
 async def publish(req: PublishRequest):
-    if not groupsig.verify(sig=req.sig, msg=req.idx + req.ctx, gpk=gpk):
+    if not billing.verify_token(config.VOPRF_VK, req.bt):
+        return unauthorized_response({"message": "Invalid billing Token"})
+    
+    pp_hash = billing.Utils.to_base64(billing.Utils.hash256(bytes(req.idx + req.ctx, 'utf-8')))
+    bill_hash = billing.get_billing_hash(req.bt, req.peers)
+    
+    if not groupsig.verify(sig=req.sig, msg=pp_hash + bill_hash, gpk=gpk):
         return unauthorized_response()
     
-    value = req.idx + '.' + req.ctx + '.' + req.sig
+    value = req.idx + '.' + req.ctx + '.' + req.sig + '.' + bill_hash
     cache.cache_for_seconds(
         key=get_record_key(req.idx), 
         value=value, 
@@ -50,7 +60,13 @@ async def publish(req: PublishRequest):
     
 @app.post("/retrieve")
 async def retrieve(req: RetrieveRequest):
-    if not groupsig.verify(sig=req.sig, msg=req.idx, gpk=gpk):
+    if not billing.verify_token(config.VOPRF_VK, req.bt):
+        return unauthorized_response({"message": "Invalid billing Token"})
+    
+    pp_hash = billing.Utils.to_base64(billing.Utils.hash256(bytes(req.idx, 'utf-8')))
+    bill_hash = billing.get_billing_hash(req.bt, req.peers)
+    
+    if not groupsig.verify(sig=req.sig, msg=pp_hash + bill_hash, gpk=gpk):
         return unauthorized_response()
     
     value = cache.find(key=get_record_key(req.idx))
@@ -61,9 +77,9 @@ async def retrieve(req: RetrieveRequest):
             status_code=status.HTTP_404_NOT_FOUND
         )
     
-    (idx, ctx, sig) = value.split('.')
+    (idx, ctx, sig, bill_h) = value.split('.')
     
-    return success_response({"idx": idx, "ctx": ctx, "sig": sig})
+    return success_response({"idx": idx, "ctx": ctx, "sig": sig, 'bh': bill_h})
 
 @app.get("/health")
 async def health():

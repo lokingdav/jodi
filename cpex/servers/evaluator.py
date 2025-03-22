@@ -3,7 +3,7 @@ from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from cpex.crypto import groupsig, oprf
+from cpex.crypto import groupsig, oprf, billing
 from cpex.models import cache
 from cpex.helpers import mylogging
 from cpex import config
@@ -18,11 +18,23 @@ class EvaluateRequest(BaseModel):
     i_k: int
     x: str
     sig: str
+    bt: str
+    peers: str
     
 @app.post("/evaluate")
 async def evaluate(req: EvaluateRequest):
-    start_time = time.perf_counter()
-    if not groupsig.verify(sig=req.sig, msg=str(req.i_k) + str(req.x), gpk=gpk):
+    # start_time = time.perf_counter()
+
+    if not billing.verify_token(config.VOPRF_VK, req.bt):
+        return JSONResponse(
+            content={"message": "Invalid Token"}, 
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
+    
+    pp_hash = oprf.Utils.to_base64(oprf.Utils.hash256(bytes(str(req.i_k) + req.x, 'utf-8')))
+    bill_hash = billing.get_billing_hash(req.bt, req.peers)
+
+    if not groupsig.verify(sig=req.sig, msg=pp_hash + bill_hash, gpk=gpk):
         return JSONResponse(
             content={"message": "Invalid Signature"}, 
             status_code=status.HTTP_401_UNAUTHORIZED
