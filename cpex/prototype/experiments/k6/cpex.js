@@ -29,7 +29,11 @@ const CidGenerationProtocol = (record) => {
         cidGenReqs.push({
             method: 'POST',
             url: `${ev}/evaluate`,
-            body: JSON.stringify(record.cpex.oprf),
+            body: JSON.stringify({
+                ...record.cpex.oprf,
+                bt: record.cpex.bt,
+                peers: record.cpex.evs_peers,
+            }),
             params: { 
                 ...globalParams, 
                 headers,
@@ -56,7 +60,9 @@ const PublishProtocol = (record) => {
             body: JSON.stringify({
                 idx: record.cpex.idx, 
                 ctx: record.cpex.ctx, 
-                sig: record.cpex.pub_sig
+                sig: record.cpex.pub_sig,
+                bt: record.cpex.bt,
+                peers: record.cpex.mss_peers,
             }),
             params: { 
                 ...globalParams, 
@@ -85,7 +91,9 @@ const RetrieveProtocol = (record) => {
             url: `${ms}/retrieve`,
             body: JSON.stringify({
                 idx: record.cpex.idx, 
-                sig: record.cpex.ret_sig
+                sig: record.cpex.ret_sig,
+                bt: record.cpex.bt,
+                peers: record.cpex.mss_peers,
             }),
             params: { 
                 ...globalParams, 

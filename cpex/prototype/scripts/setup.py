@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from cpex.crypto import groupsig, libcpex
+from cpex.crypto import groupsig, libcpex, billing
 from cpex.helpers import files, misc, dht
 from cpex import config, constants
 import yaml, re, random
@@ -171,25 +171,42 @@ def setup_sample_loads(creds=None):
         ctx = libcpex.encrypt_and_mac(call_id=cid, plaintext=data['passport'])
 
         mss, evs = [], []
+        mss_peers, evs_peers = "", ""
+
         if nodes[config.STORES_KEY]:
             mss = dht.get_stores(keys=cid, count=config.n_ms, nodes=nodes[config.STORES_KEY])
+            mss_peers = libcpex.get_peers(mss)
             mss = [ms['url'] for ms in mss]
+
         if nodes[config.EVALS_KEY]:
             evs = dht.get_evals(keys=cid, count=config.n_ev, nodes=nodes[config.EVALS_KEY])
+            evs_peers = libcpex.get_peers(evs)
             evs = [ev['url'] for ev in evs]
+        
+        billable_tk = billing.create_endorsed_token(config.VOPRF_SK)
+
+        eval_pp_hash = Utils.to_base64(Utils.hash256(bytes(str(i_k) + x, 'utf-8')))
+        pub_pp_hash = Utils.to_base64(Utils.hash256(bytes(idx + ctx, 'utf-8')))
+        ret_pp_hash = Utils.to_base64(Utils.hash256(bytes(idx, 'utf-8')))
+
+        bill_hash_mss = billing.get_billing_hash(billable_tk, mss_peers)
+        bill_hash_evs = billing.get_billing_hash(billable_tk, evs_peers)
 
         data['cpex'] = {
             'idx': idx, 
             'ctx': ctx, 
             'oprf': {
                 'x': x, 
-                'i_k': i_k, 
-                'sig': groupsig.sign(msg=str(i_k)+x, gsk=gsk, gpk=gpk)
+                'i_k': i_k,
+                'sig': groupsig.sign(msg=eval_pp_hash + bill_hash_evs, gsk=gsk, gpk=gpk)
             },
-            'pub_sig': groupsig.sign(msg=idx + ctx, gsk=gsk, gpk=gpk),
-            'ret_sig': groupsig.sign(msg=idx, gsk=gsk, gpk=gpk),
+            'pub_sig': groupsig.sign(msg=pub_pp_hash + bill_hash_mss, gsk=gsk, gpk=gpk),
+            'ret_sig': groupsig.sign(msg=ret_pp_hash + bill_hash_mss, gsk=gsk, gpk=gpk),
+            'bt': billable_tk,
             'mss': mss,
-            'evs': evs
+            'evs': evs,
+            'evs_peers': evs_peers,
+            'mss_peers': mss_peers
         }
         loads.append(data)
     files.override_json(config.CONF_DIR + '/loads.json', loads)
