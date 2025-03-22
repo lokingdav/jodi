@@ -26,6 +26,7 @@ class LocalSimulator(NetworkedSimulator):
     def create_nodes(self, **kwargs):
         num_evs = kwargs['num_evs']
         num_repos = kwargs['num_repos']
+        print(f"Creating {num_evs} EVs and {num_repos} MSs")
         LocalSimulator.create_cpex_nodes(num_evs, num_repos)
     
     @staticmethod
@@ -58,6 +59,8 @@ class LocalSimulator(NetworkedSimulator):
             cache.save(key=config.EVALS_KEY, value=json.dumps(evals))
         if keysets:
             cache.save(key=config.EVAL_KEYSETS_KEY, value=json.dumps(keysets))
+            
+        print(f"Created {len(evals)} EVs and {len(stores)} MSs")
 
 def get_status(ntype: str):
     p = config.EV_AVAILABILITY if ntype == 'ev' else config.MS_AVAILABILITY

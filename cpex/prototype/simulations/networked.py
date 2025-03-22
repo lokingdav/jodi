@@ -37,14 +37,15 @@ class NetworkedSimulator:
         return res
     
     def create_prov_params(self, pid, impl, mode, options, next_prov):
-        if not call_placement_services:
-            raise Exception("No call placement services found")
+        if call_placement_services:
+            cps = random.choice(call_placement_services)
+        else:
+            cps = {'url': 'http://localhost', 'fqdn': 'localhost'}
         
-        if not certificate_repos:
-            raise Exception("No certificate repositories found")
-        
-        cps = random.choice(call_placement_services)
-        cr = random.choice(certificate_repos)
+        if certificate_repos:
+            cr = random.choice(certificate_repos)
+        else:
+            cr = {'url': 'http://localhost', 'fqdn': 'localhost'}
             
         i = random.randint(0, config.NO_OF_INTERMEDIATE_CAS * config.NUM_CREDS_PER_ICA - 1)
         ck = f"{constants.OTHER_CREDS_KEY}-{i}" 
@@ -60,7 +61,7 @@ class NetworkedSimulator:
             'next_prov': next_prov,
             'cps': { 'url': cps['url'], 'fqdn': cps['fqdn'] } if cps else None,
             'cr': {'x5u': cr['url'] + f'/certs/{ck}', 'sk': cred['sk']},
-            'bt': billing.create_endorsed_token(),
+            'bt': billing.create_endorsed_token(config.VOPRF_SK),
         }
         
     def create_provider_instance(self, pid, impl, mode, options, next_prov):
