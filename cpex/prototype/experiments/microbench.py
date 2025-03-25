@@ -10,7 +10,7 @@ from cpex.prototype.simulations import entities, local
 from cpex.prototype.stirshaken import stirsetup
 
 
-numIters = 1
+numIters = 1000
 cache_client = None
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
