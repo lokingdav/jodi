@@ -38,10 +38,10 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk, bt) -> by
     x_str = Utils.to_base64(x)
     peers = get_peers(evaluators)
 
-    pp_hash = Utils.to_base64(Utils.hash256(bytes(str(i_k) + x_str, 'utf-8')))
-    bill_hash = billing.get_billing_hash(bt, peers)
+    pp = Utils.to_base64(Utils.hash256(bytes(str(i_k) + x_str, 'utf-8')))
+    bb = billing.get_billing_hash(bt, peers)
 
-    sig = groupsig.sign(msg=pp_hash + bill_hash, gsk=gsk, gpk=gpk)
+    sig = groupsig.sign(msg=pp + bb, gsk=gsk, gpk=gpk)
     
     # Create evaluation requests
     requests = []
@@ -83,9 +83,9 @@ def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, bt, s
     ctx = encrypt_and_mac(call_id=call_id, plaintext=msg)
     peers = get_peers(stores)
 
-    pp_hash = Utils.to_base64(Utils.hash256(bytes(idx + ctx, 'utf-8')))
-    bill_hash = billing.get_billing_hash(bt, peers)
-    sig = groupsig.sign(msg=pp_hash + bill_hash, gsk=gsk, gpk=gpk)
+    pp = Utils.to_base64(Utils.hash256(bytes(idx + ctx, 'utf-8')))
+    bb = billing.get_billing_hash(bt, peers)
+    sig = groupsig.sign(msg=pp + bb, gsk=gsk, gpk=gpk)
     
     # Create storage requests for closest n_ms stores
     requests = []
@@ -109,10 +109,10 @@ def create_retrieve_requests(call_ids: List[bytes], n_ms: int, gsk, gpk, bt) -> 
         idx = Utils.to_base64(Utils.hash256(call_ids[i]))
         peers = get_peers(stores)
 
-        pp_hash = Utils.to_base64(Utils.hash256(bytes(idx, 'utf-8')))
-        bill_hash = billing.get_billing_hash(bt, peers)
+        pp = Utils.to_base64(Utils.hash256(bytes(idx, 'utf-8')))
+        bb = billing.get_billing_hash(bt, peers)
 
-        sig = groupsig.sign(msg=pp_hash + bill_hash, gsk=gsk, gpk=gpk)
+        sig = groupsig.sign(msg=pp + bb, gsk=gsk, gpk=gpk)
 
         for store in stores:
             requests.append({
@@ -137,8 +137,8 @@ def decrypt(call_ids: List[bytes], responses: List[dict], gpk):
     call_ids = { Utils.to_base64(Utils.hash256(cid)): cid for cid in call_ids }
     
     for res in responses:
-        pp_hash = Utils.to_base64(Utils.hash256(bytes(res['idx'] + res['ctx'], 'utf-8')))
-        if '_error' in res or not groupsig.verify(sig=res['sig'], msg=pp_hash + res['bh'], gpk=gpk):
+        pp = Utils.to_base64(Utils.hash256(bytes(res['idx'] + res['ctx'], 'utf-8')))
+        if '_error' in res or not groupsig.verify(sig=res['sig'], msg=pp + res['bh'], gpk=gpk):
             continue
         try:
             c_0, c_1 = res['ctx'].split(':')

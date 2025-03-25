@@ -43,13 +43,13 @@ async def publish(req: PublishRequest):
     if not billing.verify_token(config.VOPRF_VK, req.bt):
         return unauthorized_response({"message": "Invalid billing Token"})
     
-    pp_hash = billing.Utils.to_base64(billing.Utils.hash256(bytes(req.idx + req.ctx, 'utf-8')))
-    bill_hash = billing.get_billing_hash(req.bt, req.peers)
+    pp = billing.Utils.to_base64(billing.Utils.hash256(bytes(req.idx + req.ctx, 'utf-8')))
+    bb = billing.get_billing_hash(req.bt, req.peers)
     
-    if not groupsig.verify(sig=req.sig, msg=pp_hash + bill_hash, gpk=gpk):
+    if not groupsig.verify(sig=req.sig, msg=pp + bb, gpk=gpk):
         return unauthorized_response()
     
-    value = req.idx + '.' + req.ctx + '.' + req.sig + '.' + bill_hash
+    value = req.idx + '.' + req.ctx + '.' + req.sig + '.' + bb
     cache.cache_for_seconds(
         key=get_record_key(req.idx), 
         value=value, 
@@ -63,10 +63,10 @@ async def retrieve(req: RetrieveRequest):
     if not billing.verify_token(config.VOPRF_VK, req.bt):
         return unauthorized_response({"message": "Invalid billing Token"})
     
-    pp_hash = billing.Utils.to_base64(billing.Utils.hash256(bytes(req.idx, 'utf-8')))
-    bill_hash = billing.get_billing_hash(req.bt, req.peers)
+    pp = billing.Utils.to_base64(billing.Utils.hash256(bytes(req.idx, 'utf-8')))
+    bb = billing.get_billing_hash(req.bt, req.peers)
     
-    if not groupsig.verify(sig=req.sig, msg=pp_hash + bill_hash, gpk=gpk):
+    if not groupsig.verify(sig=req.sig, msg=pp + bb, gpk=gpk):
         return unauthorized_response()
     
     value = cache.find(key=get_record_key(req.idx))

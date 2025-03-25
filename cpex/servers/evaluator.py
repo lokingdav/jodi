@@ -31,10 +31,10 @@ async def evaluate(req: EvaluateRequest):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
     
-    pp_hash = oprf.Utils.to_base64(oprf.Utils.hash256(bytes(str(req.i_k) + req.x, 'utf-8')))
-    bill_hash = billing.get_billing_hash(req.bt, req.peers)
+    pp = oprf.Utils.to_base64(oprf.Utils.hash256(bytes(str(req.i_k) + req.x, 'utf-8')))
+    bb = billing.get_billing_hash(req.bt, req.peers)
 
-    if not groupsig.verify(sig=req.sig, msg=pp_hash + bill_hash, gpk=gpk):
+    if not groupsig.verify(sig=req.sig, msg=pp + bb, gpk=gpk):
         return JSONResponse(
             content={"message": "Invalid Signature"}, 
             status_code=status.HTTP_401_UNAUTHORIZED

@@ -50,15 +50,15 @@ class MessageStore:
             self.log_msg(res)
             return res
         
-        pp_hash = Utils.to_base64(Utils.hash256(bytes(request['idx'] + request['ctx'], 'utf-8')))
-        bill_hash = billing.get_billing_hash(request['bt'], request['peers'])
+        pp = Utils.to_base64(Utils.hash256(bytes(request['idx'] + request['ctx'], 'utf-8')))
+        bb = billing.get_billing_hash(request['bt'], request['peers'])
 
-        if not groupsig.verify(sig=request['sig'], msg=pp_hash + bill_hash, gpk=self.gpk):
+        if not groupsig.verify(sig=request['sig'], msg=pp + bb, gpk=self.gpk):
             res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
             self.log_msg(res)
             return res
          
-        value = request['idx'] + '.' + request['ctx'] + '.' + request['sig'] + '.' + bill_hash
+        value = request['idx'] + '.' + request['ctx'] + '.' + request['sig'] + '.' + bb
 
         cache.cache_for_seconds(
             key=self.get_content_key(request['idx']), 
@@ -81,10 +81,10 @@ class MessageStore:
             self.log_msg(res)
             return res
         
-        pp_hash = Utils.to_base64(Utils.hash256(bytes(request['idx'], 'utf-8')))
-        bill_hash = billing.get_billing_hash(request['bt'], request['peers'])
+        pp = Utils.to_base64(Utils.hash256(bytes(request['idx'], 'utf-8')))
+        bb = billing.get_billing_hash(request['bt'], request['peers'])
         
-        if not groupsig.verify(sig=request['sig'], msg=pp_hash + bill_hash, gpk=self.gpk):
+        if not groupsig.verify(sig=request['sig'], msg=pp + bb, gpk=self.gpk):
             res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
             self.log_msg(res)
             return res
@@ -131,10 +131,10 @@ class Evaluator:
             self.log_msg(res)
             return res
 
-        pp_hash = Utils.to_base64(Utils.hash256(bytes(str(request['i_k']) + request['x'], 'utf-8')))
-        bill_hash = billing.get_billing_hash(request['bt'], request['peers'])
+        pp = Utils.to_base64(Utils.hash256(bytes(str(request['i_k']) + request['x'], 'utf-8')))
+        bb = billing.get_billing_hash(request['bt'], request['peers'])
         
-        if not groupsig.verify(sig=request['sig'], msg=pp_hash + bill_hash, gpk=self.gpk):
+        if not groupsig.verify(sig=request['sig'], msg=pp + bb, gpk=self.gpk):
             res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
             self.log_msg(res)
             return res
