@@ -61,7 +61,7 @@ class CpexIWF:
                     flattened.append(reslist.get('time_taken', 0))
                 elif type(reslist) == list:
                     flattened.extend([res.get('time_taken', 0) for res in reslist])
-            ev_avg_time = np.sum(flattened) / len(flattened) if len(flattened) > 0 else 0
+            ev_avg_time = np.mean(flattened)
             sim_ovrhd = time.perf_counter() - sim_ovrhd
         except Exception as e:
             pass
@@ -113,7 +113,7 @@ class CpexIWF:
             # Subtract wait time from compute time
             self.publish_provider_time -= req_time_taken
             # Average time taken to store a message by a single store
-            self.publish_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(reqs)
+            self.publish_ms_time = np.mean([res.get('time_taken', 0) for res in responses])
             self.sim_overhead.append(time.perf_counter() - sim_ovrhd)
         except:
             pass
@@ -144,7 +144,7 @@ class CpexIWF:
         
         self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         
-        self.retrieve_ms_time = np.sum([res.get('time_taken', 0) for res in responses]) / len(requests) # Average time taken to store a message by a single store
+        self.retrieve_ms_time = np.mean([res.get('time_taken', 0) for res in responses]) # Average time taken to store a message by a single store
         
         # self.log_msg(f"\n--> Filtered Responses: {responses}")
         # self.log_msg(f"--> Call IDs: {call_ids}\n")

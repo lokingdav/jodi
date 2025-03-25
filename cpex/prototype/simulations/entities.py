@@ -152,6 +152,7 @@ class Provider(BaseProvider):
     
     async def make_request(self, req_type, requests):
         responses = []
+        timer = time.perf_counter()
         for req in requests:
             available = req.get('avail')
             available = available['up'] if available is not None else True
@@ -179,4 +180,10 @@ class Provider(BaseProvider):
                 ).retrieve(req['data'])
                 
             responses.append(payload)
+        
+        # This section makes it appear as if the requests were parallelized
+        n = len(responses)
+        time_taken = time.perf_counter() - timer
+        avg_time_taken = time_taken/n
+        self.sim_overhead.append(time_taken - avg_time_taken)
         return responses

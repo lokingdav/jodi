@@ -176,8 +176,8 @@ def run_experiment_1(resultsloc):
 
     start = time.perf_counter()
     
-    for i in [3]:
-        for j in [3]:
+    for i in range(i_start, maxRepTrustParams + 1):
+        for j in range(j_start, maxRepTrustParams + 1):
             for iteration in range(iter_start, numIters + 1):
                 params = {'n_ev': i, 'n_ms': j, 'iter': iteration}
                 print(f"\n============ Iteration {iteration}/{numIters}, {params} ============")
