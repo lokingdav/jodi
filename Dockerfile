@@ -20,6 +20,7 @@ RUN rm -rf mcl
 
 RUN git clone https://github.com/lokingdav/libcpex.git && \
     cd libcpex && \
+    git checkout master && \
     python -m build && \
     pip install dist/*.whl
     

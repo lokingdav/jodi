@@ -70,6 +70,7 @@ HOST_APP_PATH = env('HOST_APP_PATH')
 
 # General Parameters
 T_MAX_SECONDS = env('T_MAX_SECONDS', 15, dtype=int)
+SEC_PARAM_BYTES = env('SEC_PARAM_BYTES', 32, dtype=int)
 
 
 # Group Signatures

@@ -49,9 +49,8 @@ def bench_voprf():
     (sk, pk) = Voprf.keygen()
 
     # Check for correctness first
-    (p1, x1, r1) = Voprf.blind(msg=callDetails)
-    (p2, x2, r2) = Voprf.blind(msg=callDetails)
-    assert(p1 == p2) # hashed points must match
+    (x1, r1) = Voprf.blind(msg=callDetails)
+    (x2, r2) = Voprf.blind(msg=callDetails)
     assert(x1 != x2) # blindings must differ
     assert(r1 != r2) # random scalars must differ
     
@@ -63,12 +62,12 @@ def bench_voprf():
     digest2 = Voprf.unblind(fx=fx2, r=r2)
     assert(digest1 == digest2)
     
-    assert(Voprf.verify(pk=pk, p=p1, y=digest1))
-    assert(Voprf.verify(pk=pk, p=p2, y=digest2))
+    assert(Voprf.verify(vk=pk, msg=callDetails, y=digest1))
+    assert(Voprf.verify(vk=pk, msg=callDetails, y=digest2))
 
     start = startTimer()
     for i in range(numIters):
-        (p, x, r) = Voprf.blind(msg=callDetails)
+        (x, r) = Voprf.blind(msg=callDetails)
     endTimer("Voprf::blind", start, numIters)
 
     start = startTimer()
@@ -83,7 +82,7 @@ def bench_voprf():
     
     start = startTimer()
     for i in range(numIters):
-        assert Voprf.verify(pk=pk, p=p, y=digest)
+        assert Voprf.verify(vk=pk, msg=callDetails, y=digest)
     endTimer("Voprf::verify", start, numIters)
 
 def bench_ciphering():
@@ -127,7 +126,6 @@ def key_rotation():
 def main():
     bench_ciphering()
     bench_oprf()
-    # key_rotation()
     bench_voprf()
 
 if __name__ == "__main__":
