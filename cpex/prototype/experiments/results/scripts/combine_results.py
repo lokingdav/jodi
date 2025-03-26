@@ -2,6 +2,9 @@ import os, json, argparse
 from cpex.helpers import files
 import pandas as pd
 
+oobss = 'oob-s/s'
+jodi = 'jodi'
+
 def combine_k6(prefix):
     folder = 'cpex/prototype/experiments/results/k6'
     filenames = os.listdir(folder)
@@ -15,9 +18,9 @@ def combine_k6(prefix):
                 (proto, _) = file.split('-')
 
                 if 'cpex' in proto:
-                    proto = 'CPeX'
+                    proto = jodi
                 else:
-                    proto = 'ATIS'
+                    proto = oobss
 
                 row = [proto, data['metrics']['vus']['max']]
 
@@ -68,6 +71,8 @@ def combine_lat():
         file_path = os.path.join(folder, filename)
         if os.path.exists(file_path):  # Ensure the file exists
             df = pd.read_csv(file_path)
+            # modify the protocol column changed atis to oobss and cpex to jodi
+            df['protocol'] = df['protocol'].apply(lambda x: oobss if x == 'atis' else jodi)
             dataframes.append(df)
         else:
             print(f"Warning: {file_path} not found.")
