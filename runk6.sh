@@ -24,7 +24,7 @@ func_measure_real_latency() {
 
 func_run_latency_experiments() {
     # local x=(20)
-    local x=(20 40 60 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000)
+    local x=(20 40 60 100 200 300 400 500 600 700 800 900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000)
     local lastval=${x[${#x[@]}-1]}
     local proto=$1
 
@@ -33,7 +33,7 @@ func_run_latency_experiments() {
     for vus in "${x[@]}" ; do
         echo "Running $proto with $vus vus"
 
-        k6 run --log-output=stdout \
+        k6 run --log-output=none \
             --env VUS=$vus \
             --summary-export "cpex/prototype/experiments/results/k6/rt_$proto-$vus.json" \
             --vus $vus \
@@ -51,7 +51,7 @@ func_run_latency_experiments() {
 
 func_run_success_rate_experiments() {
     # local x=(100)
-    local x=(100 200 300 400 500 700 900 1000 2000 3000 4000 5000 6000)
+    local x=(100 200 300 400 500 700 900 1000 1500 2000 2500 3000 3500 4000 4500 5000 5500 6000)
     local lastval=${x[${#x[@]}-1]}
     local proto=$1
 
@@ -75,7 +75,7 @@ func_run_success_rate_experiments() {
     done
 }
 
-# rm cpex/prototype/experiments/results/k6/*.json || true
+rm cpex/prototype/experiments/results/k6/*.json || true
 
 protocols=(atis cpex)
 if [ -n "$protocol" ]; then
