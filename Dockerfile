@@ -14,7 +14,8 @@ RUN git clone https://github.com/herumi/mcl.git && \
     cd build && \
     cmake .. && \
     make && \
-    make install
+    make install && \
+    ldconfig
 
 RUN rm -rf mcl
 

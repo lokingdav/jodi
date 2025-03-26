@@ -185,9 +185,9 @@ def setup_sample_loads(creds=None):
         
         billable_tk = billing.create_endorsed_token(config.VOPRF_SK)
 
-        eval_pp = Utils.to_base64(Utils.hash256(bytes(str(i_k) + x, 'utf-8')))
-        pub_pp = Utils.to_base64(Utils.hash256(bytes(idx + ctx, 'utf-8')))
-        ret_pp = Utils.to_base64(Utils.hash256(bytes(idx, 'utf-8')))
+        pp_eval = Utils.to_base64(Utils.hash256(bytes(str(i_k) + x, 'utf-8')))
+        pp_pub = Utils.to_base64(Utils.hash256(bytes(idx + ctx, 'utf-8')))
+        pp_ret = Utils.to_base64(Utils.hash256(bytes(idx, 'utf-8')))
 
         bb_mss = billing.get_billing_hash(billable_tk, mss_peers)
         bb_evs = billing.get_billing_hash(billable_tk, evs_peers)
@@ -198,10 +198,10 @@ def setup_sample_loads(creds=None):
             'oprf': {
                 'x': x, 
                 'i_k': i_k,
-                'sig': groupsig.sign(msg=eval_pp + bb_evs, gsk=gsk, gpk=gpk)
+                'sig': groupsig.sign(msg=pp_eval + bb_evs, gsk=gsk, gpk=gpk)
             },
-            'pub_sig': groupsig.sign(msg=pub_pp + bb_mss, gsk=gsk, gpk=gpk),
-            'ret_sig': groupsig.sign(msg=ret_pp + bb_mss, gsk=gsk, gpk=gpk),
+            'pub_sig': groupsig.sign(msg=pp_pub + bb_mss, gsk=gsk, gpk=gpk),
+            'ret_sig': groupsig.sign(msg=pp_ret + bb_mss, gsk=gsk, gpk=gpk),
             'bt': billable_tk,
             'mss': mss,
             'evs': evs,
