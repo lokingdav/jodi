@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from fastapi import FastAPI, status, Request
 from fastapi.responses import JSONResponse
 
-from cpex.crypto import groupsig
+from cpex.crypto import groupsig, billing
 from cpex.models import cache, iwf
 from cpex import config
 from cpex.prototype.scripts import setup
@@ -45,13 +45,15 @@ class Publish(Retrieve):
     
 @app.post("/publish")
 async def oob_proxy_publish(req: Publish):
-    proxy = iwf.CpexIWF(proxy_params)
+    bt = billing.create_endorsed_token(config.VOPRF_SK)
+    proxy = iwf.CpexIWF({**proxy_params, 'bt': bt})
     await proxy.cpex_publish(src=req.src, dst=req.dst, token=req.passport)
     return success_response()
 
 @app.get("/retrieve/{src}/{dst}")
 async def oob_proxy_retrieve(src: str, dst: str, req: Request):
-    proxy = iwf.CpexIWF(proxy_params)
+    bt = billing.create_endorsed_token(config.VOPRF_SK)
+    proxy = iwf.CpexIWF({**proxy_params, 'bt': bt})
     token = await proxy.cpex_retrieve(src=src, dst=dst)
     return success_response(content={"token": token})
 
