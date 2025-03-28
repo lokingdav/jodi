@@ -10,6 +10,7 @@ from collections import defaultdict
 numIters = 1
 cache_client = None
 
+nprovs = 53
 deployRate = 55.96
 maxRepTrustParams = 10
 EXPERIMENT_NUM = '1'
@@ -17,11 +18,11 @@ EXPERIMENT_PART = ''
 EXPERIMENT_PARAMS = {
     '1': {
         'node_groups': [(20, 20)],
-        'provider_groups': [50],
+        'provider_groups': [nprovs],
     },
     '3': {
         'node_groups': [(10, 10)],
-        'provider_groups': [50]
+        'provider_groups': [nprovs]
     }
 }
 
@@ -170,8 +171,8 @@ def set_simulator(args):
 
 def run_experiment_1(resultsloc):
     prevState = load_checkpoint()
-    i_start = prevState.get('n_ev', 1)
-    j_start = prevState.get('n_ms', 1)
+    i_start = prevState.get('n_ev', 2)
+    j_start = prevState.get('n_ms', 2)
     iter_start = prevState.get('iter', 0) + 1
 
     start = time.perf_counter()
@@ -185,8 +186,8 @@ def run_experiment_1(resultsloc):
                 simulate(resultsloc=resultsloc, mode=constants.MODE_CPEX, params=params)
                 print(f"\tTime taken: {time.perf_counter() - start_time:.2f} seconds\n=============================================")
             iter_start = 1 # Reset iter_start after first iteration
-        j_start = 1 # Reset j_start after first iteration
-    i_start = 1 # Reset i_start after first iteration
+        j_start = 2 # Reset j_start after first iteration
+    i_start = 2 # Reset i_start after first iteration
     delete_state_for_exp()
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 

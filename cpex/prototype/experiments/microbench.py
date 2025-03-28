@@ -53,6 +53,7 @@ async def bench_async(options):
     assert final_token == initial_token, "Tokens do not match"
     pub_compute = originating_provider.get_publish_compute_times()
     ret_compute = terminating_provider.get_retrieve_compute_times()
+    total_time = originating_provider.get_latency_ms() + terminating_provider.get_latency_ms()
     
     results = [
         n_ev, 
@@ -64,7 +65,9 @@ async def bench_async(options):
         
         ret_compute['provider'], 
         ret_compute['evaluator'],
-        ret_compute['message_store']
+        ret_compute['message_store'],
+        
+        total_time
     ]
     
     return results
@@ -82,7 +85,7 @@ def main():
     )
 
     resutlsloc = f"{os.path.dirname(os.path.abspath(__file__))}/results/experiment-2.csv"
-    files.write_csv(resutlsloc, [['n', 'm', 'PUB:P', 'PUB:EV', 'PUB:MS', 'RET:P', 'RET:EV', 'RET:MS']])
+    files.write_csv(resutlsloc, [['n', 'm', 'PUB:P', 'PUB:EV', 'PUB:MS', 'RET:P', 'RET:EV', 'RET:MS', 'Total']])
     
     print(f"Running {numIters} iterations of the CPEX protocol microbenchmark...")
     start = time.perf_counter()
