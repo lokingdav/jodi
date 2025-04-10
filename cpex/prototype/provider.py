@@ -2,12 +2,10 @@ import random, traceback, time, json
 from uuid import uuid4
 from pydantic import BaseModel
 import cpex.config as config
-import cpex.constants as constants
-from cpex.helpers import misc, http
-from cpex.prototype.stirshaken.auth_service import AuthService
-from typing import List, Union
-from cpex.models import cache, iwf
-from cpex.prototype.stirshaken import stirsetup
+from cpex.helpers import misc
+from typing import Union
+from cpex.models.iwf import CpexIWF
+from cpex.prototype.stirshaken.oobss_iwf import OobSSIWF
 
 def get_type(instance):
     return 'SIP Signal' if isinstance(instance, SIPSignal) else 'TDM Signal'
@@ -24,30 +22,14 @@ class SIPSignal(BaseModel):
     Identity: str
     CallId: str = str(uuid4())
 
-class Provider(iwf.CpexIWF):
+class Provider(CpexIWF, OobSSIWF):
     def __init__(self, params: dict):
         super().__init__(params)
         self.latencies = []
         self.mode = params['mode']
-        self.pid = params['pid']
-        self.SPC = f'sp_{self.pid}'
         self.impl = params['impl']
         self.next_prov = params.get('next_prov')
 
-        self.cps = params.get('cps')
-        self.cr = params.get('cr')
-
-        if self.mode not in [constants.MODE_ATIS, constants.MODE_CPEX]:
-            raise Exception('Mode must be specified as either atis or cpex')
-        
-        if config.is_atis_mode(self.mode):
-            if not self.cps:
-                raise Exception('CPS must be specified')
-            if not self.cr:
-                raise Exception('CR must be specified')
-            
-        self.load_auth_service()
-    
     def is_atis_mode(self):
         return config.is_atis_mode(self.mode)
     
@@ -63,13 +45,6 @@ class Provider(iwf.CpexIWF):
     def reset(self):
         self.latencies = []
         super().reset()
-
-    def load_auth_service(self):
-        self.auth_service = AuthService(
-            ownerId=self.pid,
-            private_key_pem=self.cr['sk'],
-            x5u=self.cr['x5u'],
-        )
     
     async def originate(self, src: str = None, dst: str = None) -> Union[SIPSignal, TDMSignal]:
         src = misc.fake_number(1) if src is None else src
@@ -129,40 +104,29 @@ class Provider(iwf.CpexIWF):
         start_time = time.perf_counter()
         
         if self.is_atis_mode():
-            await self.atis_publish(signal=sip_signal)
+            await self.atis_publish_token(
+                src=sip_signal.From, 
+                dst=sip_signal.To, 
+                identity=sip_signal.Identity
+            )
         else:
-            await self.cpex_publish(src=sip_signal.From, dst=sip_signal.To, token=sip_signal.Identity)
+            await self.cpex_publish(
+                src=sip_signal.From, 
+                dst=sip_signal.To, 
+                token=sip_signal.Identity
+            )
             
         time_taken = time.perf_counter() - start_time
         self.latencies.append(time_taken)
         self.publish_provider_time += time_taken
         return tdm_signal
-        
-    async def atis_publish(self, signal: SIPSignal):
-        self.log_msg(f'--> Executes ATIS PUBLISH')
-        authorization: str = self.auth_service.authenticate_request(
-            action='publish',
-            orig=signal.From,
-            dest=signal.To,
-            passports=[signal.Identity],
-            iss=self.pid,
-            aud=self.cps['fqdn']
-        )
-        # self.log_msg(f'Authorized Request with: Bearer {authorization}')
-        headers: dict = {'Authorization': 'Bearer ' + authorization }
-        payload: dict = {'passports': [ signal.Identity ]}
-        url: str = self.cps['url']
-        url = f'{url}/publish/{signal.To}/{signal.From}'
-        self.log_msg(f'--> PUBLISH URL: {url}')
-        responses = await http.posts(reqs=[{'url': url, 'data': payload, 'headers': headers}])
-        self.log_msg(f"ATIS PUBLISH Responses: {responses}")
     
     async def retrieve(self, signal: TDMSignal) -> SIPSignal:
         self.log_msg(f'--> Executes RETRIEVE')
         try: 
             start_time = time.perf_counter()
             if self.is_atis_mode():
-                token = await self.atis_retrieve_token(signal=signal)
+                token = await self.atis_retrieve_token(src=signal.From, dst=signal.To)
             else:
                 token = await self.cpex_retrieve(src=signal.From, dst=signal.To)
                 
@@ -176,27 +140,6 @@ class Provider(iwf.CpexIWF):
             traceback.print_exc()
             signal = self.convert_tdm_to_sip(signal=signal)
         return signal
-    
-    async def atis_retrieve_token(self, signal: TDMSignal) -> List[str]:
-        self.log_msg(f'--> Executes ATIS RETRIEVE')
-        authorization: str = self.auth_service.authenticate_request(
-            action='retrieve',
-            orig=signal.From,
-            dest=signal.To,
-            passports=[],
-            iss=self.pid,
-            aud=self.cps['fqdn']
-        )
-        # self.log_msg(f'Authorized Request with: Bearer {authorization}')
-        headers: dict = {'Authorization': 'Bearer ' + authorization }
-        url: str = self.cps['url']
-        url = f'{url}/retrieve/{signal.To}/{signal.From}'
-        self.log_msg(f'--> RETRIEVE URL: {url}')
-        response = await http.get(url=url, params={}, headers=headers)
-        self.log_msg(f"ATIS RETRIEVE Response: {response}")
-        if type(response) == list and len(response) > 0:
-            return response[0]
-        return response
 
     def convert_sip_to_tdm(self, signal: SIPSignal):
         if not isinstance(signal, SIPSignal):

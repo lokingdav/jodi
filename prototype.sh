@@ -3,12 +3,6 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-# Load environment variables from .env file if it exists
-if [[ -f .env ]]; then
-  # shellcheck disable=SC2046
-  export $(grep -v '^#' .env | xargs)
-fi
-
 ###############################################################################
 # Configuration Variables
 ###############################################################################
@@ -89,10 +83,10 @@ compose_up() {
 
   case "$profile" in
     cpex)
-      docker compose --profile cpex --profile proxy --profile experiment up -d
+      docker compose --profile cpex --profile jodi_proxy --profile experiment up -d
       ;;
     atis)
-      docker compose --profile atis --profile experiment up -d
+      docker compose --profile atis --profile oobss_proxy --profile experiment up -d
       ;;
     all)
       docker compose --profile cpex --profile atis --profile experiment up -d
@@ -113,7 +107,7 @@ compose_down() {
   fi
 
   echo "Stopping Docker Compose services..."
-  docker compose --profile cpex --profile proxy --profile atis --profile experiment --profile db down --remove-orphans
+  docker compose --profile cpex --profile jodi_proxy --profile atis --profile experiment --profile db --profile oobss_proxy down --remove-orphans
 }
 
 dockerps() {

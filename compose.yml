@@ -39,7 +39,7 @@ services:
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --keep-alive 30
+      --keep-alive 60
       --timeout 120
     ports:
       - 10430:80
@@ -63,22 +63,22 @@ services:
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --keep-alive 30
+      --keep-alive 60
       --timeout 120
     ports:
       - 10431:80
     profiles: [cpex, ms]
 
-  provider-iwf:
+  jodi-proxy:
     <<: *cpex-service
-    container_name: provider-iwf
+    container_name: jodi-proxy
     command: >
       gunicorn cpex.servers.cpex_proxy:app 
       --bind 0.0.0.0:80 
       --workers 8
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-    profiles: [proxy]
+    profiles: [jodi_proxy]
 
   sti-cr:
     <<: *cpex-service
@@ -89,7 +89,7 @@ services:
       --workers 2
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --keep-alive 30
+      --keep-alive 60
       --timeout 120
     ports:
       - 10432:80
@@ -97,47 +97,49 @@ services:
       - NODE_PORT=10432
     profiles: [atis, cr]
 
-  sti-cps-0:
+  sti-cps:
     <<: *cpex-service
-    container_name: sti-cps-0
+    container_name: sti-cps
     command: > 
       gunicorn cpex.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 
-      --workers 4
+      --workers 1
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --keep-alive 30
+      --keep-alive 60
+      --timeout 120
     ports:
       - 10433:80
     environment:
       - NODE_PORT=10433
-    profiles: [atis, cps, cps0]
+    depends_on:
+      cache:
+        condition: service_healthy
+    profiles: [atis, cps]
 
-  sti-cps-1:
+  oobss-proxy:
     <<: *cpex-service
-    container_name: sti-cps-1
-    command:  > 
-      gunicorn cpex.prototype.stirshaken.cps_server:app 
+    container_name: oobss-proxy
+    command: >
+      gunicorn cpex.prototype.stirshaken.oobss_proxy:app 
       --bind 0.0.0.0:80 
-      --workers 4
+      --workers 8
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
-      --keep-alive 30
-    ports:
-      - 10434:80
-    environment:
-      - NODE_PORT=10434
-    profiles: [atis, cps, cps1]
+    profiles: [oobss_proxy]
 
 # Cache and Database
   cache:
-    container_name: cpex-cache
+    container_name: cache
     image: redis
     platform: linux/x86_64
-    # ports:
-      # - 6379:6379
     networks:
       - net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
   
   mongo:
     container_name: cpex-mongo
