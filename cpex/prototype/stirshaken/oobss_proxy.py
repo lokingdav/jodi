@@ -13,10 +13,19 @@ logfile = 'oobss_proxy'
 mylogging.init_mylogger(logfile, f'logs/{logfile}.log')
 cache.set_client(cache.connect())
 
+metrics_log = mylogging.init_logger(
+    name='oobss_proxy_metrics',
+    filename=f'logs/oobss_proxy_metrics.log',
+    level=mylogging.logging.INFO,
+    formatter=None
+)
+
 proxy_params: dict = {
     'pid': config.OOBSS_PROXY_SPC,
     'cps': { 'fqdn': config.OOBSS_PROXY_CPS_FQDN },
-    'cr': { 'sk': config.OOBSS_PROXY_CR_SK, 'x5u': config.OOBSS_PROXY_CR_X5U }
+    'cr': { 'sk': config.OOBSS_PROXY_CR_SK, 'x5u': config.OOBSS_PROXY_CR_X5U },
+    'logger': mylogging.mylogger,
+    'metrics_log': metrics_log
 }
 
 def init_server():
@@ -29,22 +38,28 @@ def success_response(content = {"message": "OK"}):
         content=content, 
         status_code=status.HTTP_200_OK
     )
+    
+def error_response(content = {"_error": "Unprocessable Entity"}):
+    return JSONResponse(
+        content=content, 
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+    )
 
-class Retrieve(BaseModel):
+class Publish(BaseModel):
     src: str
     dst: str
-
-class Publish(Retrieve):
     passport: str
     
 @app.post("/publish")
 async def oob_proxy_publish(req: Publish):
     proxy = OobSSIWF({**proxy_params})
-    await proxy.atis_publish_token(
+    res = await proxy.atis_publish_token(
         src=req.src, 
         dst=req.dst, 
         identity=req.passport
     )
+    if '_error' in res:
+        return error_response(content=res)
     return success_response()
 
 @app.get("/retrieve/{src}/{dst}")

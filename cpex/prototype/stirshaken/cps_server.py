@@ -28,9 +28,10 @@ def init_server():
     global MY_CRED, X5U
     
     cache.set_client(cache.connect())
-    print(cache.client, flush=True)
+    
     nodes = setup.get_node_hosts()
-    cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
+    if config.CPS_KEY in nodes:
+        cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
 
     MY_CRED, allcerts = stirsetup.load_certs()
     certs.set_certificate_repository(allcerts)

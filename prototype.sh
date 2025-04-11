@@ -81,6 +81,8 @@ compose_up() {
   local profile="$1"
   echo "Starting Docker Compose services..."
 
+  rm -rf logs/*.log
+
   case "$profile" in
     cpex)
       docker compose --profile cpex --profile jodi_proxy --profile experiment up -d
