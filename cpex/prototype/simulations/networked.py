@@ -1,10 +1,10 @@
-import random, asyncio, os, time, math, json
+import random, asyncio, os, time, math, json, aiohttp, asyncio
 import numpy as np
 from multiprocessing import Pool
 from cpex.crypto import groupsig, billing
 from cpex.prototype import network
 from cpex.models import cache, persistence
-from cpex.helpers import errors, mylogging
+from cpex.helpers import errors, mylogging, http
 from cpex.prototype.stirshaken import stirsetup
 from cpex import config, constants
 from cpex.prototype import provider as providerModule
@@ -15,7 +15,6 @@ gsk, gpk = None, None
 credentials = None
 call_placement_services = []
 certificate_repos = []
-
 cache_client = None
 
 def set_cache_client(client):
@@ -30,6 +29,11 @@ def init_worker():
     certificate_repos = cache.find(key=config.CR_KEY, dtype=dict) or []
     _, credentials = stirsetup.load_certs()
     entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
+    
+    if not http.keep_alive_session:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        http.set_session(http.create_session(event_loop=loop))
     
 class NetworkedSimulator:
     def simulate_call_sync(self, options: dict):

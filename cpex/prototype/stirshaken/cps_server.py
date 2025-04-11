@@ -1,4 +1,5 @@
 from fastapi import FastAPI, status, Header, Request
+from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
@@ -41,6 +42,13 @@ def init_server():
         cache.save_certificates(allcerts)
 
     return FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    keep_alive_session = http.create_session()
+    http.set_session(keep_alive_session)
+    yield
+    await keep_alive_session.close()
 
 def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     # mylogging.mylogger.debug(f"{os.getpid()}: Authorizing request")

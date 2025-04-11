@@ -1,13 +1,14 @@
-import json
+import json, asyncio
 from pydantic import BaseModel
 from fastapi import FastAPI, status, Request
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 
 from cpex.models import cache
 from cpex import config
 from cpex.prototype.stirshaken.oobss_iwf import OobSSIWF
 
-from cpex.helpers import mylogging
+from cpex.helpers import mylogging, http
 
 logfile = 'oobss_proxy'
 mylogging.init_mylogger(logfile, f'logs/{logfile}.log')
@@ -28,8 +29,16 @@ proxy_params: dict = {
     'metrics_logger': metrics_logger
 }
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    keep_alive_session = http.create_session()
+    # print(keep_alive_session, flush=True)
+    http.set_session(keep_alive_session)
+    yield
+    await keep_alive_session.close()
+
 def init_server():
-    return FastAPI(title="OOB-S/S Proxy API")
+    return FastAPI(title="OOB-S/S Proxy API", lifespan=lifespan)
 
 app = init_server()
 
@@ -65,8 +74,11 @@ async def oob_proxy_publish(req: Publish):
 @app.get("/retrieve/{src}/{dst}")
 async def oob_proxy_retrieve(src: str, dst: str, req: Request):
     proxy = OobSSIWF({**proxy_params})
-    token = await proxy.atis_retrieve_token(src=src, dst=dst)
-    return success_response(content={"token": token})
+    res = await proxy.atis_retrieve_token(src=src, dst=dst)
+    mylogging.mylogger.debug(f"RETRIEVE RESPONSE: {res}")
+    if '_error' in res:
+        return error_response(content=res)
+    return success_response(content={"token": res})
 
 @app.get("/health")
 async def health():
