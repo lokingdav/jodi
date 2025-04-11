@@ -9,7 +9,7 @@ class OobSSIWF:
         self.pid = params['pid']
         self.SPC = f'sp_{self.pid}'
         self.logger = params.get('logger')
-        self.metrics_log = params.get('metrics_log')
+        self.metrics_logger = params.get('metrics_logger')
         
         self.cps_fqdn = params['cps']['fqdn']
         self.cr_sk = params['cr']['sk']
@@ -29,8 +29,8 @@ class OobSSIWF:
             self.logger.debug(msg)
 
     def log_metric(self, metric: str):
-        if self.metrics_log:
-            self.metrics_log.info(metric)
+        if self.metrics_logger:
+            self.metrics_logger.info(metric)
         
     async def atis_retrieve_token(self, src: str, dst: str) -> str:
         start_compute = time.perf_counter()

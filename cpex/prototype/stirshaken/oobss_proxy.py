@@ -13,7 +13,7 @@ logfile = 'oobss_proxy'
 mylogging.init_mylogger(logfile, f'logs/{logfile}.log')
 cache.set_client(cache.connect())
 
-metrics_log = mylogging.init_logger(
+metrics_logger = mylogging.init_logger(
     name='oobss_proxy_metrics',
     filename=f'logs/oobss_proxy_metrics.log',
     level=mylogging.logging.INFO,
@@ -25,7 +25,7 @@ proxy_params: dict = {
     'cps': { 'fqdn': config.OOBSS_PROXY_CPS_FQDN },
     'cr': { 'sk': config.OOBSS_PROXY_CR_SK, 'x5u': config.OOBSS_PROXY_CR_X5U },
     'logger': mylogging.mylogger,
-    'metrics_log': metrics_log
+    'metrics_logger': metrics_logger
 }
 
 def init_server():

@@ -1,13 +1,21 @@
 from cpex.helpers import http
 import asyncio, time, json
-from cpex.crypto import billing
 from cpex import config
 
+proto = 'jodi'
+
 async def main():
-    token = billing.create_endorsed_token(sk=config.VOPRF_SK)
-    print("Token:", token)
-    verified = billing.verify_token(vk=config.VOPRF_VK, token=token)
-    print("Verified:", verified)
+    src, dst = '11111111111', '22222222222'
+    pub_res = await http.posts([
+        {
+            'url': f'http://{proto}-proxy/publish',
+            'data': {'src': src, 'dst': dst, 'passport': 'header.payload.signature'},
+        }
+    ])
+    print(pub_res)
+    # time.sleep(3)
+    ret_res = await http.get(f'http://{proto}-proxy/retrieve/{src}/{dst}')
+    print(ret_res)
 
 if __name__ == '__main__':
     asyncio.run(main())
