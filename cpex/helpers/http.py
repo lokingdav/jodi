@@ -1,6 +1,12 @@
 from typing import List, Dict
 import aiohttp
-import asyncio
+import asyncio, traceback
+
+import logging
+
+aiohttp_log = logging.getLogger("aiohttp.client")
+aiohttp_log.setLevel(logging.DEBUG)
+aiohttp_log.addHandler(logging.StreamHandler())
 
 keep_alive_session: aiohttp.ClientSession = None
 
@@ -35,6 +41,7 @@ async def post(url: str, data: dict, headers: dict = {}) -> dict:
             response.raise_for_status()
             return await response.json()
     except Exception as e:
+        # traceback.print_exc()
         return {"_error": str(e)}
 
 async def posts(reqs: List[dict]) -> List[dict]:
@@ -68,4 +75,5 @@ async def get(url: str, params: dict = {}, headers: dict = {}) -> dict:
             response.raise_for_status()
             return await response.json()
     except Exception as e:
+        # traceback.print_exc()
         return {"_error": str(e)}

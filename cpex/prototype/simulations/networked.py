@@ -1,4 +1,4 @@
-import random, asyncio, os, time, math, json
+import random, asyncio, os, time, math, json, atexit
 import numpy as np
 from multiprocessing import Pool
 from cpex.crypto import groupsig, billing
@@ -34,10 +34,18 @@ def init_worker():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         http.set_session(http.create_session(event_loop=loop))
+        
+def teardown_worker(args):
+    print(f"{os.getpid()}: teardown worker")
+    loop = asyncio.get_event_loop()
+    if loop and http.keep_alive_session:
+        loop.run_until_complete(http.keep_alive_session.close())
+        loop.close()
     
 class NetworkedSimulator:
     def simulate_call_sync(self, options: dict):
-        res = asyncio.run(self.simulate_call(options))
+        # print('Simulating call with options', options)
+        res = self.simulate_call(options)
         return res
     
     def create_prov_params(self, pid, impl, mode, options, next_prov):
@@ -78,7 +86,7 @@ class NetworkedSimulator:
         )
         return providerModule.Provider(params)
 
-    async def simulate_call(self, options: dict):
+    def simulate_call(self, options: dict):
         mode: str = options.get('mode')
 
         if mode not in constants.MODES:
@@ -99,6 +107,8 @@ class NetworkedSimulator:
         logger.debug(f"Simulating call with route: {route}")
         
         signal, start_token, final_token, latency, oob = None, None, None, 0, 0
+        
+        loop = asyncio.get_event_loop()
 
         for i, (idx, impl) in enumerate(route):
             provider = self.create_provider_instance(
@@ -111,11 +121,11 @@ class NetworkedSimulator:
             provider.logger = logger
 
             if i == 0: # Originating provider
-                signal, start_token = await provider.originate()
+                signal, start_token = loop.run_until_complete(provider.originate())
             elif i == len(route) - 1: # Terminating provider
-                final_token = await provider.terminate(signal)
+                final_token = loop.run_until_complete(provider.terminate(signal))
             else: # Intermediate provider
-                signal = await provider.receive(signal)
+                signal = loop.run_until_complete(provider.receive(signal)) 
 
             lat = provider.get_latency_ms()
             latency += lat
@@ -127,7 +137,7 @@ class NetworkedSimulator:
         logger.debug(f"Total latency for call = {latency} ms")
 
         # if not is_correct:
-        #   mylogging.print_logs(logger)
+        # mylogging.print_logs(logger)
             
         mylogging.close_logger(logger)
 
