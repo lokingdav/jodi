@@ -17,6 +17,11 @@ def destroy_session():
     loop = asyncio.get_event_loop()
     if keep_alive_session:
         loop.run_until_complete(keep_alive_session.close())
+        
+async def async_destroy_session():
+    global keep_alive_session
+    if keep_alive_session:
+        await keep_alive_session.close()
 
 def get_headers(headers: dict = {}) -> dict:
     return {

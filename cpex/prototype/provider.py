@@ -24,7 +24,9 @@ class SIPSignal(BaseModel):
 
 class Provider(CpexIWF, OobSSIWF):
     def __init__(self, params: dict):
-        super().__init__(params)
+        CpexIWF.__init__(self, params)
+        OobSSIWF.__init__(self, params)
+        
         self.latencies = []
         self.mode = params['mode']
         self.impl = params['impl']

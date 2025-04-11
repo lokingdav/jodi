@@ -1,4 +1,4 @@
-import random, asyncio, os, time, math, json, aiohttp, asyncio
+import random, asyncio, os, time, math, json
 import numpy as np
 from multiprocessing import Pool
 from cpex.crypto import groupsig, billing
