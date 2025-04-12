@@ -1,4 +1,5 @@
 from fastapi import FastAPI, status, Header, Request
+from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
@@ -23,6 +24,13 @@ class PublishRequest(BaseModel):
     
 class RepublishRequest(PublishRequest):
     token: str
+    
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    keep_alive_session = http.create_session()
+    http.set_session(keep_alive_session)
+    yield
+    await keep_alive_session.close()
 
 def init_server():
     global MY_CRED, X5U
@@ -30,7 +38,8 @@ def init_server():
     cache.set_client(cache.connect())
     
     nodes = setup.get_node_hosts()
-    cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
+    if config.CPS_KEY in nodes:
+        cache.save(key=OTHER_CPSs, value=json.dumps(nodes.get(config.CPS_KEY)))
 
     MY_CRED, allcerts = stirsetup.load_certs()
     certs.set_certificate_repository(allcerts)
@@ -39,7 +48,7 @@ def init_server():
     if config.USE_LOCAL_CERT_REPO:
         cache.save_certificates(allcerts)
 
-    return FastAPI()
+    return FastAPI(title="CPS API", lifespan=lifespan)
 
 def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     # mylogging.mylogger.debug(f"{os.getpid()}: Authorizing request")

@@ -24,7 +24,7 @@ func_measure_real_latency() {
 
 func_run_latency_experiments() {
     # local x=(20)
-    local x=(20 40 60 100 200 300 400 500 600 700 800 900 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 2000)
+    local x=(100 200 400 600 800 1000 1200 1400 1600 1800 2000 2200 2400 2600 2800 3000 3200 3400 3600 3800 4000)
     local lastval=${x[${#x[@]}-1]}
     local proto=$1
 
@@ -51,7 +51,7 @@ func_run_latency_experiments() {
 
 func_run_success_rate_experiments() {
     # local x=(100)
-    local x=(100 200 300 400 500 700 900 1000 1500 2000 2500 3000 3500 4000 4500 5000 5500 6000)
+    local x=(100 200 300 400 500 700 900 1000 1500 2000 2500 3000 3500 4000 4500 5000 5500 6000 6500 7000)
     local lastval=${x[${#x[@]}-1]}
     local proto=$1
 

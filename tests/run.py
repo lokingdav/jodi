@@ -2,8 +2,8 @@ import asyncio, argparse, json, random, time
 from cpex.prototype.provider import Provider
 from cpex.helpers import dht
 from cpex.models import cache
-from cpex.crypto import groupsig
-from cpex.helpers import mylogging
+from cpex.crypto import groupsig, billing
+from cpex.helpers import mylogging, http
 from cpex.prototype.simulations.networked import NetworkedSimulator
 from cpex import config
 from itertools import product
@@ -13,6 +13,8 @@ cache.set_client(cache.connect())
 cpex_conf = {'n_ev': 2, 'n_ms': 2, 'gsk': groupsig.get_gsk(), 'gpk': groupsig.get_gpk()}
 
 async def main(args):
+    http.set_session(http.create_session())
+    
     sim = NetworkedSimulator()
     sim.create_nodes()
     cpss = cache.find(config.CPS_KEY, dtype=dict)
@@ -32,6 +34,7 @@ async def main(args):
         'mode': mode,
         'logger': logger,
         'next_prov': (1, 0),
+        'bt': billing.create_endorsed_token(config.VOPRF_SK),
         'cps': { 'url': cps1['url'], 'fqdn': cps1['fqdn'] },
         'cr': {'x5u': cps2['url'] + f'/certs/ocrt-164', 'sk': "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgM2RHw7TQdVvbo9pq\n829inltAQ+Ud8qYRYvbrdu2dIeKhRANCAAS3YDPLvKw41B2PV87DUDn04qOtZDFH\nWJS+M2Nqk7eAgWGVbh6T6BQkiMXifXGvBQ1wFNIPRY1rsi330VP8dzPd\n-----END PRIVATE KEY-----\n"},
         **cpex_conf,
@@ -45,6 +48,7 @@ async def main(args):
         'mode': mode,
         'logger': logger,
         'next_prov': None,
+        'bt': billing.create_endorsed_token(config.VOPRF_SK),
         'cps': { 'url': cps2['url'], 'fqdn': cps2['fqdn'] },
         'cr': {'x5u': cps1['url'] + f'/certs/ocrt-164', 'sk': "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgM2RHw7TQdVvbo9pq\n829inltAQ+Ud8qYRYvbrdu2dIeKhRANCAAS3YDPLvKw41B2PV87DUDn04qOtZDFH\nWJS+M2Nqk7eAgWGVbh6T6BQkiMXifXGvBQ1wFNIPRY1rsi330VP8dzPd\n-----END PRIVATE KEY-----\n"},
         **cpex_conf,
@@ -54,7 +58,9 @@ async def main(args):
     print(f"Tokens Match: {token == token_retrieved}")
     print(f'Total Latency: {provider1.get_latency_ms() + provider2.get_latency_ms()} ms')
 
-    mylogging.print_logs(logger)
+    # mylogging.print_logs(logger)
+    
+    await http.async_destroy_session()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

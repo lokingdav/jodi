@@ -79,7 +79,7 @@ def get_node_hosts():
                 nodes[config.CR_KEY].append(create_node(f'{ip_addr}:{config.CR_PORT}'))
                 
                 nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_0_PORT}'))
-                nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_1_PORT}'))
+                # nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_1_PORT}'))
             else:
                 node = create_node(ip_addr)
                 if '-ev-' in ip_addr or 'evaluator' in ip_addr:

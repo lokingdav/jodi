@@ -47,9 +47,15 @@ def create(num_providers:int, deploy_rate: float = config.SS_DEPLOY_RATE) -> Tup
     data = []
     index = 1
     for i, route in enumerate(routes):
+        if index > 1000:
+            break
+        
         _route = [(r, adopters[int(r)]) for r in route]
-        if all([r[1] == 1 for r in _route]):
-            continue
+        count_ones = sum([r[1] for r in _route])
+        count_zeros = len(_route) - count_ones
+        if count_ones == len(_route) or (count_zeros > 1 and count_ones):
+            continue # skip if all are 1s or if there are 2 or more 0s and at least one 1
+        
         data.append({
             '_id': index,
             'status': STATUS_PENDING,
@@ -58,5 +64,5 @@ def create(num_providers:int, deploy_rate: float = config.SS_DEPLOY_RATE) -> Tup
         index += 1
         
     data = [{'_id': 0, 'total': len(data), 'all': len(routes)}] + data
-    
+    print(f"\tTotal Routes: {len(routes)}\n\tTotal Adopters: {len(adopters)}\n\tSampled OOB Routes: {len(data)-1}")
     return data, stats

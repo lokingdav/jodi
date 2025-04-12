@@ -1,10 +1,10 @@
-import random, asyncio, os, time, math, json
+import random, asyncio, os, time, math, json, atexit
 import numpy as np
 from multiprocessing import Pool
 from cpex.crypto import groupsig, billing
 from cpex.prototype import network
 from cpex.models import cache, persistence
-from cpex.helpers import errors, mylogging
+from cpex.helpers import errors, mylogging, http
 from cpex.prototype.stirshaken import stirsetup
 from cpex import config, constants
 from cpex.prototype import provider as providerModule
@@ -15,7 +15,6 @@ gsk, gpk = None, None
 credentials = None
 call_placement_services = []
 certificate_repos = []
-
 cache_client = None
 
 def set_cache_client(client):
@@ -31,9 +30,22 @@ def init_worker():
     _, credentials = stirsetup.load_certs()
     entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
     
+    if not http.keep_alive_session:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        http.set_session(http.create_session(event_loop=loop))
+        
+def teardown_worker(args):
+    print(f"{os.getpid()}: teardown worker")
+    loop = asyncio.get_event_loop()
+    if loop and http.keep_alive_session:
+        loop.run_until_complete(http.keep_alive_session.close())
+        loop.close()
+    
 class NetworkedSimulator:
     def simulate_call_sync(self, options: dict):
-        res = asyncio.run(self.simulate_call(options))
+        # print('Simulating call with options', options)
+        res = self.simulate_call(options)
         return res
     
     def create_prov_params(self, pid, impl, mode, options, next_prov):
@@ -74,7 +86,7 @@ class NetworkedSimulator:
         )
         return providerModule.Provider(params)
 
-    async def simulate_call(self, options: dict):
+    def simulate_call(self, options: dict):
         mode: str = options.get('mode')
 
         if mode not in constants.MODES:
@@ -95,6 +107,8 @@ class NetworkedSimulator:
         logger.debug(f"Simulating call with route: {route}")
         
         signal, start_token, final_token, latency, oob = None, None, None, 0, 0
+        
+        loop = asyncio.get_event_loop()
 
         for i, (idx, impl) in enumerate(route):
             provider = self.create_provider_instance(
@@ -107,11 +121,11 @@ class NetworkedSimulator:
             provider.logger = logger
 
             if i == 0: # Originating provider
-                signal, start_token = await provider.originate()
+                signal, start_token = loop.run_until_complete(provider.originate())
             elif i == len(route) - 1: # Terminating provider
-                final_token = await provider.terminate(signal)
+                final_token = loop.run_until_complete(provider.terminate(signal))
             else: # Intermediate provider
-                signal = await provider.receive(signal)
+                signal = loop.run_until_complete(provider.receive(signal)) 
 
             lat = provider.get_latency_ms()
             latency += lat
@@ -123,7 +137,7 @@ class NetworkedSimulator:
         logger.debug(f"Total latency for call = {latency} ms")
 
         # if not is_correct:
-        #   mylogging.print_logs(logger)
+        # mylogging.print_logs(logger)
             
         mylogging.close_logger(logger)
 
@@ -171,7 +185,7 @@ class NetworkedSimulator:
         
         if config.is_atis_mode(mode):
             cps = cache.find(key=config.CPS_KEY, dtype=dict)
-            assert cps and len(cps) == num_evs + num_mss
+            assert cps and len(cps) == config.CPS_COUNT
         else:
             evs = cache.find(key=config.EVALS_KEY, dtype=dict)
             assert evs and len(evs) == num_evs

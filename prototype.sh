@@ -81,12 +81,14 @@ compose_up() {
   local profile="$1"
   echo "Starting Docker Compose services..."
 
+  rm -rf logs/*.log
+
   case "$profile" in
     cpex)
-      docker compose --profile cpex --profile proxy --profile experiment up -d
+      docker compose --profile cpex --profile jodi_proxy --profile experiment up -d
       ;;
     atis)
-      docker compose --profile atis --profile experiment up -d
+      docker compose --profile atis --profile oobss_proxy --profile experiment up -d
       ;;
     all)
       docker compose --profile cpex --profile atis --profile experiment up -d
@@ -107,7 +109,7 @@ compose_down() {
   fi
 
   echo "Stopping Docker Compose services..."
-  docker compose --profile cpex --profile proxy --profile atis --profile experiment --profile db down --remove-orphans
+  docker compose --profile cpex --profile jodi_proxy --profile atis --profile experiment --profile db --profile oobss_proxy down --remove-orphans
 }
 
 dockerps() {

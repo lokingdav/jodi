@@ -13,6 +13,7 @@ class CpexIWF:
         self.gpk = params['gpk']
         self.gsk = params['gsk']
         self.logger = params.get('logger')
+        self.metrics_logger = params.get('metrics_logger')
         self.fake_proxy = params.get('fake_proxy', False)
         self.bt = params['bt']
         self.sim_overhead = []
@@ -33,6 +34,8 @@ class CpexIWF:
         self.sim_overhead = []
         
     async def cpex_generate_call_ids(self, src: str, dst: str, req_type: str) -> str:
+        start_compute = time.perf_counter()
+
         self.log_msg(f'==================== CALL ID GENERATION')
         self.log_msg(f'--> This is call id generation for {req_type} request')
         call_details: str = libcpex.normalize_call_details(src=src, dst=dst)
@@ -46,9 +49,9 @@ class CpexIWF:
         )
         self.log_msg(f'--> Created Requests for the Following EVs: {[r["nodeId"]+":::"+str(r["data"]["i_k"]) for r in requests]}')
         
-        req_time_start = time.perf_counter()
+        end_compute = time.perf_counter()
         responses = await self.make_request('evaluate', requests=requests)
-        req_time_taken = time.perf_counter() - req_time_start
+        req_time_taken = time.perf_counter() - end_compute
         
         self.log_msg(f'--> Responses from Evaluators: {responses}')
         
@@ -77,21 +80,35 @@ class CpexIWF:
             
         self.sim_overhead.append(sim_ovrhd)
         
+        compute_time = end_compute - start_compute
+        net_time = req_time_taken
+        
+        start_compute = time.perf_counter()
         call_ids = libcpex.create_call_ids(responses=responses, mask=mask, req_type=req_type)
-
+        
+        compute_time += time.perf_counter() - start_compute
+        
         if call_ids:
             self.log_msg(f"---> Call ID: {[Utils.to_base64(cid) for cid in call_ids if cid]}")
 
         self.log_msg(f'==================== END CALL ID GENERATION')
-        return call_ids
+        
+        runtime = {
+            'compute_time': compute_time,
+            'net_time': net_time,
+        }
+        
+        return call_ids, runtime
     
     async def cpex_publish(self, src, dst, token):
         self.log_msg(f'===== START PUBLISH PROTOCOL =====')
-        call_ids = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='publish')
+        call_ids, cid_runtime = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='publish')
         
         if not call_ids:
             self.log_msg(f'===== END PUBLISH because no call id generated =====')
-            return
+            return {'_error': 'No Call ID generated'}
+        
+        start_compute = time.perf_counter()
         
         reqs = libcpex.create_storage_requests(
             call_id=call_ids[0], # Only publish the recent call ID
@@ -103,9 +120,9 @@ class CpexIWF:
         )
         self.log_msg(f'--> Created Requests for the Following MSs: {[r["nodeId"] for r in reqs]}')
         
-        req_time_start = time.perf_counter()
+        end_compute = time.perf_counter()
         responses = await self.make_request('publish', requests=reqs)
-        req_time_taken = time.perf_counter() - req_time_start
+        req_time_taken = time.perf_counter() - end_compute
         self.log_msg(f'--> Responses From MS: {responses}')
         
         try:
@@ -118,15 +135,22 @@ class CpexIWF:
         except:
             pass
         self.log_msg(f'===== END PUBLISH PROTOCOL =====\n')
+        
+        compute_time = cid_runtime['compute_time'] + (end_compute - start_compute)
+        net_time = cid_runtime['net_time'] + req_time_taken
+        self.log_metric(f'jodi,publish,{misc.toMs(compute_time)},{misc.toMs(net_time)},{misc.toMs(compute_time + net_time)}')
+        
+        return {'_success': 'message published'}
 
     async def cpex_retrieve(self, src: str, dst: str) -> str:
         self.log_msg(f'===== START RETRIEVE PROTOCOL =====')
-        call_ids = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='retrieve')
+        call_ids, cid_runtime = await self.cpex_generate_call_ids(src=src, dst=dst, req_type='retrieve')
         
         if not call_ids:
             self.log_msg(f'===== END RETRIEVE PROTOCOL because no call id generated =====')
             return None
         
+        start_compute = time.perf_counter()
         requests = libcpex.create_retrieve_requests(
             call_ids=call_ids, 
             n_ms=self.n_ms, 
@@ -137,20 +161,29 @@ class CpexIWF:
         # self.log_msg(f'--> Retrieve Requests: {requests}')
         self.log_msg(f'--> Created Retrieve Requests for the Following MSs: {[r["nodeId"] for r in requests]}')
         
-        req_time_start = time.perf_counter()
+        end_compute = time.perf_counter()
         responses = await self.make_request('retrieve', requests=requests)
-        req_time_taken = time.perf_counter() - req_time_start
+        req_time_taken = time.perf_counter() - end_compute
         self.log_msg(f'--> Responses from Stores: {responses}')
         
         self.retrieve_provider_time -= req_time_taken # Subtract wait time from compute time
         
         self.retrieve_ms_time = np.mean([res.get('time_taken', 0) for res in responses]) # Average time taken to store a message by a single store
         
+        compute_time = cid_runtime['compute_time'] + (end_compute - start_compute)
+        net_time = cid_runtime['net_time'] + req_time_taken
+        
         # self.log_msg(f"\n--> Filtered Responses: {responses}")
         # self.log_msg(f"--> Call IDs: {call_ids}\n")
+        start_compute = time.perf_counter()
         token = libcpex.decrypt(call_ids=call_ids, responses=responses, gpk=self.gpk)
+        compute_time += time.perf_counter() - start_compute
+        
         self.log_msg(f'--> Retrieved Token: {token}')
         self.log_msg(f"===== END RETRIEVE PROTOCOL =====\n")
+        
+        self.log_metric(f'jodi,retrieve,{misc.toMs(compute_time)},{misc.toMs(net_time)},{misc.toMs(compute_time + net_time)}')
+        
         return token
     
     async def make_request(self, req_type: str, requests: List[dict]):
@@ -182,9 +215,12 @@ class CpexIWF:
         }
     
     def log_msg(self, msg):
-        # print(msg)
         if config.DEBUG and self.logger:
             self.logger.debug(msg)
+
+    def log_metric(self, metric: str):
+        if self.metrics_logger:
+            self.metrics_logger.info(metric)
             
 async def make_fake_request(req_type: str, requests: List[dict], gsk: str, gpk: str):
     if req_type == 'evaluate':

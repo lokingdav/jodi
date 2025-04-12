@@ -31,11 +31,11 @@ def verify_token(token: str, audience: str = config.NODE_FQDN) -> dict:
     # return jwt.decode(token, options={"verify_signature": False})
     header = jwt.get_unverified_header(token)
     public_key = load_public_key(header['x5u'])
-    # mylogging.mylogger.debug(f"Public Key: {public_key}")
+    # mylogging.mylogger.debug(f"Public Key: {public_key}, Audience: {audience}")
     if not public_key:
         return None
     try:
         return jwt.decode(token, public_key, algorithms=[header['alg']], audience=audience)
     except Exception as e:
-        # mylogging.mylogger.error(f'Error verifying token: {e}')
+        mylogging.mylogger.error(f'Error verifying token: {e}')
         return None

@@ -49,7 +49,7 @@ n_ms = env('n_ms', 3)
 FAKE_PROXY = env('FAKE_PROXY', True, dtype=bool)
 
 NODE_IP = env('NODE_IP')
-NODE_PORT = env('NODE_PORT')
+NODE_PORT = env('NODE_PORT', '10433')
 NODE_FQDN = env('NODE_FQDN', f'{NODE_IP}:{NODE_PORT}')
 
 EV_PORT = env('EV_PORT', '10430')
@@ -102,3 +102,14 @@ CHURN_INTERVAL_SECONDS = env('CHURN_INTERVAL_SECONDS', min(EV_DOWN_TIME, MS_DOWN
 
 EMPTY_TOKEN = env('EMPTY_TOKEN', '-1')
 USE_LOCAL_CERT_REPO = env('USE_LOCAL_CERT_REPO', False, dtype=bool)
+
+
+# OOB-S/S Parameters
+OOBSS_PROXY_SPC = env('OOBSS_PROXY_SPC')
+OOBSS_PROXY_CPS_FQDN = env('OOBSS_PROXY_CPS_FQDN')
+OOBSS_PROXY_CR_SK = env('OOBSS_PROXY_CR_SK')
+OOBSS_PROXY_CR_X5U = env('OOBSS_PROXY_CR_X5U')
+
+
+# Experiment Parameters
+CPS_COUNT = env('CPS_COUNT', 10, dtype=int)
