@@ -78,6 +78,7 @@ services:
       --workers 8
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
+      --keep-alive 60
     profiles: [jodi_proxy]
 
   sti-cr:
@@ -103,7 +104,7 @@ services:
     command: > 
       gunicorn cpex.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 
-      --workers 1
+      --workers 6
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
       --keep-alive 60
@@ -126,6 +127,7 @@ services:
       --workers 8
       --worker-class uvicorn.workers.UvicornWorker 
       --log-file=-
+      --keep-alive 60
     profiles: [oobss_proxy]
 
 # Cache and Database
