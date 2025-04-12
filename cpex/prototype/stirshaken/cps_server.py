@@ -155,6 +155,9 @@ async def handle_republish_req(dest: str, orig: str, request: RepublishRequest, 
         # mylogging.mylogger.error(f"{os.getpid()}: REPUBLISH request unauthorized")
         return unauthorized_response()
     
+    mylogging.mylogger.debug(f"Passports key: {get_record_key(dest=dest, orig=orig)}")
+    mylogging.mylogger.debug(f"Received Passports: {request.passports}")
+    
     cache.cache_for_seconds(
         key=get_record_key(dest=dest, orig=orig), 
         value=request.passports, 
@@ -173,6 +176,7 @@ async def handle_retrieve_req(dest: str, orig: str, authorization: str = Header(
         mylogging.mylogger.error(f"{os.getpid()}: RETRIEVE request unauthorized")
         return unauthorized_response()
     
+    mylogging.mylogger.debug(f"Passports key: {get_record_key(dest=dest, orig=orig)}")
     passports = cache.find(
         key=get_record_key(dest=dest, orig=orig), 
         dtype=dict
