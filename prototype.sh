@@ -3,12 +3,6 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-# Load environment variables from .env file if it exists
-if [[ -f .env ]]; then
-  # shellcheck disable=SC2046
-  export $(grep -v '^#' .env | xargs)
-fi
-
 ###############################################################################
 # Configuration Variables
 ###############################################################################
