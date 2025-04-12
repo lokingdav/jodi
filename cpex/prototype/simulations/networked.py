@@ -185,7 +185,7 @@ class NetworkedSimulator:
         
         if config.is_atis_mode(mode):
             cps = cache.find(key=config.CPS_KEY, dtype=dict)
-            assert cps and len(cps) == num_evs + num_mss
+            assert cps and len(cps) == config.CPS_COUNT
         else:
             evs = cache.find(key=config.EVALS_KEY, dtype=dict)
             assert evs and len(evs) == num_evs
