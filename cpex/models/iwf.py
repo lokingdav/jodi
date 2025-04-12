@@ -106,7 +106,7 @@ class CpexIWF:
         
         if not call_ids:
             self.log_msg(f'===== END PUBLISH because no call id generated =====')
-            return
+            return {'_error': 'No Call ID generated'}
         
         start_compute = time.perf_counter()
         
@@ -139,6 +139,8 @@ class CpexIWF:
         compute_time = cid_runtime['compute_time'] + (end_compute - start_compute)
         net_time = cid_runtime['net_time'] + req_time_taken
         self.log_metric(f'jodi,publish,{misc.toMs(compute_time)},{misc.toMs(net_time)},{misc.toMs(compute_time + net_time)}')
+        
+        return {'_success': 'message published'}
 
     async def cpex_retrieve(self, src: str, dst: str) -> str:
         self.log_msg(f'===== START RETRIEVE PROTOCOL =====')
