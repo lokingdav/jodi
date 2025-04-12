@@ -10,7 +10,7 @@ aiohttp_log.addHandler(logging.StreamHandler())
 
 keep_alive_session: aiohttp.ClientSession = None
 
-def create_session(event_loop=None, limit=100, keepalive_timeout=60) -> aiohttp.ClientSession:
+def create_session(event_loop=None, limit=1000, keepalive_timeout=60) -> aiohttp.ClientSession:
     connector = aiohttp.TCPConnector(loop=event_loop, limit=limit, keepalive_timeout=keepalive_timeout)
     return aiohttp.ClientSession(loop=event_loop, connector=connector)
         
