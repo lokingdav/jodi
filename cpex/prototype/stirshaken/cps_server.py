@@ -24,6 +24,13 @@ class PublishRequest(BaseModel):
     
 class RepublishRequest(PublishRequest):
     token: str
+    
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    keep_alive_session = http.create_session()
+    http.set_session(keep_alive_session)
+    yield
+    await keep_alive_session.close()
 
 def init_server():
     global MY_CRED, X5U
@@ -41,14 +48,7 @@ def init_server():
     if config.USE_LOCAL_CERT_REPO:
         cache.save_certificates(allcerts)
 
-    return FastAPI()
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    keep_alive_session = http.create_session()
-    http.set_session(keep_alive_session)
-    yield
-    await keep_alive_session.close()
+    return FastAPI(title="CPS API", lifespan=lifespan)
 
 def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     # mylogging.mylogger.debug(f"{os.getpid()}: Authorizing request")
