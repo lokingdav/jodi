@@ -31,7 +31,7 @@ async def verify_token(token: str, audience: str = config.NODE_FQDN) -> dict:
     # return jwt.decode(token, options={"verify_signature": False})
     header = jwt.get_unverified_header(token)
     public_key = await load_public_key(header['x5u'])
-    mylogging.mylogger.debug(f"Public Key: {public_key}, Audience: {audience}")
+    # mylogging.mylogger.debug(f"Public Key: {public_key}, Audience: {audience}")
     if not public_key:
         return None
     try:
