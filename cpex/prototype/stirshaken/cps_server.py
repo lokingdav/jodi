@@ -50,10 +50,10 @@ def init_server():
 
     return FastAPI(title="CPS API", lifespan=lifespan)
 
-def authorize_request(authorization: str, passports: List[str] = None) -> dict:
+async def authorize_request(authorization: str, passports: List[str] = None) -> dict:
     # mylogging.mylogger.debug(f"{os.getpid()}: Authorizing request")
     authorization = authorization.replace("Bearer ", "")
-    decoded = verify_service.verify_token(authorization)
+    decoded = await verify_service.verify_token(authorization)
     # mylogging.mylogger.debug(f"{os.getpid()}: Decoded token: {decoded}")
     if not decoded or 'passports' not in decoded:
         return None
@@ -123,7 +123,7 @@ app = init_server()
 async def handle_publish_req(dest: str, orig: str, request: PublishRequest, authorization: str = Header(None)):
     mylogging.mylogger.debug(f"{os.getpid()}: PUBLISH request: src={orig},  dst={dest}, passports={request.passports}")
     
-    decoded = authorize_request(authorization, request.passports)
+    decoded = await authorize_request(authorization, request.passports)
     if not decoded:
         # mylogging.mylogger.error(f"{os.getpid()}: Unauthorized request")
         return unauthorized_response()
@@ -150,7 +150,7 @@ async def handle_publish_req(dest: str, orig: str, request: PublishRequest, auth
 async def handle_republish_req(dest: str, orig: str, request: RepublishRequest, authorization: str = Header(None)):
     mylogging.mylogger.debug(f"{os.getpid()}: REPUBLISH request: src={orig},  dst={dest}, passports={request.passports}")
     
-    decoded = authorize_request(authorization, request.passports)
+    decoded = await authorize_request(authorization, request.passports)
     if not decoded:
         # mylogging.mylogger.error(f"{os.getpid()}: REPUBLISH request unauthorized")
         return unauthorized_response()
@@ -170,7 +170,7 @@ async def handle_republish_req(dest: str, orig: str, request: RepublishRequest, 
 async def handle_retrieve_req(dest: str, orig: str, authorization: str = Header(None)):
     mylogging.mylogger.debug(f"{os.getpid()}: RETRIEVE request from, src={orig},  dst={dest}")
     
-    decoded = authorize_request(authorization)
+    decoded = await authorize_request(authorization)
     if not decoded:
         mylogging.mylogger.error(f"{os.getpid()}: RETRIEVE request unauthorized")
         return unauthorized_response()

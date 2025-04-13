@@ -88,13 +88,14 @@ def sign_csr(csr_str: str, ca_private_key_str: str, ca_cert_str: str, days_valid
     return cert_pem
 
 
-def download(url: str) -> str:
+async def download(url: str) -> str:
     if not validators.url(url) and not url.startswith('http'):
         raise ValueError(f'Cert url must be a valid URL: {url}')
     try:
-        res = requests.get(url=url)
-        res.raise_for_status()
-        return res.text
+        res = await http.get(url=url)
+        if '_error' in res:
+            return None
+        return res
     except Exception as e:
         print(f'Error downloading certificate: {e}')
         return None

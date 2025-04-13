@@ -4,7 +4,7 @@ from cpex.models import cache
 from cpex import config
 from cpex.helpers import mylogging
 
-def load_public_key(x5u: str):
+async def load_public_key(x5u: str):
     if config.USE_LOCAL_CERT_REPO:
         key = x5u.split('/')[-1]
         certificate = cache.find(key)
@@ -12,7 +12,7 @@ def load_public_key(x5u: str):
         certificate = cache.find(x5u)
         if not certificate:
             print("Downloading certificate from x5u:", x5u, flush=True)
-            certificate = certs.download(x5u)
+            certificate = await certs.download(x5u)
             if certificate:
                 try:
                     certs.verify_chain_of_trust(certificate.replace("\\n", "\n"))
@@ -27,11 +27,11 @@ def load_public_key(x5u: str):
     
     return certs.get_public_key_from_cert(certificate)
 
-def verify_token(token: str, audience: str = config.NODE_FQDN) -> dict:
+async def verify_token(token: str, audience: str = config.NODE_FQDN) -> dict:
     # return jwt.decode(token, options={"verify_signature": False})
     header = jwt.get_unverified_header(token)
-    public_key = load_public_key(header['x5u'])
-    # mylogging.mylogger.debug(f"Public Key: {public_key}, Audience: {audience}")
+    public_key = await load_public_key(header['x5u'])
+    mylogging.mylogger.debug(f"Public Key: {public_key}, Audience: {audience}")
     if not public_key:
         return None
     try:
