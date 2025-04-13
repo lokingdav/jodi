@@ -40,12 +40,10 @@ async def evaluate(req: EvaluateRequest):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
     
-    # mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Received request to evaluate {req.x} with index {req.i_k}")
+    mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Received request to evaluate with index {req.i_k}")
     keypairs = oprf.KeyRotation.get_keys(req.i_k)
-    # mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Using key with index {req.i_k}, keypairs: {keypairs}")
     
     content = oprf.evaluate(keypairs, req.x)
-    # mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Evaluated {req.x} with index {req.i_k} in {round((time.perf_counter() - start_time)*1000, 2)} ms")
 
     return JSONResponse(
         content=content, 

@@ -156,7 +156,6 @@ async def handle_republish_req(dest: str, orig: str, request: RepublishRequest, 
         return unauthorized_response()
     
     mylogging.mylogger.debug(f"Passports key: {get_record_key(dest=dest, orig=orig)}")
-    mylogging.mylogger.debug(f"Received Passports: {request.passports}")
     
     cache.cache_for_seconds(
         key=get_record_key(dest=dest, orig=orig), 
