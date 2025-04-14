@@ -61,7 +61,7 @@ def combine_k6(prefix):
     
 def combine_lat():
     folder = 'cpex/prototype/experiments/results'
-    filenames = ['experiment-3a.csv', 'experiment-3b.csv']
+    filenames = ['experiment-3b.csv', 'experiment-3a.csv']
     output_file = os.path.join(folder, 'experiment-3.csv')  # Output file
     dp = 3  # Decimal places for rounding
 
