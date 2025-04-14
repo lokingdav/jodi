@@ -37,6 +37,7 @@ async def bench_async(options):
         'n_ev': n_ev,
         'n_ms': n_ms,
         'cr': {'x5u': 'https://example.com/ev1.crt', 'sk': cred['sk']},
+        'cps': {'fqdn': 'example.com'},
         'bt': billing.create_endorsed_token(config.VOPRF_SK),
     }
 
