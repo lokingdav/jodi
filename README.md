@@ -1,6 +1,12 @@
-# Control Plane Extension For Telephony
+# Jodi - Jodi’s Out-of-band Dial Intelligence
 
-- This repository contains the code for setting up
+The STIR/SHAKEN caller attestation framework to combat pervasive telephone abuse. This initiative has not achieved its goals, partly because legacy non-VoIP infrastructure could not participate. The industry solution to extend STIR/SHAKEN broadcasts sensitive metadata of every non-VoIP call in plaintext to every third party required to facilitate the system. It has no mechanism to determine if a provider's request for call data is appropriate, nor can it ensure that every copy of that call data is unavailable after its specified expiration. It threatens both individual privacy and industry trade secrets.
+
+Jodi (pronounced “YOH-dee"), is a distributed system that securely extends STIR/SHAKEN across telephone network technologies. It provides secure out-of-band signaling for transmitting STIR/SHAKEN PASSPorTs even with non-VoIP infrastructure and protects confidentiality of subscriber identity. Not only is Jodi a superior approach, it provides a transformative tool for future improvements, such as stronger call authentication or features like Branded Calling.
+
+Jodi makes use of Oblivious Pseudorandom Functions (OPRFs), Threshold Group Signatures (TGS) and Symmetric Key Encryption to ensure its security guarantees. Jodi distributes secrets in a T-out of-N scheme. So, at least T members of the group have to collude to leak any secrets as compared to 1 in the original OOB SS design.
+
+- The code repository contains the source code for setting up
     - Jodi Evaluators (EV) and Message Stores (MS) on the cloud
     - ATIS OOB STIR/SHAKEN CPSes on the cloud
     - Jodi and OOB STIR/SHAKEN proxy on the providers infrastructure
