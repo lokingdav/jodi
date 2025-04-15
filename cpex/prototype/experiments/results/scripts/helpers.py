@@ -99,3 +99,42 @@ def get_oob_fraction():
     # print('Max', np.max(y_vals))
     # print('Min', np.min(y_vals))
     return np.median(y_vals)
+
+def estimate_storage(call_rate, N = 20, M = 20):
+    # Storage Requirement
+    # Token: 2 * 0.078 billion per day * 300 Bytes * 1 day
+    # EV == Token
+    # MS: Token + (2 * 0.078 billion per day * 1024 Bytes * 15 seconds)
+    print("Call rate:", call_rate)
+    token_size = 300
+    aggregation_cycle_in_secs = 60
+    cache_duration_in_secs = 15
+    ctx_size = 1024
+    
+    ev_req_per_sec = 2 * call_rate / N
+    ms_req_per_sec = 2 * call_rate / M
+    
+    print("MS Req per sec:", ms_req_per_sec)
+    print("EV Req per sec:", ev_req_per_sec)
+    
+    ev_storage = ev_req_per_sec * aggregation_cycle_in_secs * token_size
+    ms_storage = (ms_req_per_sec * aggregation_cycle_in_secs * token_size) + (ms_req_per_sec * cache_duration_in_secs * ctx_size)
+    
+    gb = 1024 * 1024 * 1024
+    # Convert to GB
+    ev_storage = math.ceil(ev_storage / gb)
+    ms_storage = math.ceil(ms_storage / gb)
+    
+    print(f"Storage Requirement\n------------------")
+    print(f"Evaluator: {ev_storage} GB")
+    print(f"Message Store: {ms_storage} GB")
+    
+
+def estimate_bandwidth(call_rate, p_rate, N, M):
+    # Bandwidth For 
+    # provider: (6 * 1000 per second) * 1.5 * (2000 Bytes) to megabits per second
+    # message store: (2 * 0.078 billion per day) * 1.5 * (2000 Bytes) to megabits per second
+    # Evaluator: (2 * 0.078 billion per day) * 1.5 * (900 Bytes) to megabits per second
+    ev_req_per_sec = 2 * call_rate / N
+    ms_req_per_sec = 2 * call_rate / M
+    
