@@ -12,6 +12,14 @@ Jodi makes use of Oblivious Pseudorandom Functions (OPRFs), Threshold Group Sign
     - Jodi and OOB STIR/SHAKEN proxy on the providers infrastructure
 - All of the components are Dockerized for easy and scalable deployment
 
+
+## Setup Instructions
+- Install Docker and Docker Compose
+- Create a copy of ```.env``` file and update the values as per your setup.
+- Run ```./prototype.sh build``` to build the Docker images
+- Run ```./prototype.sh up``` to start the services
+
+
 ## Jodi Evaluators and Message Stores
 - The current setup uses Terraform and Ansible to set up multiple instances of EV and MS on AWS over different zones in the US
 - Once the setup is done, ```automation/hosts.yml``` and ```.env``` files are created, which will be used by the proxy
@@ -43,9 +51,7 @@ docker compose --profile oobss_proxy up -d
 
 
 
-Implementation of the CPeX paper
-
-Run experiment in background
+## Other Useful Commands
 
 ```bash
 nohup ./prototype.sh runexp 1 > output.log 2>&1 & echo $! > exp1.pid
