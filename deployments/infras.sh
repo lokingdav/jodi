@@ -4,6 +4,14 @@ set -e  # Exit immediately if any command fails
 cmd=$1
 cmds=('configure' 'create' 'destroy' 'install' 'run' 'pull')
 
+# Retrive HOSTS_FILE from .env file
+if [ -f .env ]; then
+    source .env
+else
+    echo ".env file not found. Please create it with the required variables."
+    exit 1
+fi
+
 configure() {
     ./scripts/generate-ssh-keys.sh
     ./scripts/configure-aws-cli.sh
@@ -22,7 +30,7 @@ destroy() {
 }
 
 install() {
-    ansible-playbook -i hosts.yml playbooks/install.yml
+    ansible-playbook -i $ANSIBLE_HOSTS_FILE playbooks/install.yml
 }
 
 pull_changes() {

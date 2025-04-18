@@ -169,7 +169,7 @@ hosts.yml
 .terra*
 terra*
 
-automation/playbooks/vars.yml
+deployments/playbooks/vars.yml
 cpex/prototype/experiments/state.json
 *.pid
 locust_*.csv

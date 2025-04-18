@@ -14,6 +14,7 @@ VALID_CMDS=(build push-img up down restart ps bash runexp cpex atis ev ms cps cr
 # Docker images (adjust names as needed)
 CPEX_DOCKER_IMAGE="kofidahmed/cpex"
 CPEX_AUTOMATION_DOCKER_IMAGE="cpex-experiment"
+DIND_VM_IMAGE="dindvm"
 
 # Optional container naming conventions
 CPEX_NODE_PREFIX="cpex-node"
@@ -59,6 +60,10 @@ build_image() {
     experiment)
       echo "Building Image for Experimentation"
       docker build -f automation/Dockerfile -t "$CPEX_AUTOMATION_DOCKER_IMAGE" .
+      ;;
+    dindvm)
+      echo "Building Image for Docker DIND VM"
+      docker build -f deployments/Dockerfile.VM -t "$DIND_VM_IMAGE" ./deployments
       ;;
     *)
       echo "Building both Images"
