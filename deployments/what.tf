@@ -202,7 +202,7 @@ resource "aws_instance" "cpex_nodes_use1" {
   key_name        = aws_key_pair.use1.key_name
   security_groups = [aws_security_group.sg_use1.name]
 
-  user_data       = file("${path.module}/scripts/setup-instance.sh")
+  user_data       = file("../${path.module}/scripts/setup-instance.sh")
 
   tags = {
     Name = "cpex-node-use1-${count.index}"
@@ -217,7 +217,7 @@ resource "aws_instance" "cpex_nodes_use2" {
   key_name        = aws_key_pair.use2.key_name
   security_groups = [aws_security_group.sg_use2.name]
 
-  user_data       = file("${path.module}/scripts/setup-instance.sh")
+  user_data       = file("../${path.module}/scripts/setup-instance.sh")
 
   tags = {
     Name = "cpex-node-use2-${count.index}"
@@ -232,7 +232,7 @@ resource "aws_instance" "cpex_nodes_usw1" {
   key_name        = aws_key_pair.usw1.key_name
   security_groups = [aws_security_group.sg_usw1.name]
 
-  user_data       = file("${path.module}/scripts/setup-instance.sh")
+  user_data       = file("../${path.module}/scripts/setup-instance.sh")
 
   tags = {
     Name = "cpex-node-usw1-${count.index}"
@@ -247,7 +247,7 @@ resource "aws_instance" "cpex_nodes_usw2" {
   key_name        = aws_key_pair.usw2.key_name
   security_groups = [aws_security_group.sg_usw2.name]
 
-  user_data       = file("${path.module}/scripts/setup-instance.sh")
+  user_data       = file("../${path.module}/scripts/setup-instance.sh")
 
   tags = {
     Name = "cpex-node-usw2-${count.index}"
@@ -303,5 +303,5 @@ ${join(
 )}
 EOT
 
-  filename = "./livehosts.yml"
+  filename = "./hosts/livenet.yml"
 }

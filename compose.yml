@@ -7,12 +7,12 @@ x-cpex-service: &cpex-service
     - cache
   networks: [expnet]
 
-x-labnet: &labnet
+x-testnet: &testnet
   image: dindvm
   privileged: true
   environment:
     - DOCKER_TLS_CERTDIR=
-  profiles: [labnet]
+  profiles: [testnet]
 
 services:
   experiment:
@@ -26,12 +26,12 @@ services:
     volumes:
       - '.:/app'
       - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
-      - './docker/data/automation/.aws:/root/.aws'
-      - './docker/data/automation/.ssh:/root/.ssh'
+      - './docker/data/.aws:/root/.aws'
+      - './docker/data/.ssh:/root/.ssh'
     depends_on:
       - cache
       - mongo
-    networks: [expnet, labnet]
+    networks: [expnet, testnet]
     profiles: [experiment]
 
 # CPeX Services
@@ -165,117 +165,117 @@ services:
 
 # DindVM Nodes
   node-0:
-    <<: *labnet
+    <<: *testnet
     hostname: node-0
     container_name: node-0
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.10
     volumes:
-      - ./docker/data/labnet/node-0/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-0/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-0/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-0/opt/cpex:/opt/cpex
 
   node-1:
-    <<: *labnet
+    <<: *testnet
     hostname: node-1
     container_name: node-1
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.11
     volumes:
-      - ./docker/data/labnet/node-1/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-1/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-1/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-1/opt/cpex:/opt/cpex
 
   node-2:
-    <<: *labnet
+    <<: *testnet
     hostname: node-2
     container_name: node-2
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.12
     volumes:
-      - ./docker/data/labnet/node-2/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-2/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-2/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-2/opt/cpex:/opt/cpex
 
   node-3:
-    <<: *labnet
+    <<: *testnet
     hostname: node-3
     container_name: node-3
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.13
     volumes:
-      - ./docker/data/labnet/node-3/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-3/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-3/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-3/opt/cpex:/opt/cpex
 
   node-4:
-    <<: *labnet
+    <<: *testnet
     hostname: node-4
     container_name: node-4
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.14
     volumes:
-      - ./docker/data/labnet/node-4/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-4/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-4/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-4/opt/cpex:/opt/cpex
 
   node-5:
-    <<: *labnet
+    <<: *testnet
     hostname: node-5
     container_name: node-5
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.15
     volumes:
-      - ./docker/data/labnet/node-5/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-5/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-5/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-5/opt/cpex:/opt/cpex
 
   node-6:
-    <<: *labnet
+    <<: *testnet
     hostname: node-6
     container_name: node-6
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.16
     volumes:
-      - ./docker/data/labnet/node-6/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-6/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-6/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-6/opt/cpex:/opt/cpex
 
   node-7:
-    <<: *labnet
+    <<: *testnet
     hostname: node-7
     container_name: node-7
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.17
     volumes:
-      - ./docker/data/labnet/node-7/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-7/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-7/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-7/opt/cpex:/opt/cpex
 
   node-8:
-    <<: *labnet
+    <<: *testnet
     hostname: node-8
     container_name: node-8
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.18
     volumes:
-      - ./docker/data/labnet/node-8/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-8/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-8/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-8/opt/cpex:/opt/cpex
 
   node-9:
-    <<: *labnet
+    <<: *testnet
     hostname: node-9
     container_name: node-9
     networks:
-      labnet:
+      testnet:
         ipv4_address: 172.20.0.19
     volumes:
-      - ./docker/data/labnet/node-9/var/lib/docker:/var/lib/docker
-      - ./docker/data/labnet/node-9/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-9/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-9/opt/cpex:/opt/cpex
 
 networks:
-  labnet:
+  testnet:
     driver: bridge
     ipam:
       config:

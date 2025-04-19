@@ -165,7 +165,8 @@ cython_debug/
 libcpex/
 *.lock
 
-hosts.yml
+main.yml
+livenet.yml
 .terra*
 terra*
 

@@ -15,6 +15,7 @@ Jodi makes use of Oblivious Pseudorandom Functions (OPRFs), Threshold Group Sign
 
 ## Setup Instructions
 - Install Docker and Docker Compose
+- Run ```sudo chmod +x ./prototype && sudo chmod +x -R scripts/``` to make the scripts executable
 - Create a copy of ```.env``` file and update the values as per your setup.
 - Run ```./prototype.sh build``` to build the Docker images
 - Run ```./prototype.sh up``` to start the services
