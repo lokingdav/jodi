@@ -9,7 +9,7 @@ from cpex.prototype.stirshaken import stirsetup, auth_service
 
 def groupsig_setup():
     if config.TGS_GPK and config.TGS_GSK and config.TGS_GML and config.TGS_MSK:
-        return update_vars_file(config.TGS_GPK)
+        return
     
     msk, gpk, gml, gsk = groupsig.setup()
     files.update_env_file('.env', {
@@ -18,8 +18,6 @@ def groupsig_setup():
         'TGS_GML': gml,
         'TGS_GSK': gsk
     })
-
-    update_vars_file(gpk)
     
     print("Group signature setup completed")
     
@@ -32,24 +30,6 @@ def voprt_setup():
         'VOPRF_VK': Utils.to_base64(vk)
     })
 
-def update_vars_file(gpk):
-    try:
-        # 1. Read existing data
-        with open('automation/playbooks/vars.yml', 'r') as varsFile:
-            data = yaml.safe_load(varsFile)
-            if data is None:
-                data = {}  # Handle empty file gracefully
-                
-        # 2. Update data
-        data['tgs_gpk_value'] = gpk
-
-        # 3. Write updated data
-        with open('automation/playbooks/vars.yml', 'w') as varsFile:
-            yaml.dump(data, varsFile)
-
-    except Exception as e:
-        raise Exception("Failed to update vars.yml") from e
-
 def is_valid_ipv4(ip):
     pattern = r"^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$"
     return re.match(pattern, ip) is not None
@@ -58,13 +38,12 @@ def create_node(fqdn):
     return {'id': Utils.hash256(fqdn.encode()).hex(), 'name': fqdn, 'fqdn': fqdn, 'ip': fqdn, 'url': f'http://{fqdn}'}
 
 def get_node_hosts():
-    hosts_file = 'automation/hosts.yml'
     nodes = defaultdict(list)
 
-    if files.is_empty(hosts_file):
+    if files.is_empty(config.HOSTS_FILE):
         return nodes
     
-    with open(hosts_file, 'r') as file:
+    with open(config.HOSTS_FILE, 'r') as file:
         data = yaml.safe_load(file)
         if not data or 'all' not in data or 'hosts' not in data['all']:
             raise Exception("Invalid hosts.yml format")

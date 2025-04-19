@@ -2,6 +2,7 @@
 set -e  # Exit immediately if any command fails
 
 cmd=$1
+subcmd=$2
 cmds=('configure' 'create' 'destroy' 'install' 'run' 'pull')
 
 # Retrive HOSTS_FILE from .env file
@@ -19,10 +20,22 @@ configure() {
 }
 
 create() {
-    terraform apply
-    
-    # create sample loads based on $ANSIBLE_HOSTS_FILE created by terraform
-    cd /app && python cpex/prototype/scripts/setup.py --loads
+    case "$1" in
+        livenet)
+            echo "Creating Livenet Cloud Infrastructure..."
+            terraform apply
+            cd /app && python cpex/prototype/scripts/setup.py --loads
+            ;;
+        testnet)
+            echo "Creating Testnet Infrastructure..."
+            cp localhosts.yml $ANSIBLE_HOSTS_FILE
+            ;;
+        *)
+            echo "Unknown environment: $env (should be 'livenet' or 'testnet')"
+            exit 1
+            ;;
+    esac
+    echo "Infrastructure created successfully. Hosts file: $ANSIBLE_HOSTS_FILE"
 }
 
 destroy() {
@@ -67,7 +80,7 @@ case "$cmd" in
         configure
         ;;
     create)
-        create
+        create $subcmd
         ;;
     destroy)
         destroy

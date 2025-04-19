@@ -41,19 +41,12 @@
         force: yes
         update: yes
 
-    # - name: Build Docker Images
-    #   tags:
-    #     - build_images
-    #   command: "./prototype.sh build cpex"
-    #   args:
-    #     chdir: "{{ repo_dest }}"
-
     - name: Copy hosts.yml to Node
       tags:
         - copy_hosts
       copy:
-        src: "{{ hosts_file_location }}"
-        dest: "{{ repo_dest }}/automation/hosts.yml"
+        src: "../{{ hosts_file }}"
+        dest: "{{ repo_dest }}/deployments/{{ hosts_file }}"
 
     - name: Ensure conf directory exists on Node
       tags:
