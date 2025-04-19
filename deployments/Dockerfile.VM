@@ -19,7 +19,6 @@ RUN mkdir -p /home/ubuntu && \
     echo "Setup complete." > /home/ubuntu/done.txt && \
     chown -R ubuntu:ubuntu /home/ubuntu
 
-EXPOSE 10430 10431 10432 10433 10434 10435
 
 USER ubuntu
 WORKDIR /home/ubuntu

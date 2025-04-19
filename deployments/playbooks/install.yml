@@ -52,7 +52,7 @@
       tags:
         - copy_hosts
       copy:
-        src: "../hosts.yml"
+        src: "{{ hosts_file_location }}"
         dest: "{{ repo_dest }}/automation/hosts.yml"
 
     - name: Ensure conf directory exists on Node

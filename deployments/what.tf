@@ -303,5 +303,5 @@ ${join(
 )}
 EOT
 
-  filename = "./hosts.yml"
+  filename = "./livehosts.yml"
 }

@@ -21,7 +21,7 @@ configure() {
 create() {
     terraform apply
     
-    # create sample loads based on hosts.yml created by terraform
+    # create sample loads based on $ANSIBLE_HOSTS_FILE created by terraform
     cd /app && python cpex/prototype/scripts/setup.py --loads
 }
 
@@ -34,7 +34,7 @@ install() {
 }
 
 pull_changes() {
-    ansible-playbook -i hosts.yml playbooks/install.yml --tags "checkout_branch"
+    ansible-playbook -i $ANSIBLE_HOSTS_FILE playbooks/install.yml --tags "checkout_branch"
 }
 
 runapp() {
@@ -59,7 +59,7 @@ runapp() {
             ;;
     esac
     
-    ansible-playbook -i hosts.yml playbooks/main.yml --tags "$tags"
+    ansible-playbook -i $ANSIBLE_HOSTS_FILE playbooks/main.yml --tags "$tags"
 }
 
 case "$cmd" in

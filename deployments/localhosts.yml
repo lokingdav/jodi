@@ -1,52 +1,52 @@
 all:
   hosts:
     node-0:
-      ansible_host: 172.28.0.10
+      ansible_host: 172.20.0.10
       ansible_user: ubuntu
       ansible_docker_host: node-0
       ansible_connection: docker
     node-1:
-      ansible_host: 172.28.0.11
+      ansible_host: 172.20.0.11
       ansible_user: ubuntu
       ansible_docker_host: node-1
       ansible_connection: docker
     node-2:
-      ansible_host: 172.28.0.12
+      ansible_host: 172.20.0.12
       ansible_user: ubuntu
       ansible_docker_host: node-2
       ansible_connection: docker
     node-3:
-      ansible_host: 172.28.0.13
+      ansible_host: 172.20.0.13
       ansible_user: ubuntu
       ansible_docker_host: node-3
       ansible_connection: docker
     node-4:
-      ansible_host: 172.28.0.14
+      ansible_host: 172.20.0.14
       ansible_user: ubuntu
       ansible_docker_host: node-4
       ansible_connection: docker
     node-5:
-      ansible_host: 172.28.0.15
+      ansible_host: 172.20.0.15
       ansible_user: ubuntu
       ansible_docker_host: node-5
       ansible_connection: docker
     node-6:
-      ansible_host: 172.28.0.16
+      ansible_host: 172.20.0.16
       ansible_user: ubuntu
       ansible_docker_host: node-6
       ansible_connection: docker
     node-7:
-      ansible_host: 172.28.0.17
+      ansible_host: 172.20.0.17
       ansible_user: ubuntu
       ansible_docker_host: node-7
       ansible_connection: docker
     node-8:
-      ansible_host: 172.28.0.18
+      ansible_host: 172.20.0.18
       ansible_user: ubuntu
       ansible_docker_host: node-8
       ansible_connection: docker
     node-9:
-      ansible_host: 172.28.0.19
+      ansible_host: 172.20.0.19
       ansible_user: ubuntu
       ansible_docker_host: node-9
       ansible_connection: docker
