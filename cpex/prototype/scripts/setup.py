@@ -88,8 +88,9 @@ def setup_sample_loads(creds=None):
     num_certs = config.NO_OF_INTERMEDIATE_CAS * config.NUM_CREDS_PER_ICA
     loads = []
     
+    print(f"Generating {num_certs} Pre-Computed Protocol Payloads")
+    
     for i in range(num_certs):
-        print(f"Creating load {i+1}/{num_certs}")
         ck = f"{constants.OTHER_CREDS_KEY}-{i}"
         iss = f'P{random.randint(0, 1000)}'
         
@@ -189,12 +190,36 @@ def setup_sample_loads(creds=None):
         }
         loads.append(data)
     files.override_json(config.CONF_DIR + '/loads.json', loads)
+    print(f"Pre-Computed Protocol Payloads generated and saved to {config.CONF_DIR}/loads.json")
     
+def create_main_yml_for_testnet():
+    compose_file = 'compose.testnet.yml'
+    compose_data = None
+    
+    with open(compose_file, 'r') as file:
+        compose_data = yaml.safe_load(file)
+        
+    if not compose_data or 'services' not in compose_data:
+        raise Exception("Invalid compose file format")
+    
+    hosts = {}
+    for node, data in compose_data['services'].items():
+        hosts[node] = {
+            'ansible_host': data['networks']['testnet']['ipv4_address'],
+            'ansible_connection': 'community.docker.docker_api',
+            'ansible_docker_host': node
+        }
+    hosts = {'all': {'hosts': hosts}}
+    
+    with open(config.HOSTS_FILE, 'w') as file:
+        yaml.dump(hosts, file, default_flow_style=False, sort_keys=False)
+
 def main(args):
     if args.all or args.groupsig:
         voprt_setup()
         groupsig_setup()
         setup_certificates()
+        create_main_yml_for_testnet()
     else:
         if args.groupsig:
             groupsig_setup()
@@ -204,6 +229,8 @@ def main(args):
             setup_sample_loads()
         elif args.voprf:
             voprt_setup()
+        elif args.testnet:
+            create_main_yml_for_testnet()
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -211,6 +238,7 @@ if __name__ == '__main__':
     parser.add_argument('--voprf', action='store_true', help='Setup VOPRF')
     parser.add_argument('--certs', action='store_true', help='Setup STIR/SHAKEN certificates')
     parser.add_argument('--loads', action='store_true', help='Setup sample loads')
+    parser.add_argument('--testnet', action='store_true', help='Create hosts file for testnet')
     parser.add_argument('--all', action='store_true', help='Setup everything')
     args = parser.parse_args()
     # if no arguments, print help

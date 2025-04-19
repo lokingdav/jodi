@@ -7,13 +7,6 @@ x-cpex-service: &cpex-service
     - cache
   networks: [expnet]
 
-x-testnet: &testnet
-  image: dindvm
-  privileged: true
-  environment:
-    - DOCKER_TLS_CERTDIR=
-  profiles: [testnet]
-
 services:
   experiment:
     image: cpex-experiment
@@ -25,14 +18,13 @@ services:
       - HOST_APP_PATH=${HOST_APP_PATH}
     volumes:
       - '.:/app'
-      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
       - './docker/data/.aws:/root/.aws'
       - './docker/data/.ssh:/root/.ssh'
     depends_on:
       - cache
       - mongo
-    networks: [expnet, testnet]
     profiles: [experiment]
+    networks: [expnet]
 
 # CPeX Services
   evaluator:
@@ -140,8 +132,7 @@ services:
     container_name: cache
     image: redis
     platform: linux/x86_64
-    networks:
-      - expnet
+    networks: [expnet]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1s
@@ -159,127 +150,10 @@ services:
       - 27017:27017
     volumes:
       - ./docker/data/mongo:/data/db
-    networks:
-      - expnet
+    networks: [expnet]
     profiles: [experiment]
 
-# DindVM Nodes
-  node-0:
-    <<: *testnet
-    hostname: node-0
-    container_name: node-0
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.10
-    volumes:
-      - ./docker/data/testnet/node-0/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-0/opt/cpex:/opt/cpex
-
-  node-1:
-    <<: *testnet
-    hostname: node-1
-    container_name: node-1
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.11
-    volumes:
-      - ./docker/data/testnet/node-1/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-1/opt/cpex:/opt/cpex
-
-  node-2:
-    <<: *testnet
-    hostname: node-2
-    container_name: node-2
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.12
-    volumes:
-      - ./docker/data/testnet/node-2/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-2/opt/cpex:/opt/cpex
-
-  node-3:
-    <<: *testnet
-    hostname: node-3
-    container_name: node-3
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.13
-    volumes:
-      - ./docker/data/testnet/node-3/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-3/opt/cpex:/opt/cpex
-
-  node-4:
-    <<: *testnet
-    hostname: node-4
-    container_name: node-4
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.14
-    volumes:
-      - ./docker/data/testnet/node-4/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-4/opt/cpex:/opt/cpex
-
-  node-5:
-    <<: *testnet
-    hostname: node-5
-    container_name: node-5
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.15
-    volumes:
-      - ./docker/data/testnet/node-5/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-5/opt/cpex:/opt/cpex
-
-  node-6:
-    <<: *testnet
-    hostname: node-6
-    container_name: node-6
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.16
-    volumes:
-      - ./docker/data/testnet/node-6/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-6/opt/cpex:/opt/cpex
-
-  node-7:
-    <<: *testnet
-    hostname: node-7
-    container_name: node-7
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.17
-    volumes:
-      - ./docker/data/testnet/node-7/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-7/opt/cpex:/opt/cpex
-
-  node-8:
-    <<: *testnet
-    hostname: node-8
-    container_name: node-8
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.18
-    volumes:
-      - ./docker/data/testnet/node-8/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-8/opt/cpex:/opt/cpex
-
-  node-9:
-    <<: *testnet
-    hostname: node-9
-    container_name: node-9
-    networks:
-      testnet:
-        ipv4_address: 172.20.0.19
-    volumes:
-      - ./docker/data/testnet/node-9/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-9/opt/cpex:/opt/cpex
-
 networks:
-  testnet:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
   expnet:
     driver: bridge
     ipam:

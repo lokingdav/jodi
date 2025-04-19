@@ -9,7 +9,7 @@
     - name: Stop Services
       tags:
         - stop_services
-      command: "./prototype.sh down"
+      command: "./scripts/apps.sh down"
       args:
         chdir: "{{ repo_dest }}"
 
@@ -23,13 +23,13 @@
     - name: Start CPEX Services
       tags:
         - start_cpex
-      command: "./prototype.sh cpex up"
+      command: "./scripts/apps.sh cpex"
       args:
         chdir: "{{ repo_dest }}"
 
     - name: Start ATIS Services
       tags:
         - start_atis
-      command: "./prototype.sh atis up"
+      command: "./scripts/apps.sh atis"
       args:
         chdir: "{{ repo_dest }}"

@@ -2,9 +2,8 @@
 
 set -e
 
-MAIN_HOSTS_FILE=hosts/main.yml
-TESTNET_HOSTS_FILE=hosts/testnet.yml
-LIVENET_HOSTS_FILE=hosts/livenet.yml
+MAIN_HOSTS_FILE=hosts.yml
+TESTNET_COMPOSE_FILE=compose.testnet.yml
 
 run_in_docker() {
     local command=$1
@@ -14,6 +13,7 @@ run_in_docker() {
         -v "$app_dir:/app" \
         -v "$app_dir/docker/data/.aws:/root/.aws" \
         -v "$app_dir/docker/data/.ssh:/root/.ssh" \
+        -v "$DOCKER_SOCKET_PATH":"$DOCKER_SOCKET_PATH" \
         -e ANSIBLE_HOST_KEY_CHECKING=False \
         -e ANSIBLE_CONFIG=/app/deployments/ansible.cfg \
         cpex-experiment \
@@ -37,12 +37,12 @@ create() {
     case "$network" in
         livenet)
             echo "Creating Livenet Cloud Infrastructure..."
-            run_in_docker "cd deployments && terraform apply && cp $LIVENET_HOSTS_FILE $MAIN_HOSTS_FILE"
+            run_in_docker "cd deployments && terraform apply"
             ;;
         testnet)
             echo "Creating Testnet Infrastructure..."
-            docker compose --profile testnet up -d
-            run_in_docker "cd deployments && cp $TESTNET_HOSTS_FILE $MAIN_HOSTS_FILE"
+            docker compose -f $TESTNET_COMPOSE_FILE up -d
+            run_in_docker "python cpex/prototype/scripts/setup.py --testnet"
             ;;
         *)
             echo "Available subcommands for create:"
@@ -57,22 +57,32 @@ create() {
 }
 
 destroy() {
-    docker compose --profile testnet down
+    echo "1. Destroying Testnet Infrastructure (if applicable)..."
+    docker compose -f $TESTNET_COMPOSE_FILE down
     rm_files="rm -rf $MAIN_HOSTS_FILE"
+    echo "2. Destroying Livenet Cloud Infrastructure (if applicable)..."
     run_in_docker "cd deployments && terraform destroy && $rm_files"
+
+    echo "Destroyed all resources successfully."
 }
 
 install() {
-    run_in_docker "cd deployments && ansible-playbook -i $MAIN_HOSTS_FILE playbooks/install.yml"
+    pull="$1"
+    run_in_docker "cd deployments && ansible-playbook -i $MAIN_HOSTS_FILE playbooks/install.yml $pull"
 }
 
 pull_changes() {
-    ansible-playbook -i $MAIN_HOSTS_FILE playbooks/install.yml --tags "checkout_branch"
+    install "--tags 'checkout_branch'"
 }
 
 runapp() {
     local app=$1
     local pull=$2
+
+    if [ -z "$app" ]; then
+        echo "Usage: run {cpex|atis}"
+        exit 1
+    fi
 
     tags="stop_services,clear_logs"
     if [ "$pull" == "--pull" ]; then
@@ -92,7 +102,7 @@ runapp() {
             ;;
     esac
     
-    ansible-playbook -i $MAIN_HOSTS_FILE playbooks/main.yml --tags "$tags"
+    run_in_docker "cd deployments && ansible-playbook -i $MAIN_HOSTS_FILE playbooks/main.yml --tags $tags"
 }
 
 case "$1" in
@@ -112,11 +122,6 @@ case "$1" in
         pull_changes
         ;;
     run)
-        # Ensure an app name is provided
-        if [ -z "$2" ]; then
-            echo "Usage: $0 run {cpex|atis}"
-            exit 1
-        fi
         runapp "$2" "$3"
         ;;
     *)

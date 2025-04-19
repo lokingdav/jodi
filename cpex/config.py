@@ -113,4 +113,4 @@ OOBSS_PROXY_CR_X5U = env('OOBSS_PROXY_CR_X5U')
 
 # Experiment Parameters
 CPS_COUNT = env('CPS_COUNT', 10, dtype=int)
-HOSTS_FILE = env('HOSTS_FILE', 'deployments/hosts/main.yml')
+HOSTS_FILE = env('HOSTS_FILE', 'deployments/hosts.yml')
