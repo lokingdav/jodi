@@ -3,6 +3,7 @@ from cpex.crypto import groupsig, libcpex, billing
 from cpex.helpers import files, misc, dht
 from cpex import config, constants
 import yaml, re, random
+from tqdm import tqdm
 from pylibcpex import Utils, Oprf, Voprf
 from collections import defaultdict
 from cpex.prototype.stirshaken import stirsetup, auth_service
@@ -90,7 +91,7 @@ def setup_sample_loads(creds=None):
     
     print(f"Generating {num_certs} Pre-Computed Protocol Payloads")
     
-    for i in range(num_certs):
+    for i in tqdm(range(num_certs)):
         ck = f"{constants.OTHER_CREDS_KEY}-{i}"
         iss = f'P{random.randint(0, 1000)}'
         
@@ -207,7 +208,8 @@ def create_main_yml_for_testnet():
         hosts[node] = {
             'ansible_host': data['networks']['testnet']['ipv4_address'],
             'ansible_connection': 'community.docker.docker_api',
-            'ansible_docker_host': node
+            'ansible_python_interpreter': '/usr/bin/python3',
+            'ansible_docker_host': node,
         }
     hosts = {'all': {'hosts': hosts}}
     

@@ -8,10 +8,10 @@ x-cpex-service: &cpex-service
   networks: [expnet]
 
 services:
-  experiment:
-    image: cpex-experiment
+  control:
+    image: cpex-control
     platform: linux/x86_64
-    container_name: cpex-exp
+    container_name: control
     command: tail -f /dev/null
     environment:
       - DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
@@ -23,7 +23,7 @@ services:
     depends_on:
       - cache
       - mongo
-    profiles: [experiment]
+    profiles: [control]
     networks: [expnet]
 
 # CPeX Services
@@ -151,7 +151,7 @@ services:
     volumes:
       - ./docker/data/mongo:/data/db
     networks: [expnet]
-    profiles: [experiment]
+    profiles: [control]
 
 networks:
   expnet:

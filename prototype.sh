@@ -17,7 +17,7 @@ case "$1" in
   *)
     echo "Usage: $0 {images|infras|control} [args...]"
     echo "Commands:"
-    echo "$0 images {build|push} [main|experiment|dindvm] [--push]"
+    echo "$0 images {build|push} [main|control|dindvm] [--push]"
     echo "$0 infras create {livenet|testnet}"
     exit 1
     ;;

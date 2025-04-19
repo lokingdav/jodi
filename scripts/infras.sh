@@ -16,7 +16,7 @@ run_in_docker() {
         -v "$DOCKER_SOCKET_PATH":"$DOCKER_SOCKET_PATH" \
         -e ANSIBLE_HOST_KEY_CHECKING=False \
         -e ANSIBLE_CONFIG=/app/deployments/ansible.cfg \
-        cpex-experiment \
+        cpex-control \
         /bin/bash -c "cd /app && $command"
 }
 

@@ -6,7 +6,7 @@ CMD="$1"
 IMG="$2"
 
 MAIN_IMAGE="kofidahmed/cpex"
-EXP_IMAGE="cpex-experiment"
+EXP_IMAGE="cpex-control"
 DIND_VM_IMAGE="dindvm"
 
 push_image() {
@@ -23,9 +23,9 @@ build_image() {
       echo "Building $MAIN_IMAGE"
       docker build -f Dockerfile.jodi -t "$MAIN_IMAGE" .
       ;;
-    experiment)
+    control)
       echo "Building $EXP_IMAGE"
-      docker build -f Dockerfile.experiment -t "$EXP_IMAGE" .
+      docker build -f Dockerfile.control -t "$EXP_IMAGE" .
       ;;
     dindvm)
       echo "Building $DIND_VM_IMAGE"
@@ -34,7 +34,7 @@ build_image() {
     *)
       echo "Building All Images: $MAIN_IMAGE, $EXP_IMAGE, $DIND_VM_IMAGE"
       docker build -f Dockerfile.jodi -t "$MAIN_IMAGE" .
-      docker build -f Dockerfile.experiment -t "$EXP_IMAGE" .
+      docker build -f Dockerfile.control -t "$EXP_IMAGE" .
       docker build -f Dockerfile.vm -t "$DIND_VM_IMAGE" .
       ;;
   esac
@@ -54,7 +54,7 @@ case "$CMD" in
   *)
     echo "Unknown command: $CMD"
     echo "Usage: {build|push} [image] [--push]"
-    echo "Available images: main, experiment, dindvm"
+    echo "Available images: main, control, dindvm"
     exit 1
     ;;
 esac

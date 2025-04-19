@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 
+run_control() {
+  case "$1" in
+    up)
+      docker compose --profile control up -d
+      ;;
+    down)
+      docker compose --profile control down
+      ;;
+    *)
+      docker exec -it control bash
+      ;;
+  esac
+}
+
 case "$1" in
   cpex)
     docker compose --profile cpex up -d
@@ -8,10 +22,10 @@ case "$1" in
     docker compose --profile atis up -d
     ;;
   control)
-    docker compose --profile experiment up -d
+    run_control "$2"
     ;;
   down)
-    docker compose --profile cpex --profile atis --profile experiment down
+    docker compose --profile cpex --profile atis --profile control down
     ;;
   k6)
     runk6 $SUBCMD

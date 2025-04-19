@@ -33,8 +33,7 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 
 # Install Ansible via pip
 RUN pip install --upgrade pip; \
-    pip install "ansible==${ANSIBLE_VERSION}"; \
-    pip install ansible
+    pip install ansible tqdm
 
 # Verify tools
 RUN terraform --version && \
