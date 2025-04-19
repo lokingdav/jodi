@@ -9,7 +9,7 @@ run_control() {
       docker compose --profile control down
       ;;
     *)
-      docker exec -it control bash
+      docker exec -it cpex-control bash
       ;;
   esac
 }

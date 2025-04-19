@@ -5,13 +5,13 @@ x-cpex-service: &cpex-service
     - '.:/app'
   depends_on:
     - cache
-  networks: [expnet]
+  networks: [controlnet]
 
 services:
   control:
     image: cpex-control
     platform: linux/x86_64
-    container_name: control
+    container_name: cpex-control
     command: tail -f /dev/null
     environment:
       - DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
@@ -24,7 +24,7 @@ services:
       - cache
       - mongo
     profiles: [control]
-    networks: [expnet]
+    networks: [controlnet]
 
 # CPeX Services
   evaluator:
@@ -132,7 +132,7 @@ services:
     container_name: cache
     image: redis
     platform: linux/x86_64
-    networks: [expnet]
+    networks: [controlnet]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1s
@@ -150,11 +150,11 @@ services:
       - 27017:27017
     volumes:
       - ./docker/data/mongo:/data/db
-    networks: [expnet]
+    networks: [controlnet]
     profiles: [control]
 
 networks:
-  expnet:
+  controlnet:
     driver: bridge
     ipam:
       config:
