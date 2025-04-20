@@ -3,7 +3,6 @@ from jodi.crypto import groupsig, libjodi, billing
 from jodi.helpers import files, misc, dht
 from jodi import config, constants
 import yaml, re, random
-from tqdm import tqdm
 from pylibjodi import Utils, Oprf, Voprf
 from collections import defaultdict
 from jodi.prototype.stirshaken import stirsetup, auth_service
@@ -76,6 +75,8 @@ def setup_certificates():
     return stirsetup.setup()
 
 def setup_sample_loads(creds=None):
+    from tqdm import tqdm
+    
     if not creds:
         creds = setup_certificates()
         
@@ -89,7 +90,7 @@ def setup_sample_loads(creds=None):
     num_certs = config.NO_OF_INTERMEDIATE_CAS * config.NUM_CREDS_PER_ICA
     loads = []
     
-    print(f"Generating {num_certs} Pre-Computed Protocol Payloads")
+    print(f"\nGenerating Pre-Computed Protocol Payloads")
     
     for i in tqdm(range(num_certs)):
         ck = f"{constants.OTHER_CREDS_KEY}-{i}"
