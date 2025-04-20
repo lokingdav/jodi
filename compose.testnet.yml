@@ -1,5 +1,7 @@
 x-testnet: &testnet
   image: dindvm
+  mem_limit: 2g # 2 GB RAM
+  cpus: 2.0 # 2 vCPU cores
   privileged: true
   environment:
     - DOCKER_TLS_CERTDIR=
@@ -117,6 +119,7 @@ services:
 
 networks:
   testnet:
+    name: jodi_testnet
     driver: bridge
     ipam:
       config:

@@ -24,7 +24,7 @@ services:
       - cache
       - mongo
     profiles: [control]
-    networks: [controlnet]
+    networks: [controlnet, jodi_testnet]
 
 # jodi Services
   evaluator:
@@ -154,6 +154,9 @@ services:
     profiles: [control]
 
 networks:
+  jodi_testnet:
+    external: true
+    
   controlnet:
     driver: bridge
     ipam:

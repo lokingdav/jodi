@@ -66,6 +66,12 @@ destroy() {
     echo "Destroyed all resources successfully."
 }
 
+reset() {
+    echo "Resetting infrastructure..."
+    destroy
+    run_in_docker "rm -rf docker/data/testnet"
+}
+
 install() {
     pull="$1"
     run_in_docker "cd deployments && ansible-playbook -i $MAIN_HOSTS_FILE playbooks/install.yml $pull"
@@ -78,11 +84,6 @@ pull_changes() {
 runapp() {
     local app=$1
     local pull=$2
-
-    if [ -z "$app" ]; then
-        echo "Usage: run {jodi|oobss}"
-        exit 1
-    fi
 
     tags="stop_services,clear_logs"
     if [ "$pull" == "--pull" ]; then
@@ -98,6 +99,7 @@ runapp() {
             ;;
         *)
             echo "Unknown app: $app"
+            echo "Usage: infras run {jodi|oobss}"
             exit 1
             ;;
     esac
@@ -114,6 +116,9 @@ case "$1" in
         ;;
     destroy)
         destroy
+        ;;
+    reset)
+        reset
         ;;
     install)
         install

@@ -1,5 +1,4 @@
-import os, time, argparse, threading
-from jodi.prototype import compose
+import os, time, argparse
 from jodi import config, constants
 from multiprocessing import Pool
 from jodi.models import persistence, cache
@@ -78,12 +77,6 @@ def simulate(resultsloc: str, mode: str, params: dict = {}):
             num_evs=node_groups[i][0],
             num_repos=node_groups[i][1]
         )
-        
-        # Handle network churn simulation
-        # if EXPERIMENT_NUM == '1':
-        #     stop_churning = threading.Event()
-        #     network_churning = threading.Thread(target=local.network_churn, args=(stop_churning,))
-        #     network_churning.start()
         
         for j in range(j_start, len(provider_groups)):
             num_provs = provider_groups[j]
