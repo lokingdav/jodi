@@ -15,11 +15,11 @@ func_measure_real_latency() {
     local proto=$1
     exp_id="3b"
 
-    if [ "$proto" == "atis" ]; then
+    if [ "$proto" == "oobss" ]; then
         exp_id="3a"
     fi
 
-    python cpex/prototype/experiments/scalability.py --experiment $exp_id
+    python jodi/prototype/experiments/scalability.py --experiment $exp_id
 }
 
 func_run_latency_experiments() {
@@ -35,10 +35,10 @@ func_run_latency_experiments() {
 
         k6 run --log-output=none \
             --env VUS=$vus \
-            --summary-export "cpex/prototype/experiments/results/k6/rt_$proto-$vus.json" \
+            --summary-export "jodi/prototype/experiments/results/k6/rt_$proto-$vus.json" \
             --vus $vus \
             --duration 1m \
-            "cpex/prototype/experiments/k6/$proto.js"
+            "jodi/prototype/experiments/k6/$proto.js"
 
         if [ $vus -lt $lastval ]; then
             echo "Sleeping for $rest_time seconds"
@@ -63,10 +63,10 @@ func_run_success_rate_experiments() {
         k6 run --log-output=none \
             --env VUS=$vus \
             --env TIMEOUT=3s \
-            --summary-export "cpex/prototype/experiments/results/k6/sr_$proto-$vus.json" \
+            --summary-export "jodi/prototype/experiments/results/k6/sr_$proto-$vus.json" \
             --vus $vus \
             --duration 1m \
-            "cpex/prototype/experiments/k6/$proto.js"
+            "jodi/prototype/experiments/k6/$proto.js"
 
         if [ $vus -lt $lastval ]; then
             echo "Sleeping for $rest_time seconds"
@@ -75,9 +75,9 @@ func_run_success_rate_experiments() {
     done
 }
 
-rm cpex/prototype/experiments/results/k6/*.json || true
+rm jodi/prototype/experiments/results/k6/*.json || true
 
-protocols=(atis cpex)
+protocols=(oobss jodi)
 if [ -n "$protocol" ]; then
     protocols=($protocol)
 fi
@@ -88,4 +88,4 @@ for proto in "${protocols[@]}"; do
 done
 
 # Combine results from multiple files
-python cpex/prototype/experiments/results/scripts/combine_results.py --type all
+python jodi/prototype/experiments/results/scripts/combine_results.py --type all

@@ -19,13 +19,13 @@ RUN git clone https://github.com/herumi/mcl.git && \
 
 RUN rm -rf mcl
 
-RUN git clone https://github.com/lokingdav/libcpex.git && \
-    cd libcpex && \
-    git checkout master && \
+RUN git clone https://github.com/lokingdav/libjodi.git && \
+    cd libjodi && \
+    git checkout main && \
     python -m build && \
     pip install dist/*.whl
     
-RUN rm -rf libcpex
+RUN rm -rf libjodi
 
 COPY . .
 

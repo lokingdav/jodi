@@ -5,8 +5,8 @@ set -e
 CMD="$1"
 IMG="$2"
 
-MAIN_IMAGE="kofidahmed/cpex"
-CONTROL_IMAGE="cpex-control"
+MAIN_IMAGE="kofidahmed/jodi"
+CONTROL_IMAGE="jodi-control"
 DIND_VM_IMAGE="dindvm"
 
 push_image() {

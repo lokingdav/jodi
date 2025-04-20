@@ -1,5 +1,5 @@
 ---
-- name: Install and configure Cpex
+- name: Install and configure Jodi
   hosts: all
   become: yes
   vars_files:

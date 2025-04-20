@@ -1,5 +1,5 @@
 repo_branch: main
-repo_dest: /opt/cpex
-repo_url: https://github.com/lokingdav/cpex.git
+repo_dest: /opt/jodi
+repo_url: https://github.com/lokingdav/jodi.git
 user_data_done_file: /home/ubuntu/done.txt
 hosts_file: hosts.yml

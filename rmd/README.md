@@ -5,7 +5,7 @@
 - rmd-original.csv: original file
 
 ## How to deduplicate entries
-- A conveinient Jupyter notebook is provided which contains functions to organize, deduplicate and report statistics of the given RMD CSV file
+- A conveinient Jupyter notebook is provided which contains functions to organize, deduplicate and report stoobsstics of the given RMD CSV file
 - Only US providers who have provided all the necessary information have been considered for the analysis
 - Deduplication is done through the following steps
     - remove rows where

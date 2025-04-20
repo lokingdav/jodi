@@ -1,16 +1,16 @@
 import asyncio, argparse, json, random, time
-from cpex.prototype.provider import Provider
-from cpex.helpers import dht
-from cpex.models import cache
-from cpex.crypto import groupsig, billing
-from cpex.helpers import mylogging, http
-from cpex.prototype.simulations.networked import NetworkedSimulator
-from cpex import config
+from jodi.prototype.provider import Provider
+from jodi.helpers import dht
+from jodi.models import cache
+from jodi.crypto import groupsig, billing
+from jodi.helpers import mylogging, http
+from jodi.prototype.simulations.networked import NetworkedSimulator
+from jodi import config
 from itertools import product
 
 
 cache.set_client(cache.connect())
-cpex_conf = {'n_ev': 2, 'n_ms': 2, 'gsk': groupsig.get_gsk(), 'gpk': groupsig.get_gpk()}
+jodi_conf = {'n_ev': 2, 'n_ms': 2, 'gsk': groupsig.get_gsk(), 'gpk': groupsig.get_gpk()}
 
 async def main(args):
     http.set_session(http.create_session())
@@ -37,7 +37,7 @@ async def main(args):
         'bt': billing.create_endorsed_token(config.VOPRF_SK),
         'cps': { 'url': cps1['url'], 'fqdn': cps1['fqdn'] },
         'cr': {'x5u': cps2['url'] + f'/certs/ocrt-164', 'sk': "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgM2RHw7TQdVvbo9pq\n829inltAQ+Ud8qYRYvbrdu2dIeKhRANCAAS3YDPLvKw41B2PV87DUDn04qOtZDFH\nWJS+M2Nqk7eAgWGVbh6T6BQkiMXifXGvBQ1wFNIPRY1rsi330VP8dzPd\n-----END PRIVATE KEY-----\n"},
-        **cpex_conf,
+        **jodi_conf,
     })
 
     signal, token = await provider1.originate()
@@ -51,7 +51,7 @@ async def main(args):
         'bt': billing.create_endorsed_token(config.VOPRF_SK),
         'cps': { 'url': cps2['url'], 'fqdn': cps2['fqdn'] },
         'cr': {'x5u': cps1['url'] + f'/certs/ocrt-164', 'sk': "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgM2RHw7TQdVvbo9pq\n829inltAQ+Ud8qYRYvbrdu2dIeKhRANCAAS3YDPLvKw41B2PV87DUDn04qOtZDFH\nWJS+M2Nqk7eAgWGVbh6T6BQkiMXifXGvBQ1wFNIPRY1rsi330VP8dzPd\n-----END PRIVATE KEY-----\n"},
-        **cpex_conf,
+        **jodi_conf,
     })
     token_retrieved = await provider2.terminate(signal)
 
@@ -64,7 +64,7 @@ async def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--mode', type=str, default='cpex', help='Mode to run the simulation in')
+    parser.add_argument('-m', '--mode', type=str, default='jodi', help='Mode to run the simulation in')
     args = parser.parse_args()
     asyncio.run(main(args))
     

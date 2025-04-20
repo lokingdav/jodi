@@ -1,4 +1,4 @@
-FROM kofidahmed/cpex
+FROM kofidahmed/jodi
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ANSIBLE_VERSION=2.18

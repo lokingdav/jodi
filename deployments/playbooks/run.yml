@@ -20,16 +20,16 @@
       args:
         chdir: "{{ repo_dest }}"
 
-    - name: Start CPEX Services
+    - name: Start Jodi Services
       tags:
-        - start_cpex
-      command: "./scripts/apps.sh cpex"
+        - start_jodi
+      command: "./scripts/apps.sh jodi"
       args:
         chdir: "{{ repo_dest }}"
 
-    - name: Start ATIS Services
+    - name: Start OOB-S/S Services
       tags:
-        - start_atis
-      command: "./scripts/apps.sh atis"
+        - start_oobss
+      command: "./scripts/apps.sh oobss"
       args:
         chdir: "{{ repo_dest }}"

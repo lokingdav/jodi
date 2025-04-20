@@ -16,7 +16,7 @@ run_in_docker() {
         -v "$DOCKER_SOCKET_PATH":"$DOCKER_SOCKET_PATH" \
         -e ANSIBLE_HOST_KEY_CHECKING=False \
         -e ANSIBLE_CONFIG=/app/deployments/ansible.cfg \
-        cpex-control \
+        jodi-control \
         /bin/bash -c "cd /app && $command"
 }
 
@@ -42,7 +42,7 @@ create() {
         testnet)
             echo "Creating Testnet Infrastructure..."
             docker compose -f $TESTNET_COMPOSE_FILE up -d
-            run_in_docker "python cpex/prototype/scripts/setup.py --testnet"
+            run_in_docker "python jodi/prototype/scripts/setup.py --testnet"
             ;;
         *)
             echo "Available subcommands for create:"
@@ -51,7 +51,7 @@ create() {
             ;;
     esac
 
-    run_in_docker "python cpex/prototype/scripts/setup.py --loads"
+    run_in_docker "python jodi/prototype/scripts/setup.py --loads"
     
     echo "Infrastructure created successfully."
 }
@@ -80,7 +80,7 @@ runapp() {
     local pull=$2
 
     if [ -z "$app" ]; then
-        echo "Usage: run {cpex|atis}"
+        echo "Usage: run {jodi|oobss}"
         exit 1
     fi
 
@@ -90,11 +90,11 @@ runapp() {
     fi
 
     case "$app" in
-        cpex)
-            tags="$tags,start_cpex"
+        jodi)
+            tags="$tags,start_jodi"
             ;;
-        atis)
-            tags="$tags,start_atis"
+        oobss)
+            tags="$tags,start_oobss"
             ;;
         *)
             echo "Unknown app: $app"

@@ -14,7 +14,7 @@ services:
         ipv4_address: 172.20.0.10
     volumes:
       - ./docker/data/testnet/node-0/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-0/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-0/opt/jodi:/opt/jodi
 
   node-1:
     <<: *testnet
@@ -25,7 +25,7 @@ services:
         ipv4_address: 172.20.0.11
     volumes:
       - ./docker/data/testnet/node-1/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-1/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-1/opt/jodi:/opt/jodi
 
   node-2:
     <<: *testnet
@@ -36,7 +36,7 @@ services:
         ipv4_address: 172.20.0.12
     volumes:
       - ./docker/data/testnet/node-2/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-2/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-2/opt/jodi:/opt/jodi
 
   node-3:
     <<: *testnet
@@ -47,7 +47,7 @@ services:
         ipv4_address: 172.20.0.13
     volumes:
       - ./docker/data/testnet/node-3/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-3/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-3/opt/jodi:/opt/jodi
 
   node-4:
     <<: *testnet
@@ -58,7 +58,7 @@ services:
         ipv4_address: 172.20.0.14
     volumes:
       - ./docker/data/testnet/node-4/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-4/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-4/opt/jodi:/opt/jodi
 
   node-5:
     <<: *testnet
@@ -69,7 +69,7 @@ services:
         ipv4_address: 172.20.0.15
     volumes:
       - ./docker/data/testnet/node-5/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-5/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-5/opt/jodi:/opt/jodi
 
   node-6:
     <<: *testnet
@@ -80,7 +80,7 @@ services:
         ipv4_address: 172.20.0.16
     volumes:
       - ./docker/data/testnet/node-6/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-6/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-6/opt/jodi:/opt/jodi
 
   node-7:
     <<: *testnet
@@ -91,7 +91,7 @@ services:
         ipv4_address: 172.20.0.17
     volumes:
       - ./docker/data/testnet/node-7/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-7/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-7/opt/jodi:/opt/jodi
 
   node-8:
     <<: *testnet
@@ -102,7 +102,7 @@ services:
         ipv4_address: 172.20.0.18
     volumes:
       - ./docker/data/testnet/node-8/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-8/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-8/opt/jodi:/opt/jodi
 
   node-9:
     <<: *testnet
@@ -113,7 +113,7 @@ services:
         ipv4_address: 172.20.0.19
     volumes:
       - ./docker/data/testnet/node-9/var/lib/docker:/var/lib/docker
-      - ./docker/data/testnet/node-9/opt/cpex:/opt/cpex
+      - ./docker/data/testnet/node-9/opt/jodi:/opt/jodi
 
 networks:
   testnet:

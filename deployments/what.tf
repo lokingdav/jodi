@@ -27,7 +27,7 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  default = "cpex-keypair"
+  default = "livenet-keypair"
 }
 
 variable "us_east_1_count" {
@@ -100,7 +100,7 @@ resource "aws_key_pair" "usw2" {
 
 resource "aws_security_group" "sg_use1" {
   provider    = aws.us-east-1
-  name_prefix = "cpex-sg-use1-"
+  name_prefix = "livenet-sg-use1-"
 
   ingress {
     from_port   = 22
@@ -124,7 +124,7 @@ resource "aws_security_group" "sg_use1" {
 
 resource "aws_security_group" "sg_use2" {
   provider    = aws.us-east-2
-  name_prefix = "cpex-sg-use2-"
+  name_prefix = "livenet-sg-use2-"
 
   ingress {
     from_port   = 22
@@ -148,7 +148,7 @@ resource "aws_security_group" "sg_use2" {
 
 resource "aws_security_group" "sg_usw1" {
   provider    = aws.us-west-1
-  name_prefix = "cpex-sg-usw1-"
+  name_prefix = "livenet-sg-usw1-"
 
   ingress {
     from_port   = 22
@@ -172,7 +172,7 @@ resource "aws_security_group" "sg_usw1" {
 
 resource "aws_security_group" "sg_usw2" {
   provider    = aws.us-west-2
-  name_prefix = "cpex-sg-usw2-"
+  name_prefix = "livenet-sg-usw2-"
 
   ingress {
     from_port   = 22
@@ -194,7 +194,7 @@ resource "aws_security_group" "sg_usw2" {
   }
 }
 
-resource "aws_instance" "cpex_nodes_use1" {
+resource "aws_instance" "livenet_nodes_use1" {
   provider        = aws.us-east-1
   count           = var.us_east_1_count
   ami             = var.ubuntu_ami_map["us-east-1"]
@@ -205,11 +205,11 @@ resource "aws_instance" "cpex_nodes_use1" {
   user_data       = file("../${path.module}/scripts/setup-instance.sh")
 
   tags = {
-    Name = "cpex-node-use1-${count.index}"
+    Name = "livenet-node-use1-${count.index}"
   }
 }
 
-resource "aws_instance" "cpex_nodes_use2" {
+resource "aws_instance" "livenet_nodes_use2" {
   provider        = aws.us-east-2
   count           = var.us_east_2_count
   ami             = var.ubuntu_ami_map["us-east-2"]
@@ -220,11 +220,11 @@ resource "aws_instance" "cpex_nodes_use2" {
   user_data       = file("../${path.module}/scripts/setup-instance.sh")
 
   tags = {
-    Name = "cpex-node-use2-${count.index}"
+    Name = "livenet-node-use2-${count.index}"
   }
 }
 
-resource "aws_instance" "cpex_nodes_usw1" {
+resource "aws_instance" "livenet_nodes_usw1" {
   provider        = aws.us-west-1
   count           = var.us_west_1_count
   ami             = var.ubuntu_ami_map["us-west-1"]
@@ -235,11 +235,11 @@ resource "aws_instance" "cpex_nodes_usw1" {
   user_data       = file("../${path.module}/scripts/setup-instance.sh")
 
   tags = {
-    Name = "cpex-node-usw1-${count.index}"
+    Name = "livenet-node-usw1-${count.index}"
   }
 }
 
-resource "aws_instance" "cpex_nodes_usw2" {
+resource "aws_instance" "livenet_nodes_usw2" {
   provider        = aws.us-west-2
   count           = var.us_west_2_count
   ami             = var.ubuntu_ami_map["us-west-2"]
@@ -250,25 +250,25 @@ resource "aws_instance" "cpex_nodes_usw2" {
   user_data       = file("../${path.module}/scripts/setup-instance.sh")
 
   tags = {
-    Name = "cpex-node-usw2-${count.index}"
+    Name = "livenet-node-usw2-${count.index}"
   }
 }
 
 output "public_ips" {
   value = concat(
-    aws_instance.cpex_nodes_use1[*].public_ip,
-    aws_instance.cpex_nodes_use2[*].public_ip,
-    aws_instance.cpex_nodes_usw1[*].public_ip,
-    aws_instance.cpex_nodes_usw2[*].public_ip
+    aws_instance.livenet_nodes_use1[*].public_ip,
+    aws_instance.livenet_nodes_use2[*].public_ip,
+    aws_instance.livenet_nodes_usw1[*].public_ip,
+    aws_instance.livenet_nodes_usw2[*].public_ip
   )
 }
 
 output "private_ips" {
   value = concat(
-    aws_instance.cpex_nodes_use1[*].private_ip,
-    aws_instance.cpex_nodes_use2[*].private_ip,
-    aws_instance.cpex_nodes_usw1[*].private_ip,
-    aws_instance.cpex_nodes_usw2[*].private_ip
+    aws_instance.livenet_nodes_use1[*].private_ip,
+    aws_instance.livenet_nodes_use2[*].private_ip,
+    aws_instance.livenet_nodes_usw1[*].private_ip,
+    aws_instance.livenet_nodes_usw2[*].private_ip
   )
 }
 
@@ -277,10 +277,10 @@ output "hosts_file" {
     "\n",
     [
       for instance in concat(
-        aws_instance.cpex_nodes_use1,
-        aws_instance.cpex_nodes_use2,
-        aws_instance.cpex_nodes_usw1,
-        aws_instance.cpex_nodes_usw2
+        aws_instance.livenet_nodes_use1,
+        aws_instance.livenet_nodes_use2,
+        aws_instance.livenet_nodes_usw1,
+        aws_instance.livenet_nodes_usw2
       ) : "${instance.tags.Name} ansible_host=${instance.public_ip} ansible_user=ubuntu"
     ]
   )
@@ -294,14 +294,14 @@ ${join(
   "\n",
   [
     for instance in concat(
-      aws_instance.cpex_nodes_use1,
-      aws_instance.cpex_nodes_use2,
-      aws_instance.cpex_nodes_usw1,
-      aws_instance.cpex_nodes_usw2
+      aws_instance.livenet_nodes_use1,
+      aws_instance.livenet_nodes_use2,
+      aws_instance.livenet_nodes_usw1,
+      aws_instance.livenet_nodes_usw2
     ) : "    ${instance.tags.Name}:\n      ansible_host: ${instance.public_ip}\n      ansible_user: ubuntu"
   ]
 )}
 EOT
 
-  filename = "./hosts/livenet.yml"
+  filename = "./hosts.yml"
 }

@@ -8,7 +8,7 @@ Jodi makes use of Oblivious Pseudorandom Functions (OPRFs), Threshold Group Sign
 
 - The code repository contains the source code for setting up
     - Jodi Evaluators (EV) and Message Stores (MS) on the cloud
-    - ATIS OOB STIR/SHAKEN CPSes on the cloud
+    - OOB STIR/SHAKEN CPSes on the cloud
     - Jodi and OOB STIR/SHAKEN proxy on the providers infrastructure
 - All of the components are Dockerized for easy and scalable deployment
 
@@ -29,7 +29,7 @@ Jodi makes use of Oblivious Pseudorandom Functions (OPRFs), Threshold Group Sign
 ./prototype.sh up
 ```
 
-## ATIS OOB STIR/SHAKEN CPS
+## OOB STIR/SHAKEN CPS
 - The current setup uses Terraform and Ansible to set up multiple instances of CPSes on AWS over different zones in the US
 - Once the setup is done, ```automation/hosts.yml``` and ```.env``` files are created, which will be used by the proxy
 - Command for the setup TODO
@@ -67,5 +67,5 @@ kill -9 $(cat exp1.pid)
 
 Run Grafana k6 load test
 ```bash
-k6 run --config cpex/prototype/experiments/k6/options.json cpex/prototype/experiments/k6/<protocol>.js # replace <protocol> with cpex or atis
+k6 run --config jodi/prototype/experiments/k6/options.json jodi/prototype/experiments/k6/<protocol>.js # replace <protocol> with jodi or oobss
 ```
