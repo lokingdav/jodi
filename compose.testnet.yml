@@ -121,6 +121,8 @@ networks:
   testnet:
     name: jodi_testnet
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-testnet
     ipam:
       config:
         - subnet: 172.20.0.0/24

@@ -158,7 +158,10 @@ networks:
     external: true
     
   controlnet:
+    name: jodi_controlnet
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-controlnet
     ipam:
       config:
         - subnet: 172.30.0.0/24
