@@ -7,7 +7,9 @@ RUN apk add --no-cache \
         git \
         python3 \
         py3-pip \
-        py3-six
+        py3-six \
+        iproute2 \
+        iputils
 
 
 RUN adduser -D -u 1000 ubuntu && \

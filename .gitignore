@@ -175,3 +175,4 @@ jodi/prototype/experiments/state.json
 locust_*.csv
 k6-*.json
 jodi/prototype/experiments/results/k6/*.json
+scripts/network_emulation/tc_cmd.txt

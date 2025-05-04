@@ -3,6 +3,8 @@ x-testnet: &testnet
   mem_limit: 2g # 2 GB RAM
   cpus: 2.0 # 2 vCPU cores
   privileged: true
+  cap_add:
+    - NET_ADMIN
   environment:
     - DOCKER_TLS_CERTDIR=
 

@@ -23,6 +23,8 @@ services:
     depends_on:
       - cache
       - mongo
+    cap_add:
+      - NET_ADMIN
     profiles: [control]
     networks: [controlnet, jodi_testnet]
 
