@@ -1,0 +1,77 @@
+sudo tc qdisc add dev $interface root handle 1: prio
+sudo tc filter add dev $interface parent 1:0 protocol ip prio 1 u32 match ip dst $ip1 flowid 2:1
+sudo tc qdisc add dev $interface parent 1:1 handle 2: netem delay $delay1
+
+tc filter add dev $interface parent 1:0 protocol ip prio 1 u32 match ip dst $ip2 flowid 2:1
+tc qdisc add dev $interface parent 1:1 handle 2: netem delay $delay2
+
+
+# reset to default
+tc qdisc del dev $interface root
+
+# show dev
+tc qdisc show dev $interface root
+
+# basic delay
+tc qdisc add dev $interface root netem delay 200ms
+
+
+
+
+export interface=eth0
+export ip1=172.19.0.4
+export ip2=172.19.0.3
+export delay1=55ms
+export delay2=75ms
+tc qdisc add dev $interface root handle 1: prio
+
+tc qdisc add dev $interface parent 1:3 handle 10: netem delay $delay1
+tc filter add dev $interface protocol ip parent 1:3 handle 10 prio 1 u32 match ip dst $ip1 flowid 1:3
+
+tc qdisc add dev $interface parent 1:3 handle 20: netem delay $delay2
+tc filter add dev $interface protocol ip parent 1:3 handle 20 prio 1 u32 match ip dst $ip2 flowid 1:3
+
+
+
+
+# Clean existing qdisc
+tc qdisc del dev $interface root
+
+# 1. Add HTB root qdisc
+tc qdisc add dev $interface root handle 1: htb default 999 r2q 10000
+tc class add dev $interface parent 1: classid 1:999 htb rate 1000mbit
+
+# 2. Add HTB classes for each IP
+tc class add dev $interface parent 1: classid 1:10 htb rate 1000mbit
+tc class add dev $interface parent 1: classid 1:20 htb rate 1000mbit
+
+# 3. Attach netem qdisc with different delays
+tc qdisc add dev $interface parent 1:10 handle 10: netem delay 200ms
+tc qdisc add dev $interface parent 1:20 handle 20: netem delay 400ms
+
+# 4. Add filters to classify packets by destination IP
+tc filter add dev $interface protocol ip parent 1: prio 1 u32 \
+  match ip dst $ip1 flowid 1:10
+
+tc filter add dev $interface protocol ip parent 1: prio 1 u32 \
+  match ip dst $ip2 flowid 1:20
+
+
+
+# considering symmetric latencies
+# delays
+delay_use1_use2=22ms
+delay_use1_usw1=78ms
+delay_use1_usw2=76ms
+
+delay_use2_usw1=70ms
+delay_use2_usw2=63ms
+
+delay_usw1_usw2=28ms
+
+
+delay_control_use1
+
+# locations
+control_location=use1
+node_1_location=

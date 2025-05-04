@@ -1,0 +1,36 @@
+{
+  "zones": {
+    "us-east-1": ["node-0", "node-1", "node-2"],
+    "us-west-1": ["node-3", "node-4", "node-5"],
+    "us-east-2": ["node-6", "node-7"],
+    "us-west-2": ["node-8", "node-9"],
+    "control":    ["jodi-control"]
+  },
+
+  "containers": {
+    "node-0": { "ip": "172.20.0.10", "if": "eth0" },
+    "node-1": { "ip": "172.20.0.11", "if": "eth0" },
+    "node-2": { "ip": "172.20.0.12", "if": "eth0" },
+    "node-3": { "ip": "172.20.0.13", "if": "eth0" },
+    "node-4": { "ip": "172.20.0.14", "if": "eth0" },
+    "node-5": { "ip": "172.20.0.15", "if": "eth0" },
+    "node-6": { "ip": "172.20.0.16", "if": "eth0" },
+    "node-7": { "ip": "172.20.0.17", "if": "eth0" },
+    "node-8": { "ip": "172.20.0.18", "if": "eth0" },
+    "node-9": { "ip": "172.20.0.19", "if": "eth0" },
+    "jodi-control":{ "ip": "172.20.0.2",  "if": "eth1" }
+  },
+
+  "links": [
+    { "zones": ["us-east-1", "us-east-2"], "latency_ms": 22 },
+    { "zones": ["us-west-1", "us-west-2"], "latency_ms": 28 },
+    { "zones": ["us-east-1", "us-west-1"], "latency_ms": 78 },
+    { "zones": ["us-east-1", "us-west-2"], "latency_ms": 76 },
+    { "zones": ["us-east-2", "us-west-1"], "latency_ms": 70 },
+    { "zones": ["us-east-2", "us-west-2"], "latency_ms": 63 },
+    { "zones": ["control", "us-east-1"],    "latency_ms": 27 },
+    { "zones": ["control", "us-east-2"],    "latency_ms": 34 },
+    { "zones": ["control", "us-west-1"],    "latency_ms": 84 },
+    { "zones": ["control", "us-west-2"],    "latency_ms": 105 }
+  ]
+}
