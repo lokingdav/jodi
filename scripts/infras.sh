@@ -5,6 +5,15 @@ set -e
 MAIN_HOSTS_FILE=hosts.yml
 TESTNET_COMPOSE_FILE=compose.testnet.yml
 
+# Panic if DOCKER_SOCKET_PATH is not set
+if [ -z "$DOCKER_SOCKET_PATH" ]; then
+    echo "Error: DOCKER_SOCKET_PATH is not set."
+    echo "You can set it by running: export DOCKER_SOCKET_PATH=/var/run/docker.sock"
+    echo "Press Ctrl+C to exit. Otherwise it will be set to /var/run/docker.sock in 5 seconds."
+    sleep 5
+    DOCKER_SOCKET_PATH=/var/run/docker.sock
+fi
+
 run_in_docker() {
     local command=$1
     local app_dir=$(pwd)
@@ -107,6 +116,24 @@ runapp() {
     run_in_docker "cd deployments && ansible-playbook -i $MAIN_HOSTS_FILE playbooks/main.yml --tags $tags"
 }
 
+latency() {
+    local action=$1
+    local config_file="./scripts/latency_emulation/tn-latency.json"
+
+    case "$action" in
+        set)
+            ./scripts/latency_emulation/tn-latency-set.sh $config_file
+            ;;
+        unset)
+            ./scripts/latency_emulation/tn-latency-reset.sh $config_file
+            ;;
+        *)
+            echo "Usage: infras latency {set|unset}"
+            exit 1
+            ;;
+    esac
+}
+
 case "$1" in
     init)
         init
@@ -128,6 +155,9 @@ case "$1" in
         ;;
     run)
         runapp "$2" "$3"
+        ;;
+    latency)
+        latency "$2"
         ;;
     *)
         echo "Usage: infras {init|create|destroy|install|pull|run} [args...]"

@@ -80,3 +80,5 @@ for c in "${!IP[@]}"; do
 done
 
 echo "✅ latency profile applied"
+
+# Run this script only when the containers are running
