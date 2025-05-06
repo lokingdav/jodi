@@ -6,7 +6,7 @@ rest_time=5
 
 func_restart_application() {
     local proto=$1
-    cd automation && ./infras.sh run $proto --pull && cd ..
+    ./scripts/infras.sh run $proto --pull --directly
     echo "Sleeping for 15 seconds to let the application start"
     sleep 15
 }
@@ -75,7 +75,7 @@ func_run_success_rate_experiments() {
     done
 }
 
-rm jodi/prototype/experiments/results/k6/*.json || true
+rm -f jodi/prototype/experiments/results/k6/*.json
 
 protocols=(oobss jodi)
 if [ -n "$protocol" ]; then

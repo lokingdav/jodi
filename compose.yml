@@ -26,7 +26,10 @@ services:
     cap_add:
       - NET_ADMIN
     profiles: [control]
-    networks: [controlnet, jodi_testnet]
+    networks:
+      controlnet: {}
+      jodi_testnet:
+        ipv4_address: 172.20.0.2
 
 # jodi Services
   evaluator:

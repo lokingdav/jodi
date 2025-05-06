@@ -5,10 +5,7 @@ run_in_docker() {
     local command=$1
     local app_dir=$(pwd)
 
-    docker run -it --rm \
-        -v "$app_dir:/app" \
-        jodi-control \
-        /bin/bash -c "cd /app && $command"
+    docker exec -it jodi-control /bin/bash -c "cd /app && $command"
 }
 
 case "$cmd" in
@@ -18,10 +15,10 @@ case "$cmd" in
         run_in_docker "python jodi/prototype/experiments/scalability.py --experiment 1"
         ;;
       2)
-        run_in_docker "python jodi/prototype/experiments/microbenchmark.py"
+        run_in_docker "python jodi/prototype/experiments/microbench.py"
         ;;
       3)
-        ./scripts/runk6.sh
+        run_in_docker "./scripts/runk6.sh"
         ;;
       *)
         echo "Invalid experiment number. Allowed values are: {1|2|3}"

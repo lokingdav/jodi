@@ -93,6 +93,7 @@ pull_changes() {
 runapp() {
     local app=$1
     local pull=$2
+    local directly=$3
 
     tags="stop_services,clear_logs"
     if [ "$pull" == "--pull" ]; then
@@ -112,8 +113,14 @@ runapp() {
             exit 1
             ;;
     esac
+
+    local cmd_str="cd deployments && ansible-playbook -i $MAIN_HOSTS_FILE playbooks/main.yml --tags $tags"
     
-    run_in_docker "cd deployments && ansible-playbook -i $MAIN_HOSTS_FILE playbooks/main.yml --tags $tags"
+    if [ "$directly" == "--directly" ]; then
+        eval "$cmd_str"
+    else
+        run_in_docker "$cmd_str"
+    fi
 }
 
 latency() {
@@ -154,7 +161,7 @@ case "$1" in
         pull_changes
         ;;
     run)
-        runapp "$2" "$3"
+        runapp "$2" "$3" "$4"
         ;;
     latency)
         latency "$2"
