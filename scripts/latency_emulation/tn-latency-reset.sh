@@ -10,7 +10,7 @@ CONFIG=${1:?Provide JSON topology file}
 jq -r '.containers | to_entries[] | "\(.key) \(.value.if)"' "$CONFIG" |
 while read -r cname ifname; do
   echo "↻  resetting $cname ($ifname)"
-  docker exec "$cname" tc qdisc del dev "$ifname" root 2>/dev/null || true
+  docker exec -u root "$cname" tc qdisc del dev "$ifname" root 2>/dev/null || true
 done
 
 echo "✅  all qdiscs removed"

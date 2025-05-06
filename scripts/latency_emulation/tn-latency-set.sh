@@ -25,8 +25,11 @@ for z in "${ZONES[@]}"; do
   done
 done
 
-# ---------- build delay lookup from .links[] ------------------------------
+# ---------- build delay lookup from .links[] and intra_zone_latency_ms ------
 declare -A DELAY   # key="src|dst" → ms
+
+INTRA_MS=$(jq -r '.intra_zone_latency_ms // empty' "$CONFIG")
+[[ -z $INTRA_MS ]] && INTRA_MS=0 
 
 while IFS= read -r link; do
   src=$(jq -r '.zones[0]' <<<"$link")
@@ -35,6 +38,12 @@ while IFS= read -r link; do
   DELAY["$src|$dst"]=$ms     # A → B
   DELAY["$dst|$src"]=$ms     # B → A (symmetry)
 done < <(jq -c '.links[]' "$CONFIG")
+
+if (( INTRA_MS > 0 )); then
+  for z in $(jq -r '.zones | keys[]' "$CONFIG"); do
+    DELAY["$z|$z"]=$INTRA_MS
+  done
+fi
 
 # ---------- helper funcs ----------------------------------------------------
 ensure_htb_root() {  # $1 container  $2 if
@@ -59,17 +68,17 @@ for c in "${!IP[@]}"; do
   echo "⎈ configuring $c ($s_zone) on $ifname"
   ensure_htb_root "$c" "$ifname"
 
-  declare -A CLS_FOR_DELAY
+  declare -A CLS_FOR_DELAY=()
   next_cls=10
 
   for d_zone in "${ZONES[@]}"; do
     d_ms=${DELAY["$s_zone|$d_zone"]-}
-    [[ -z $d_ms ]] && continue     # no shaping needed, same zone
+    [[ -z $d_ms ]] && continue     # skip if no entry
 
     cls=${CLS_FOR_DELAY[$d_ms]-}
     if [[ -z $cls ]]; then
       cls=$next_cls; CLS_FOR_DELAY[$d_ms]=$cls
-      add_latency_class "$c" "$ifname" "$cls" "$d_ms"
+      add_latency_class "$c" "$ifname" "$cls" $(((d_ms + 1) / 2))
       ((next_cls++))
     fi
 

@@ -1,8 +1,8 @@
 {
   "zones": {
     "us-east-1": ["node-0", "node-1", "node-2"],
-    "us-west-1": ["node-3", "node-4", "node-5"],
     "us-east-2": ["node-6", "node-7"],
+    "us-west-1": ["node-3", "node-4", "node-5"],
     "us-west-2": ["node-8", "node-9"],
     "control":    ["jodi-control"]
   },
@@ -32,5 +32,7 @@
     { "zones": ["control", "us-east-2"],    "latency_ms": 34 },
     { "zones": ["control", "us-west-1"],    "latency_ms": 84 },
     { "zones": ["control", "us-west-2"],    "latency_ms": 105 }
-  ]
+  ],
+
+  "intra_zone_latency_ms": 4
 }
