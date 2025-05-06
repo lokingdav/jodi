@@ -14,6 +14,9 @@ case "$1" in
   control)
     ./scripts/apps.sh control $2
     ;;
+  experiments)
+    ./scripts/experiments.sh "$2" "$3"
+    ;;
   *)
     echo "Usage: $0 {images|infras|control} [args...]"
     echo "Commands:"
