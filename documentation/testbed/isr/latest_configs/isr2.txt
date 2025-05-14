@@ -1,0 +1,348 @@
+!
+! Last configuration change at 14:16:01 EST Fri Feb 7 2025 by sshuser
+! NVRAM config last updated at 19:31:39 EST Tue Nov 26 2024 by sshuser
+!
+version 15.5
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no platform punt-keepalive disable-kernel-core
+!
+hostname ISR4331-2
+!
+boot-start-marker
+boot-end-marker
+!
+!
+vrf definition Mgmt-intf
+ !
+ address-family ipv4
+ exit-address-family
+ !
+ address-family ipv6
+ exit-address-family
+!
+card type t1 0 1
+logging buffered 2000000
+!
+no aaa new-model
+clock timezone EST -5 0
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+
+
+ip name-server 1.1.1.1 8.8.8.8
+
+ip domain name wspr.ncsu.edu
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+subscriber templating
+!
+multilink bundle-name authenticated
+!
+!
+!
+!
+isdn switch-type primary-ni
+!
+!
+!
+!
+!
+voice service voip
+ ip address trusted list
+  ipv4 192.168.43.0 255.255.255.0
+ allow-connections h323 to sip
+ allow-connections sip to h323
+ allow-connections sip to sip
+ fax protocol t38 version 0 ls-redundancy 0 hs-redundancy 0 fallback none
+ sip
+  bind control source-interface GigabitEthernet0/0/0.43
+  bind media source-interface GigabitEthernet0/0/0.43
+!
+voice class codec 1
+ codec preference 1 g711ulaw
+ codec preference 2 g711alaw
+!
+!
+!
+!
+voice iec syslog
+!
+!
+!
+!
+!
+!
+voice-card 0/1
+ no watchdog
+!
+voice-card 0/4
+ no watchdog
+!
+license udi pid ISR4331/K9 sn FDO212408BZ
+license accept end user agreement
+license boot suite FoundationSuiteK9
+license boot suite AdvUCSuiteK9
+!
+spanning-tree extend system-id
+!
+username sshuser privilege 15 password 0 okchill
+!
+redundancy
+ mode none
+!
+!
+!
+!
+controller T1 0/1/0
+ framing esf
+ linecode b8zs
+ cablelength long 0db
+!
+controller T1 0/1/1
+ framing esf
+ clock source network
+ linecode b8zs
+ cablelength short 110
+ pri-group timeslots 1-24
+!
+!
+vlan internal allocation policy ascending
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0/0
+ no ip address
+ negotiation auto
+!
+interface GigabitEthernet0/0/0.43
+ encapsulation dot1Q 43
+ ip address 192.168.43.142 255.255.255.0
+!
+interface GigabitEthernet0/0/1
+ no ip address
+ shutdown
+ negotiation auto
+!
+interface GigabitEthernet0/0/2
+ no ip address
+ shutdown
+ negotiation auto
+!
+interface Service-Engine0/1/0
+ no ip address
+ shutdown
+!
+interface Serial0/1/1:23
+ encapsulation hdlc
+ isdn switch-type primary-ni
+ isdn protocol-emulate network
+ isdn incoming-voice voice
+ no cdp enable
+!
+interface Service-Engine0/4/0
+ no ip address
+ shutdown
+!
+interface GigabitEthernet0
+ vrf forwarding Mgmt-intf
+ no ip address
+ shutdown
+ negotiation auto
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+ip forward-protocol nd
+no ip http server
+no ip http secure-server
+ip tftp source-interface GigabitEthernet0
+ip route 0.0.0.0 0.0.0.0 192.168.43.1
+ip ssh version 2
+!
+!
+!
+!
+!
+control-plane
+!
+!
+voice-port 0/1/1:23
+ !
+ !
+ !
+ !
+!
+mgcp behavior rsip-range tgcp-only
+mgcp behavior comedia-role none
+mgcp behavior comedia-check-media-src disable
+mgcp behavior comedia-sdp-force disable
+!
+mgcp profile default
+!
+!
+!
+!
+dial-peer voice 110102 pots
+ destination-pattern 302...
+ port 0/1/1:23
+ forward-digits all
+!
+dial-peer voice 200102 voip
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ incoming called-number 301...
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+!
+dial-peer voice 110111 pots
+ destination-pattern 311...
+ port 0/1/1:23
+ forward-digits all
+!
+dial-peer voice 200111 voip
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ incoming called-number 301...
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+!
+dial-peer voice 111202 pots
+ destination-pattern 302...
+ port 0/1/1:23
+ forward-digits all
+!
+dial-peer voice 201202 voip
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ incoming called-number 312...
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+!
+dial-peer voice 111211 pots
+ destination-pattern 311...
+ port 0/1/1:23
+ forward-digits all
+!
+dial-peer voice 201211 voip
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ incoming called-number 312...
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+!
+dial-peer voice 100201 pots
+ incoming called-number 302...
+ port 0/1/1:23
+ forward-digits all
+!
+dial-peer voice 210201 voip
+ destination-pattern 301...
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+!
+dial-peer voice 100212 pots
+ incoming called-number 302...
+ port 0/1/1:23
+ forward-digits all
+!
+dial-peer voice 210212 voip
+ destination-pattern 312...
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+!
+dial-peer voice 101101 pots
+ incoming called-number 311...
+ port 0/1/1:23
+ forward-digits all
+!
+dial-peer voice 211101 voip
+ destination-pattern 301...
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+!
+dial-peer voice 101112 pots
+ incoming called-number 311...
+ port 0/1/1:23
+ forward-digits all
+!
+dial-peer voice 211112 voip
+ destination-pattern 312...
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+!
+!
+!
+line con 0
+ stopbits 1
+line aux 0
+ stopbits 1
+line vty 0 4
+ login local
+ transport input ssh
+!
+ntp server time.google.com
+!
+end

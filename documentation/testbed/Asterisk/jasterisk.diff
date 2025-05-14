@@ -1,0 +1,299 @@
+diff --git a/channels/sig_pri.c b/channels/sig_pri.c
+index 55bbe47..7b1423b 100644
+--- a/channels/sig_pri.c
++++ b/channels/sig_pri.c
+@@ -121,6 +121,9 @@
+ #error "Upgrade your libpri"
+ #endif
+ 
++#include "asterisk/res_stir_shaken_oob.h"
++
++
+ /*** DOCUMENTATION
+  ***/
+ 
+@@ -5154,35 +5157,35 @@ static enum sig_pri_moh_state sig_pri_moh_fsm_pend_hold(struct ast_channel *chan
+ 
+ #if defined(HAVE_PRI_CALL_HOLD)
+ /*!
+- * \internal
+- * \brief MOH FSM state retrieve failed.
+- * \since 10.0
+- *
+- * \param chan Channel to post event to (Usually pvt->owner)
+- * \param pvt Channel private control structure.
+- * \param event MOH event to process.
+- *
+- * \note Assumes the pvt->pri->lock is already obtained.
+- * \note Assumes the sig_pri_lock_private(pvt) is already obtained.
+- *
+- * \return Next MOH state
+- */
++* \internal
++* \brief MOH FSM state retrieve failed.
++* \since 10.0
++*
++* \param chan Channel to post event to (Usually pvt->owner)
++* \param pvt Channel private control structure.
++* \param event MOH event to process.
++*
++* \note Assumes the pvt->pri->lock is already obtained.
++* \note Assumes the sig_pri_lock_private(pvt) is already obtained.
++*
++* \return Next MOH state
++*/
+ static enum sig_pri_moh_state sig_pri_moh_fsm_retrieve_fail(struct ast_channel *chan, struct sig_pri_chan *pvt, enum sig_pri_moh_event event)
+ {
+ 	enum sig_pri_moh_state next_state;
+-
++	
+ 	next_state = pvt->moh_state;
+ 	switch (event) {
+-	case SIG_PRI_MOH_EVENT_RESET:
++		case SIG_PRI_MOH_EVENT_RESET:
+ 		next_state = SIG_PRI_MOH_STATE_IDLE;
+ 		break;
+-	case SIG_PRI_MOH_EVENT_HOLD:
++		case SIG_PRI_MOH_EVENT_HOLD:
+ 		next_state = SIG_PRI_MOH_STATE_HOLD;
+ 		break;
+-	case SIG_PRI_MOH_EVENT_UNHOLD:
++		case SIG_PRI_MOH_EVENT_UNHOLD:
+ 		next_state = sig_pri_moh_retrieve_call(pvt);
+ 		break;
+-	case SIG_PRI_MOH_EVENT_REMOTE_RETRIEVE_ACK:
++		case SIG_PRI_MOH_EVENT_REMOTE_RETRIEVE_ACK:
+ 		next_state = SIG_PRI_MOH_STATE_IDLE;
+ 		break;
+ 	default:
+@@ -6068,7 +6071,9 @@ static void sig_pri_handle_setup(struct sig_pri_span *pri, pri_event *e)
+ 		pri->pvts[chanpos]->exten, NULL, NULL);
+ 	ast_mutex_lock(&pri->lock);
+ 	sig_pri_lock_private(pri->pvts[chanpos]);
+-
++	
++	pri_stir_shaken_incoming_request(e->ring.callingnum, e->ring.callednum, c); // JIWF
++	
+ 	if (c) {
+ 		setup_incoming_channel(pri, chanpos, e);
+ 
+@@ -7805,6 +7810,8 @@ int sig_pri_call(struct sig_pri_chan *p, struct ast_channel *ast, const char *rd
+ 	char *opt_args[OPT_ARG_ARRAY_SIZE];
+ 	struct ast_party_id connected_id = ast_channel_connected_effective_id(ast);
+ 
++	pri_stir_shaken_outgoing_request(connected_id.number.str, rdest, ast); // JIWF
++
+ 	ast_debug(1, "CALLER NAME: %s NUM: %s\n",
+ 		S_COR(connected_id.name.valid, connected_id.name.str, ""),
+ 		S_COR(connected_id.number.valid, connected_id.number.str, ""));
+@@ -10020,6 +10027,11 @@ int sig_pri_load(const char *cc_type_name)
+ 		return -1;
+ 	}
+ #endif	/* defined(HAVE_PRI_CCSS) */
++
++	if (res_stir_shaken_oob_init()) {
++		return -1;
++	}
++	
+ 	return 0;
+ }
+ 
+diff --git a/res/res_pjsip_stir_shaken.c b/res/res_pjsip_stir_shaken.c
+index f64152f..d739d10 100644
+--- a/res/res_pjsip_stir_shaken.c
++++ b/res/res_pjsip_stir_shaken.c
+@@ -33,6 +33,7 @@
+ #include "asterisk/res_pjsip_session.h"
+ #include "asterisk/module.h"
+ #include "asterisk/rtp_engine.h"
++#include "asterisk/pbx.h"
+ 
+ #include "asterisk/res_stir_shaken.h"
+ 
+@@ -61,6 +62,8 @@ enum sip_response_code {
+ #define SIP_RESPONSE_CODE_INVALID_IDENTITY_HEADER_STR "Invalid Identity Header"
+ #define SIP_RESPONSE_CODE_INTERNAL_ERROR_STR "Internal Error"
+ 
++#define MAX_DATE_LENGTH 64
++
+ #define response_to_str(_code) \
+ case _code: \
+ 	return _code ## _STR;
+@@ -203,7 +206,8 @@ static int stir_shaken_incoming_request(struct ast_sip_session *session, pjsip_r
+ 	RAII_VAR(char *, header, NULL, ast_free);
+ 	RAII_VAR(char *, payload, NULL, ast_free);
+ 	char *identity_hdr_val;
+-	char *date_hdr_val;
++	char *tmpgetvar;
++	char date_hdr_val[MAX_DATE_LENGTH];
+ 	char *caller_id = session->id.number.str;
+ 	const char *session_name = ast_sip_session_get_name(session);
+ 	struct ast_channel *chan = session->channel;
+@@ -225,7 +229,7 @@ static int stir_shaken_incoming_request(struct ast_sip_session *session, pjsip_r
+ 	if (rdata->msg_info.to->tag.slen) {
+ 		SCOPE_EXIT_RTN_VALUE(0, "%s: Reinvite. No action needed\n", session_name);
+ 	}
+-
++	
+ 	/*
+ 	 * Shortcut:  If there's no callerid or profile name,
+ 	 * just bail now.
+@@ -235,6 +239,19 @@ static int stir_shaken_incoming_request(struct ast_sip_session *session, pjsip_r
+ 		SCOPE_EXIT_RTN_VALUE(0, "%s: No callerid or profile name. No action needed\n", session_name);
+ 	}
+ 
++	// Jodi code BEGIN
++	identity_hdr_val = ast_sip_rdata_get_header_value(rdata, identity_hdr_str);
++	tmpgetvar = ast_sip_rdata_get_header_value(rdata, date_hdr_str);
++	snprintf(date_hdr_val, MAX_DATE_LENGTH, "%s", tmpgetvar);
++	
++	if (!ast_strlen_zero(identity_hdr_val) && !ast_strlen_zero(date_hdr_val)) {
++		ast_channel_lock(chan);
++		if(pbx_builtin_setvar_helper(chan, "__SS_ID_HDR", identity_hdr_val) == -1 || pbx_builtin_setvar_helper(chan, "__SS_DATE_HDR", date_hdr_val) == -1 )
++			ast_log(AST_LOG_ERROR, "SIP S/S IN Dialplan failed to set SS_ID_HDR or SS_DATE_HDR. Call continuing\n");
++		ast_channel_unlock(chan);
++	}
++	// Jodi code END
++
+ 	vs_rc = ast_stir_shaken_vs_ctx_create(caller_id, chan,
+ 		session->endpoint->stir_shaken_profile,
+ 		session_name, &ctx);
+@@ -246,7 +263,6 @@ static int stir_shaken_incoming_request(struct ast_sip_session *session, pjsip_r
+ 			session_name);
+ 	}
+ 
+-	identity_hdr_val = ast_sip_rdata_get_header_value(rdata, identity_hdr_str);
+ 	if (ast_strlen_zero(identity_hdr_val)) {
+ 		p_rc = process_failure(ctx, caller_id, session, rdata,
+ 			AST_STIR_SHAKEN_VS_NO_IDENTITY_HDR);
+@@ -257,7 +273,7 @@ static int stir_shaken_incoming_request(struct ast_sip_session *session, pjsip_r
+ 		SCOPE_EXIT_LOG_RTN_VALUE(1, LOG_ERROR, "%s: No Identity header found.  Call terminated\n",
+ 			session_name);
+ 	}
+-
++	
+ 	vs_rc = ast_stir_shaken_vs_ctx_add_identity_hdr(ctx, identity_hdr_val);
+ 	if (vs_rc != AST_STIR_SHAKEN_VS_SUCCESS) {
+ 		reject_incoming_call(session, 500);
+@@ -265,7 +281,6 @@ static int stir_shaken_incoming_request(struct ast_sip_session *session, pjsip_r
+ 			session_name);
+ 	}
+ 
+-	date_hdr_val = ast_sip_rdata_get_header_value(rdata, date_hdr_str);
+ 	if (ast_strlen_zero(date_hdr_val)) {
+ 		p_rc = process_failure(ctx, caller_id, session, rdata,
+ 			AST_STIR_SHAKEN_VS_NO_DATE_HDR);
+@@ -277,7 +292,7 @@ static int stir_shaken_incoming_request(struct ast_sip_session *session, pjsip_r
+ 			session_name);
+ 	}
+ 
+-	ast_stir_shaken_vs_ctx_add_date_hdr(ctx, date_hdr_val);
++	vs_rc = ast_stir_shaken_vs_ctx_add_date_hdr(ctx, date_hdr_val);
+ 	if (vs_rc != AST_STIR_SHAKEN_VS_SUCCESS) {
+ 		reject_incoming_call(session, 500);
+ 		SCOPE_EXIT_LOG_RTN_VALUE(1, LOG_ERROR, "%s: Unable to add Date header.  Call terminated.\n",
+@@ -296,6 +311,7 @@ static int stir_shaken_incoming_request(struct ast_sip_session *session, pjsip_r
+ 
+ 	}
+ 
++	ast_log(AST_LOG_VERBOSE, "%s: SIP S/S IN Verif success", session_name);
+ 	ast_stir_shaken_add_result_to_channel(ctx);
+ 
+ 	SCOPE_EXIT_RTN_VALUE(0, "Passed\n");
+@@ -393,6 +409,9 @@ static void stir_shaken_outgoing_request(struct ast_sip_session *session,
+ 	struct ast_stir_shaken_as_ctx *ctx = NULL;
+ 	enum ast_stir_shaken_as_response_code as_rc;
+ 	const char *session_name = ast_sip_session_get_name(session);
++	const char* tmpgetvar;
++	char* identity_hdr_val = NULL;
++	char date_hdr_val[MAX_DATE_LENGTH];
+ 	SCOPE_ENTER(1, "%s: Enter\n", session_name);
+ 
+ 	if (!session) {
+@@ -428,6 +447,77 @@ static void stir_shaken_outgoing_request(struct ast_sip_session *session,
+ 		SCOPE_EXIT_RTN("Unable to get caller id\n");
+ 	}
+ 
++	// Jodi code BEGIN
++	ast_channel_lock(session->channel);
++    tmpgetvar = pbx_builtin_getvar_helper(session->channel, "SS_ID_HDR");
++	if (!ast_strlen_zero(tmpgetvar))  { identity_hdr_val = (char *)ast_malloc(strlen(tmpgetvar) + 1); strcpy(identity_hdr_val, tmpgetvar); }
++    tmpgetvar = pbx_builtin_getvar_helper(session->channel, "SS_DATE_HDR");
++	if (!ast_strlen_zero(tmpgetvar)) snprintf(date_hdr_val, MAX_DATE_LENGTH, "%s", tmpgetvar);
++	ast_channel_unlock(session->channel);
++
++	if (!ast_strlen_zero(identity_hdr_val) && !ast_strlen_zero(date_hdr_val)) { 
++		// attach the old passport to the SIP INVITE
++		ast_log(AST_LOG_VERBOSE, "%s: SIP S/S OUT Retrieved PASSPorT from channel variables\n", session_name);
++
++		// check if next hop is a subscriber. if yes verify the passport.
++		tmpgetvar = pbx_builtin_getvar_helper(session->channel, "EP_TYPE");
++		if (tmpgetvar && !strncmp("sub", tmpgetvar, 3)) {
++			// verify passport here
++			// create ast_ss ctx
++			enum ast_stir_shaken_vs_response_code vs_rc;
++			struct ast_stir_shaken_vs_ctx *vsctx = NULL;
++		
++			vs_rc = ast_stir_shaken_vs_ctx_create(connected_id.number.str,
++				session->channel,
++				session->endpoint->stir_shaken_profile,
++				session_name, &vsctx);
++		
++			if (vs_rc == AST_STIR_SHAKEN_VS_DISABLED) {
++				ast_log(AST_LOG_VERBOSE, "%s: VS Disabled\n", session_name);
++				goto sip_ss_outgoing_vs_skip;
++			}
++			else if (vs_rc != AST_STIR_SHAKEN_VS_SUCCESS) {
++				ast_log(AST_LOG_ERROR, "%s: Unable to create context\n", session_name);
++				goto sip_ss_outgoing_vs_skip;
++			}
++		
++			// add identity and date header
++			vs_rc = ast_stir_shaken_vs_ctx_add_identity_hdr(vsctx, identity_hdr_val);
++			if (vs_rc != AST_STIR_SHAKEN_VS_SUCCESS) {
++				ast_log(AST_LOG_ERROR, "%s: Unable to add Identity header\n", session_name);
++				goto sip_ss_outgoing_vs_skip;
++			}
++			
++			vs_rc = ast_stir_shaken_vs_ctx_add_date_hdr(vsctx, date_hdr_val);
++			if (vs_rc != AST_STIR_SHAKEN_VS_SUCCESS) {
++				ast_log(AST_LOG_ERROR, "%s: Unable to add Date header\n", session_name);
++				goto sip_ss_outgoing_vs_skip;
++			}
++		
++			// verify PASSporT
++			vs_rc = ast_stir_shaken_vs_verify(vsctx);
++			if (vs_rc != AST_STIR_SHAKEN_VS_SUCCESS) {
++				ast_log(AST_LOG_ERROR, "%s: Verification failed\n", session_name);
++				goto sip_ss_outgoing_vs_skip;
++			}
++			ast_log(AST_LOG_VERBOSE, "%s: SIP S/S OUT SUBSCRIBER Verif success", session_name);
++		}
++
++sip_ss_outgoing_vs_skip:
++
++		ast_sip_add_header(tdata, "Date", date_hdr_val);
++		identity_val = pj_str(identity_hdr_val);
++		identity_hdr = pjsip_generic_string_hdr_create(tdata->pool, &identity_hdr_str, &identity_val);
++		if (!identity_hdr) 
++			SCOPE_EXIT_LOG_RTN(LOG_VERBOSE, "%s: Unable to create Identity header\n", session_name);
++		pjsip_msg_add_hdr(tdata->msg, (pjsip_hdr *)identity_hdr);
++		SCOPE_EXIT_RTN("Done\n");
++	}
++	// Jodi code END
++
++	// the below code is for originating providers, who should create new passports
++	ast_log(AST_LOG_VERBOSE, "%s: SIP S/S OUT Attempting to create new passport\n", session_name);
++
+ 	as_rc = ast_stir_shaken_as_ctx_create(connected_id.number.str,
+ 		dest_tn, session->channel,
+ 		session->endpoint->stir_shaken_profile,
+@@ -445,7 +535,7 @@ static void stir_shaken_outgoing_request(struct ast_sip_session *session,
+ 
+ 	add_date_header(session, tdata);
+ 	add_fingerprints_if_present(session, ctx);
+-
++	
+ 	as_rc = ast_stir_shaken_attest(ctx, &identity_str);
+ 	if (as_rc != AST_STIR_SHAKEN_AS_SUCCESS) {
+ 		ao2_cleanup(ctx);
