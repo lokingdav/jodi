@@ -1,0 +1,130 @@
+x-testnet: &testnet
+  image: dindvm
+  mem_limit: 2g # 2 GB RAM
+  cpus: 2.0 # 2 vCPU cores
+  privileged: true
+  cap_add:
+    - NET_ADMIN
+  environment:
+    - DOCKER_TLS_CERTDIR=
+
+services:
+  node-0:
+    <<: *testnet
+    hostname: node-0
+    container_name: node-0
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.10
+    volumes:
+      - ./docker/data/testnet/node-0/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-0/opt/jodi:/opt/jodi
+
+  node-1:
+    <<: *testnet
+    hostname: node-1
+    container_name: node-1
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.11
+    volumes:
+      - ./docker/data/testnet/node-1/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-1/opt/jodi:/opt/jodi
+
+  node-2:
+    <<: *testnet
+    hostname: node-2
+    container_name: node-2
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.12
+    volumes:
+      - ./docker/data/testnet/node-2/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-2/opt/jodi:/opt/jodi
+
+  node-3:
+    <<: *testnet
+    hostname: node-3
+    container_name: node-3
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.13
+    volumes:
+      - ./docker/data/testnet/node-3/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-3/opt/jodi:/opt/jodi
+
+  node-4:
+    <<: *testnet
+    hostname: node-4
+    container_name: node-4
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.14
+    volumes:
+      - ./docker/data/testnet/node-4/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-4/opt/jodi:/opt/jodi
+
+  node-5:
+    <<: *testnet
+    hostname: node-5
+    container_name: node-5
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.15
+    volumes:
+      - ./docker/data/testnet/node-5/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-5/opt/jodi:/opt/jodi
+
+  node-6:
+    <<: *testnet
+    hostname: node-6
+    container_name: node-6
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.16
+    volumes:
+      - ./docker/data/testnet/node-6/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-6/opt/jodi:/opt/jodi
+
+  node-7:
+    <<: *testnet
+    hostname: node-7
+    container_name: node-7
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.17
+    volumes:
+      - ./docker/data/testnet/node-7/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-7/opt/jodi:/opt/jodi
+
+  node-8:
+    <<: *testnet
+    hostname: node-8
+    container_name: node-8
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.18
+    volumes:
+      - ./docker/data/testnet/node-8/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-8/opt/jodi:/opt/jodi
+
+  node-9:
+    <<: *testnet
+    hostname: node-9
+    container_name: node-9
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.19
+    volumes:
+      - ./docker/data/testnet/node-9/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/node-9/opt/jodi:/opt/jodi
+
+networks:
+  testnet:
+    name: jodi_testnet
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-testnet
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24

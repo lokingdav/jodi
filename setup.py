@@ -14,13 +14,13 @@ def parse_requirements(filename):
 requirements = parse_requirements('requirements.txt')
 
 setup(
-    name='cpex',
+    name='jodi',
     version='1.0.0',
     packages=find_packages(),
     description='Control Plane Extension For Telephony',
     author='David L. Adei',
     author_email='lokingdav@gmail.com',
-    url='https://github.com/lokingdav/cpex',
+    url='https://github.com/lokingdav/jodi',
     classifiers=[
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent',

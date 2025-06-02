@@ -1,40 +1,42 @@
-x-cpex-service: &cpex-service
-  image: kofidahmed/cpex
+x-jodi-service: &jodi-service
+  image: kofidahmed/jodi
   platform: linux/x86_64
   volumes:
     - '.:/app'
   depends_on:
     - cache
-  networks:
-    - net
+  networks: [controlnet]
 
 services:
-  experiment:
-    image: cpex-experiment
+  control:
+    image: jodi-control
     platform: linux/x86_64
-    container_name: cpex-exp
+    container_name: jodi-control
     command: tail -f /dev/null
     environment:
       - DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
       - HOST_APP_PATH=${HOST_APP_PATH}
     volumes:
       - '.:/app'
-      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
-      - './docker/data/automation/.aws:/root/.aws'
-      - './docker/data/automation/.ssh:/root/.ssh'
+      - './docker/data/.aws:/root/.aws'
+      - './docker/data/.ssh:/root/.ssh'
     depends_on:
       - cache
       - mongo
+    cap_add:
+      - NET_ADMIN
+    profiles: [control]
     networks:
-      - net
-    profiles: [experiment]
+      controlnet: {}
+      jodi_testnet:
+        ipv4_address: 172.20.0.2
 
-# CPeX Services
+# jodi Services
   evaluator:
-    <<: *cpex-service
+    <<: *jodi-service
     container_name: evaluator
     command: > 
-      gunicorn cpex.servers.evaluator:app 
+      gunicorn jodi.servers.evaluator:app 
       --bind 0.0.0.0:80 
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
@@ -43,22 +45,22 @@ services:
       --timeout 120
     ports:
       - 10430:80
-    profiles: [cpex, ev]
+    profiles: [jodi, ev]
     depends_on:
       - ev-keyrotation
       - cache
 
   ev-keyrotation:
-    <<: *cpex-service
+    <<: *jodi-service
     container_name: ev-keyrotation
-    command: python cpex/servers/keyrotation.py
-    profiles: [cpex, ev]
+    command: python jodi/servers/keyrotation.py
+    profiles: [jodi, ev]
 
   message-store:
-    <<: *cpex-service
+    <<: *jodi-service
     container_name: message-store
     command: >
-      gunicorn cpex.servers.message_store:app 
+      gunicorn jodi.servers.message_store:app 
       --bind 0.0.0.0:80 
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
@@ -67,13 +69,13 @@ services:
       --timeout 120
     ports:
       - 10431:80
-    profiles: [cpex, ms]
+    profiles: [jodi, ms]
 
   jodi-proxy:
-    <<: *cpex-service
+    <<: *jodi-service
     container_name: jodi-proxy
     command: >
-      gunicorn cpex.servers.cpex_proxy:app 
+      gunicorn jodi.servers.jodi_proxy:app 
       --bind 0.0.0.0:80 
       --workers 8
       --worker-class uvicorn.workers.UvicornWorker 
@@ -82,10 +84,10 @@ services:
     profiles: [jodi_proxy]
 
   sti-cr:
-    <<: *cpex-service
+    <<: *jodi-service
     container_name: sti-cr
     command: > 
-      gunicorn cpex.prototype.stirshaken.cert_repo:app 
+      gunicorn jodi.prototype.stirshaken.cert_repo:app 
       --bind 0.0.0.0:80 
       --workers 2
       --worker-class uvicorn.workers.UvicornWorker 
@@ -96,13 +98,13 @@ services:
       - 10432:80
     environment:
       - NODE_PORT=10432
-    profiles: [atis, cr]
+    profiles: [oobss, cr]
 
   sti-cps:
-    <<: *cpex-service
+    <<: *jodi-service
     container_name: sti-cps
     command: > 
-      gunicorn cpex.prototype.stirshaken.cps_server:app 
+      gunicorn jodi.prototype.stirshaken.cps_server:app 
       --bind 0.0.0.0:80 
       --workers 6
       --worker-class uvicorn.workers.UvicornWorker 
@@ -116,13 +118,13 @@ services:
     depends_on:
       cache:
         condition: service_healthy
-    profiles: [atis, cps]
+    profiles: [oobss, cps]
 
   oobss-proxy:
-    <<: *cpex-service
+    <<: *jodi-service
     container_name: oobss-proxy
     command: >
-      gunicorn cpex.prototype.stirshaken.oobss_proxy:app 
+      gunicorn jodi.prototype.stirshaken.oobss_proxy:app 
       --bind 0.0.0.0:80 
       --workers 8
       --worker-class uvicorn.workers.UvicornWorker 
@@ -132,11 +134,10 @@ services:
 
 # Cache and Database
   cache:
-    container_name: cache
+    container_name: jodi-cache
     image: redis
     platform: linux/x86_64
-    networks:
-      - net
+    networks: [controlnet]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1s
@@ -144,7 +145,7 @@ services:
       retries: 5
   
   mongo:
-    container_name: cpex-mongo
+    container_name: jodi-mongo
     image: mongo
     platform: linux/x86_64
     environment:
@@ -154,10 +155,18 @@ services:
       - 27017:27017
     volumes:
       - ./docker/data/mongo:/data/db
-    networks:
-      - net
-    profiles: [experiment]
+    networks: [controlnet]
+    profiles: [control]
 
 networks:
-  net:
+  jodi_testnet:
+    external: true
+    
+  controlnet:
+    name: jodi_controlnet
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-controlnet
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

@@ -8,13 +8,18 @@ Jodi makes use of Oblivious Pseudorandom Functions (OPRFs), Threshold Group Sign
 
 - The code repository contains the source code for setting up
     - Jodi Evaluators (EV) and Message Stores (MS) on the cloud
-    - ATIS OOB STIR/SHAKEN CPSes on the cloud
+    - OOB STIR/SHAKEN CPSes on the cloud
     - Jodi and OOB STIR/SHAKEN proxy on the providers infrastructure
 - All of the components are Dockerized for easy and scalable deployment
 
 
-## Setup Instructions
+## Initial Setup Instructions
+We care a lot about the work you must put in to install the run this project. Therefore we thought it would be best to provide you with a script that does all the work for you. The script is called ```prototype.sh``` and is located in the root directory of the project. It will help you set up the project on your local machine.
+
+But before you run the script, we only assume that you already have docker installed on your machine. If you don't have it, please install it now. Docker is a containerization platform that allows you to run applications in isolated environments called containers. It is available for Windows, Mac, and Linux operating systems. You can find the installation instructions for your specific operating system on the official Docker website.
+
 - Install Docker and Docker Compose
+- Run ```sudo chmod +x ./prototype && sudo chmod +x -R scripts/``` to make the scripts executable
 - Create a copy of ```.env``` file and update the values as per your setup.
 - Run ```./prototype.sh build``` to build the Docker images
 - Run ```./prototype.sh up``` to start the services
@@ -28,7 +33,7 @@ Jodi makes use of Oblivious Pseudorandom Functions (OPRFs), Threshold Group Sign
 ./prototype.sh up
 ```
 
-## ATIS OOB STIR/SHAKEN CPS
+## OOB STIR/SHAKEN CPS
 - The current setup uses Terraform and Ansible to set up multiple instances of CPSes on AWS over different zones in the US
 - Once the setup is done, ```automation/hosts.yml``` and ```.env``` files are created, which will be used by the proxy
 - Command for the setup TODO
@@ -48,23 +53,3 @@ docker compose --profile jodi_proxy up -d
 docker compose --profile oobss_proxy up -d
 ```
 - Once either of the proxies is running, get the URL of it and provide it to the JIWF.
-
-
-
-## Other Useful Commands
-
-```bash
-nohup ./prototype.sh runexp 1 > output.log 2>&1 & echo $! > exp1.pid
-```
-This runs the experiment in the background and saves the output to `output.log`. The process ID is saved to `exp1.pid`.
-
-To Kill the experiment, run:
-
-```bash
-kill -9 $(cat exp1.pid)
-```
-
-Run Grafana k6 load test
-```bash
-k6 run --config cpex/prototype/experiments/k6/options.json cpex/prototype/experiments/k6/<protocol>.js # replace <protocol> with cpex or atis
-```

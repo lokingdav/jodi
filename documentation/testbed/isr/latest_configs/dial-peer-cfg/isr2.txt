@@ -1,0 +1,116 @@
+!! incoming
+! 301 to 302
+dial-peer voice 110102 pots
+ destination-pattern 302...
+ port 0/1/1:23
+ forward-digits all
+dial-peer voice 200102 voip
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ incoming called-number 301...
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+
+! 301 to 311
+dial-peer voice 110111 pots
+ destination-pattern 311...
+ port 0/1/1:23
+ forward-digits all
+dial-peer voice 200111 voip
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ incoming called-number 301...
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+
+! 312 to 302
+dial-peer voice 111202 pots
+ destination-pattern 302...
+ port 0/1/1:23
+ forward-digits all
+dial-peer voice 201202 voip
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ incoming called-number 312...
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+
+! 312 to 311
+dial-peer voice 111211 pots
+ destination-pattern 311...
+ port 0/1/1:23
+ forward-digits all
+dial-peer voice 201211 voip
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ incoming called-number 312...
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+
+
+
+
+!! outgoing
+! 302 to 301
+dial-peer voice 100201 pots
+ incoming called-number 302...
+ port 0/1/1:23
+ forward-digits all
+dial-peer voice 210201 voip
+ destination-pattern 301...
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+
+! 302 to 312
+dial-peer voice 100212 pots
+ incoming called-number 302...
+ port 0/1/1:23
+ forward-digits all
+dial-peer voice 210212 voip
+ destination-pattern 312...
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+
+! 311 to 301
+dial-peer voice 101101 pots
+ incoming called-number 311...
+ port 0/1/1:23
+ forward-digits all
+dial-peer voice 211101 voip
+ destination-pattern 301...
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info
+
+! 311 to 312
+dial-peer voice 101112 pots
+ incoming called-number 311...
+ port 0/1/1:23
+ forward-digits all
+dial-peer voice 211112 voip
+ destination-pattern 312...
+ session protocol sipv2
+ session target ipv4:192.168.43.141
+ voice-class codec 1
+ voice-class sip bind control source-interface GigabitEthernet0/0/0.43
+ voice-class sip bind media source-interface GigabitEthernet0/0/0.43
+ dtmf-relay rtp-nte sip-info

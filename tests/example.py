@@ -1,6 +1,6 @@
-from cpex.helpers import http
+from jodi.helpers import http
 import asyncio, time, json, aiohttp
-from cpex import config
+from jodi import config
 
 proto = 'oobss'
 

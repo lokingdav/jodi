@@ -1,0 +1,35 @@
+---
+- name: Setup and deploy prototype
+  hosts: all
+  become: yes
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Stop Services
+      tags:
+        - stop_services
+      command: "./scripts/apps.sh down"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: Clear logs
+      tags:
+        - clear_logs
+      shell: "rm -rf ./logs/*.log"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: Start Jodi Services
+      tags:
+        - start_jodi
+      command: "./scripts/apps.sh jodi"
+      args:
+        chdir: "{{ repo_dest }}"
+
+    - name: Start OOB-S/S Services
+      tags:
+        - start_oobss
+      command: "./scripts/apps.sh oobss"
+      args:
+        chdir: "{{ repo_dest }}"

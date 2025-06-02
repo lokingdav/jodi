@@ -1,0 +1,28 @@
+FROM docker:24-dind
+
+
+RUN apk add --no-cache \
+        bash \
+        sudo \
+        git \
+        python3 \
+        py3-pip \
+        py3-six \
+        iproute2 \
+        iputils
+
+
+RUN adduser -D -u 1000 ubuntu && \
+    addgroup  ubuntu docker && \
+    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+
+RUN mkdir -p /home/ubuntu && \
+    echo "Setup complete." > /home/ubuntu/done.txt && \
+    chown -R ubuntu:ubuntu /home/ubuntu
+
+
+USER ubuntu
+WORKDIR /home/ubuntu
+
+ENTRYPOINT ["sh", "-c", "sudo dockerd-entrypoint.sh & sleep infinity"]

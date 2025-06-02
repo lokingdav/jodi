@@ -5,14 +5,14 @@ from cryptography.x509.oid import NameOID
 from datetime import datetime, timedelta, timezone
 from cryptography.hazmat.primitives.asymmetric import ec
 
-from cpex.prototype.stirshaken.certs import (
+from jodi.prototype.stirshaken.certs import (
     generate_key_pair,
     create_csr,
     sign_csr,
     get_private_key
 )
 
-class TestCPeXStirShakenCerts(unittest.TestCase):
+class TestJodiStirShakenCerts(unittest.TestCase):
     def test_generate_key_pair(self):
         """Test generating an elliptic curve key pair."""
         private_key_str, public_key_str = generate_key_pair()
