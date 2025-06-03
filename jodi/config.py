@@ -113,3 +113,8 @@ OOBSS_PROXY_CR_X5U = env('OOBSS_PROXY_CR_X5U')
 # Experiment Parameters
 CPS_COUNT = env('CPS_COUNT', 10, dtype=int)
 HOSTS_FILE = env('HOSTS_FILE', 'deployments/hosts.yml')
+
+AUDIT_SERVER_URL = env("AUDIT_SERVER_URL", "http://auditls/log")
+LOG_BATCH_KEY = "jodi.als." + env("LOG_BATCH_KEY")
+QUEUE_NAME = env("QUEUE_NAME")
+SCHEDULE_INTERVAL_SECONDS = env("SCHEDULE_INTERVAL_SECONDS", 1, dtype=int)

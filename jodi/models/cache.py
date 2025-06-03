@@ -1,20 +1,19 @@
-import json
-from redis import Redis
+import json, redis
 from jodi.config import CACHE_HOST, CACHE_PORT, CACHE_PASS, CACHE_DB, NODE_FQDN, CPS_KEY
 
 client = None
 
-def set_client(cclient: Redis = None):
+def set_client(cclient: redis.Redis = None):
     global client
     client = cclient
 
-def connect():
-    return Redis(
+def connect(decode_responses: bool = True):
+    return redis.Redis(
         host=CACHE_HOST,
         port=CACHE_PORT,
         password=CACHE_PASS,
         db=CACHE_DB,
-        decode_responses=True
+        decode_responses=decode_responses
     )
 
 def find(key: str, dtype = str):

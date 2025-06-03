@@ -32,6 +32,26 @@ services:
         ipv4_address: 172.20.0.2
 
 # jodi Services
+  auditlog:
+    <<: *jodi-service
+    container_name: auditlog
+    command: > 
+      gunicorn jodi.servers.auditlog:app 
+      --bind 0.0.0.0:80 
+      --workers 4
+      --worker-class uvicorn.workers.UvicornWorker 
+      --log-file=-
+      --keep-alive 60
+      --timeout 120
+    ports:
+      - 10430:80
+    profiles: [jodi_als, als_al]
+    depends_on:
+      - cache
+      - mongo
+      - als_server_scheduler
+      - als_server_worker
+
   evaluator:
     <<: *jodi-service
     container_name: evaluator
@@ -45,16 +65,10 @@ services:
       --timeout 120
     ports:
       - 10430:80
-    profiles: [jodi, ev]
+    profiles: [jodi_cps, ev]
     depends_on:
-      - ev-keyrotation
+      - keyrotation
       - cache
-
-  ev-keyrotation:
-    <<: *jodi-service
-    container_name: ev-keyrotation
-    command: python jodi/servers/keyrotation.py
-    profiles: [jodi, ev]
 
   message-store:
     <<: *jodi-service
@@ -69,7 +83,65 @@ services:
       --timeout 120
     ports:
       - 10431:80
-    profiles: [jodi, ms]
+    profiles: [jodi_cps, ms]
+
+  keyrotation:
+    <<: *jodi-service
+    container_name: keyrotation
+    command: python jodi/servers/keyrotation.py
+    profiles: [jodi_cps, ev]
+
+  als_client_scheduler:
+    <<: *jodi-service
+    container_name: als_client_scheduler
+    command: >
+      sh -c "echo 'Scheduler Service: Running scheduler.py...' &&
+            python /app/jodi/servers/scheduler.py &&
+            echo 'Scheduler Service: scheduler.py finished. Starting rqscheduler daemon...' &&
+            exec rqscheduler --host cache --port 6379 --interval 2 --verbose"
+    profiles: [jodi_cps, als_cs]
+    environment:
+      - LOG_BATCH_KEY=client
+      - QUEUE_NAME=als_client
+    
+  als_client_worker:
+    <<: *jodi-service
+    container_name: als_client_worker
+    command: >
+      rq worker 
+      --host cache 
+      --port 6379 
+      --name als_client_worker 
+      --queue als_client
+    profiles: [jodi_cps, als_cw]
+    environment:
+      - LOG_BATCH_KEY=client
+      - QUEUE_NAME=als_client
+
+  als_server_scheduler:
+    <<: *jodi-service
+    container_name: als_server_scheduler
+    command: >
+      python /app/jodi/servers/scheduler.py &&
+      rq-scheduler --host cache --port 6379 --interval 2"
+    profiles: [jodi_als, als_cs]
+    environment:
+      - LOG_BATCH_KEY=server
+      - QUEUE_NAME=als_server
+
+  als_server_worker:
+    <<: *jodi-service
+    container_name: als_server_worker
+    command: >
+      rq worker 
+      --host cache 
+      --port 6379 
+      --name als_server_worker 
+      --queue als_server
+    profiles: [jodi_als, als_sw]
+    environment:
+      - LOG_BATCH_KEY=server
+      - QUEUE_NAME=als_server
 
   jodi-proxy:
     <<: *jodi-service
