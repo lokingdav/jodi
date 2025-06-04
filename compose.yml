@@ -28,8 +28,8 @@ services:
     profiles: [control]
     networks:
       controlnet: {}
-      jodi_testnet:
-        ipv4_address: 172.20.0.2
+      # jodi_testnet:
+      #   ipv4_address: 172.20.0.2
 
 # jodi Services
   auditlog:
@@ -44,13 +44,15 @@ services:
       --keep-alive 60
       --timeout 120
     ports:
-      - 10430:80
+      - 10434:80
     profiles: [jodi_als, als_al]
     depends_on:
       - cache
       - mongo
       - als_server_scheduler
       - als_server_worker
+    environment:
+      - LOG_BATCH_KEY=server
 
   evaluator:
     <<: *jodi-service
@@ -96,7 +98,7 @@ services:
     container_name: als_client_scheduler
     command: >
       sh -c "echo 'Scheduler Service: Running scheduler.py...' &&
-            python /app/jodi/servers/scheduler.py &&
+            python /app/jodi/servers/scheduler.py --client &&
             echo 'Scheduler Service: scheduler.py finished. Starting rqscheduler daemon...' &&
             exec rqscheduler --host cache --port 6379 --interval 2 --verbose"
     profiles: [jodi_cps, als_cs]
