@@ -107,7 +107,7 @@ async def retrieve(req: RetrieveRequest):
     
     if "message" in res:
         return JSONResponse(
-            content={"message": "Not Found"},
+            content=res,
             status_code=status.HTTP_404_NOT_FOUND
         )
     else:

@@ -2,9 +2,10 @@ import time
 import jodi.config as config
 from jodi.helpers import misc, http
 from typing import List
-from jodi.crypto import libjodi, groupsig
+from jodi.crypto import libjodi, groupsig, audit_logging
 from pylibjodi import Utils, Oprf
 import numpy as np
+from jodi.prototype.stirshaken import certs
 
 class JodiIWF:
     def __init__(self, params: dict):
@@ -12,6 +13,7 @@ class JodiIWF:
         self.n_ms = params['n_ms']
         self.gpk = params['gpk']
         self.gsk = params['gsk']
+        self.ipk = certs.get_public_key_from_cert(config.TEST_ICERT)
         self.logger = params.get('logger')
         self.metrics_logger = params.get('metrics_logger')
         self.fake_proxy = params.get('fake_proxy', False)
@@ -40,7 +42,7 @@ class JodiIWF:
         self.log_msg(f'--> This is call id generation for {req_type} request')
         call_details: str = libjodi.normalize_call_details(src=src, dst=dst)
         self.log_msg(f'--> Generates Call Details: {call_details}')
-        requests, mask = libjodi.create_evaluation_requests(
+        requests, mask, hreq = libjodi.create_evaluation_requests(
             call_details, 
             n_ev=self.n_ev, 
             gsk=self.gsk, 
@@ -84,12 +86,29 @@ class JodiIWF:
         net_time = req_time_taken
         
         start_compute = time.perf_counter()
-        call_ids = libjodi.create_call_ids(responses=responses, mask=mask, req_type=req_type)
+        self.log_msg(f"--> Validating EV Responses")
+        
+        valid_responses = []
+        for response in responses:
+            hres = Utils.to_base64(Utils.hash256(bytes(misc.stringify(response['evals']), 'utf-8')))
+            if audit_logging.ecdsa_verify(public_key=self.ipk, data=hreq+hres, sigma=response['sig_r']):
+                valid_responses.append(response['evals'])
+                
+        self.log_msg(f'--> Valid Responses: {valid_responses}')
+        
+        call_ids = libjodi.create_call_ids(
+            responses=valid_responses, 
+            mask=mask, 
+            req_type=req_type,
+            call_details=call_details
+        )
         
         compute_time += time.perf_counter() - start_compute
         
         if call_ids:
             self.log_msg(f"---> Call ID: {[Utils.to_base64(cid) for cid in call_ids if cid]}")
+        else:
+            self.log_msg(f'--> No Call ID generated')
 
         self.log_msg(f'==================== END CALL ID GENERATION')
         
@@ -176,7 +195,7 @@ class JodiIWF:
         # self.log_msg(f"\n--> Filtered Responses: {responses}")
         # self.log_msg(f"--> Call IDs: {call_ids}\n")
         start_compute = time.perf_counter()
-        token = libjodi.decrypt(call_ids=call_ids, responses=responses, gpk=self.gpk)
+        token = libjodi.decrypt(call_ids=call_ids, responses=responses, gpk=self.gpk, ipk=self.ipk)
         compute_time += time.perf_counter() - start_compute
         
         self.log_msg(f'--> Retrieved Token: {token}')

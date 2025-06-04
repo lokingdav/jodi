@@ -7,21 +7,22 @@ from jodi.models import cache
 from multiprocessing import Pool
 from jodi.prototype import provider as providerMod
 from jodi.prototype.simulations import entities, local
-from jodi.prototype.stirshaken import stirsetup
+from jodi.prototype.stirshaken import stirsetup, certs
 
 
-numIters = 1000
+numIters = 1
 cache_client = None
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
 n_evs = [3]
 n_mss = [3]
-
+isk = certs.get_private_key(config.TEST_ISK)
 cred, allcreds = stirsetup.load_certs()
 
 def init_worker():
     cache.set_client(cache_client)
     entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
+    entities.set_isk(isk)
 
 def bench_sync(options):
     return asyncio.run(bench_async(options))
@@ -48,9 +49,9 @@ async def bench_async(options):
     
     signal, initial_token = await originating_provider.originate() # will originate with random src and dst
     final_token = await terminating_provider.terminate(signal)
-    # print(f"Initial token: {initial_token}\n")
-    # print(f"Final token: {final_token}\n")
-    # mylogging.print_logs(logger)
+    print(f"Initial token: {initial_token}\n")
+    print(f"Final token: {final_token}\n")
+    mylogging.print_logs(logger)
     assert final_token == initial_token, "Tokens do not match"
     pub_compute = originating_provider.get_publish_compute_times()
     ret_compute = terminating_provider.get_retrieve_compute_times()

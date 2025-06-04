@@ -3,7 +3,7 @@ from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from jodi.crypto import groupsig, oprf, billing
+from jodi.crypto import groupsig, oprf, billing, audit_logging
 from jodi.models import cache
 from jodi.helpers import mylogging, misc
 from jodi import config
@@ -33,10 +33,11 @@ async def evaluate(req: EvaluateRequest):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
     
-    pp = oprf.Utils.to_base64(oprf.Utils.hash256(bytes(str(req.i_k) + req.x, 'utf-8')))
-    bb = billing.get_billing_hash(req.bt, req.peers)
+    hreq = oprf.Utils.to_base64(oprf.Utils.hash256(
+        bytes(req.x + str(req.i_k) + req.bt + req.peers, 'utf-8')
+    ))
 
-    if not groupsig.verify(sig=req.sig, msg=pp + bb, gpk=gpk):
+    if not groupsig.verify(sig=req.sig, msg=hreq, gpk=gpk):
         return JSONResponse(
             content={"message": "Invalid Signature"}, 
             status_code=status.HTTP_401_UNAUTHORIZED
@@ -45,8 +46,13 @@ async def evaluate(req: EvaluateRequest):
     mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Received request to evaluate with index {req.i_k}")
     keypairs = oprf.KeyRotation.get_keys(req.i_k)
     
-    content = oprf.evaluate(keypairs, req.x, isk=isk)
-    
+    evals = oprf.evaluate(keypairs, req.x)
+    hres = oprf.Utils.to_base64(oprf.Utils.hash256(bytes(misc.stringify(evals), 'utf-8')))
+    content = {
+        "evals": evals, 
+        "sig_r": audit_logging.ecdsa_sign(private_key=isk, data=hreq+hres)
+    }
+
     cache.enqueue_log({
         "type": config.LOG_TYPE_CID_GEN,
         "x": req.x,

@@ -1,12 +1,18 @@
 import json, os, time
 from typing import List
-from jodi.crypto import libjodi, groupsig, billing
+from jodi.crypto import libjodi, groupsig, billing, audit_logging
 from jodi.models import cache
+from jodi.helpers import misc
 from jodi import config
-from pylibjodi import Oprf, Utils
+from pylibjodi import Voprf, Utils
 from jodi.prototype.provider import Provider as BaseProvider
 
 evKeySets = None
+isk = None
+
+def set_isk(key):
+    global isk
+    isk = key
 
 def set_evaluator_keys(keys: dict):
     global evKeySets
@@ -66,7 +72,9 @@ class MessageStore:
             seconds=config.T_MAX_SECONDS
         )
         
-        return {'_success': 'message stored', 'time_taken': time.perf_counter() - start_time}
+        sig_r = audit_logging.ecdsa_sign(private_key=isk, data=pp+bb+"ok")
+        
+        return {'_success': 'message stored', 'sig_r': sig_r, 'time_taken': time.perf_counter() - start_time}
     
     def retrieve(self, request: dict):
         if not self.available:
@@ -95,15 +103,20 @@ class MessageStore:
             return {'_error': 'message not found', 'time_taken': time.perf_counter() - start_time}
         
         (msidx, msctx, mssig, bill_h) = value.split('.')
+        res = {'idx': msidx, 'ctx': msctx, 'sig': mssig, 'bb': bill_h}
+        hreq = billing.Utils.to_base64(billing.Utils.hash256(bytes(request['idx'], 'utf-8')))
+        hres = billing.Utils.to_base64(billing.Utils.hash256(bytes(misc.stringify(res), 'utf-8')))
         
-        return {'idx': msidx, 'ctx': msctx, 'sig': mssig, 'bb': bill_h, 'time_taken': time.perf_counter() - start_time}
+        sig_r = audit_logging.ecdsa_sign(private_key=isk, data=hreq+hres)
+        
+        return {'res': res, 'sig_r': sig_r, 'time_taken': time.perf_counter() - start_time}
 
 class Evaluator:
     @staticmethod
     def create_keyset():
         keys = []
         for _ in range(config.KEYLIST_SIZE):
-            sk, vk  = Oprf.keygen()
+            sk, vk  = Voprf.keygen()
             keys.append(Utils.to_base64(sk) + '.' + Utils.to_base64(vk))
         return keys
         
@@ -131,10 +144,11 @@ class Evaluator:
             self.log_msg(res)
             return res
 
-        pp = Utils.to_base64(Utils.hash256(bytes(str(request['i_k']) + request['x'], 'utf-8')))
-        bb = billing.get_billing_hash(request['bt'], request['peers'])
+        hreq = Utils.to_base64(Utils.hash256(
+            bytes(request['x'] + str(request['i_k']) + request['bt'] + request['peers'], 'utf-8')
+        ))
         
-        if not groupsig.verify(sig=request['sig'], msg=pp + bb, gpk=self.gpk):
+        if not groupsig.verify(sig=request['sig'], msg=hreq, gpk=self.gpk):
             res = {'_error': 'invalid signature', 'time_taken': time.perf_counter() - start_time}
             self.log_msg(res)
             return res
@@ -142,9 +156,17 @@ class Evaluator:
         self.log_msg(f"Receives i_k={request['i_k']}, x={request['x']}")
         self.log_msg(f"Uses sk={Utils.to_base64(self.keys[request['i_k']][0])}, pk={Utils.to_base64(self.keys[request['i_k']][1])}")
         
-        (fx, vk) = Oprf.evaluate(self.keys[request['i_k']][0], self.keys[request['i_k']][1], Utils.from_base64(request['x']))
-        return [{"fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk), 'time_taken': time.perf_counter() - start_time}]
-    
+        sk, vk = self.keys[request['i_k']][0], self.keys[request['i_k']][1]
+        fx = Voprf.evaluate(sk, Utils.from_base64(request['x']))
+        evals = [{"fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk)}]
+        hres = Utils.to_base64(Utils.hash256(bytes(misc.stringify(evals), 'utf-8')))
+        sig_r = audit_logging.ecdsa_sign(private_key=isk, data=hreq+hres)
+        
+        return {
+            "evals": evals,
+            "sig_r": sig_r,
+            "time_taken": time.perf_counter() - start_time
+        }
 
 class Provider(BaseProvider):
     def __init__(self, params: dict):

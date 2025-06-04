@@ -7,14 +7,12 @@ from jodi.crypto import audit_logging
 
 EXP_PREFIX = 'rexp'
 
-def evaluate(keypairs: list, x: str, isk) -> dict:
+def evaluate(keypairs: list, x: str) -> dict:
     evaluations = []
     for (sk, vk) in keypairs:
         fx = Voprf.evaluate(sk, Utils.from_base64(x))
         evaluations.append({ "fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk) })
-    sigma: str = audit_logging.ecdsa_sign(private_key=isk, data=evaluations)
-    return {"evals": evaluations, "sig": sigma}
-
+    return evaluations
 class KeyRotation:
     @staticmethod
     def get_keys(i: int) -> Tuple[bytes, bytes]:

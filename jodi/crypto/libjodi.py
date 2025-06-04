@@ -1,9 +1,9 @@
-from pylibjodi import Oprf, Utils, Ciphering
+from pylibjodi import Voprf, Utils, Ciphering
 import jodi.config as config
-from jodi.crypto import groupsig, billing
-from jodi.helpers import dht
+from jodi.crypto import groupsig, billing, audit_logging
+from jodi.helpers import dht, misc
 from typing import List
-import re, time
+import re, time, traceback
 from datetime import datetime
 from itertools import product
 
@@ -34,14 +34,13 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk, bt) -> by
     )
 
     # Blind and sign the call details
-    x, mask = Oprf.blind(call_details)
+    x, mask = Voprf.blind(call_details)
     x_str = Utils.to_base64(x)
     peers = get_peers(evaluators)
 
-    pp = Utils.to_base64(Utils.hash256(bytes(str(i_k) + x_str, 'utf-8')))
-    bb = billing.get_billing_hash(bt, peers)
+    hreq = Utils.to_base64(Utils.hash256(bytes(x_str + str(i_k) + bt + peers, 'utf-8')))
 
-    sig = groupsig.sign(msg=pp + bb, gsk=gsk, gpk=gpk)
+    sig = groupsig.sign(msg=hreq, gsk=gsk, gpk=gpk)
     
     # Create evaluation requests
     requests = []
@@ -53,27 +52,49 @@ def create_evaluation_requests(call_details: str, n_ev: int, gsk, gpk, bt) -> by
             'data': { 'i_k': i_k, 'x': x_str, 'sig': sig, 'bt': bt, 'peers': peers}
         })
     
-    return requests, mask
+    return requests, mask, hreq
 
-def create_call_ids(responses: List[dict], mask: bytes, req_type: str) -> bytes:
-    cids = []
-    responses = [reslist for reslist in responses if type(reslist) == list and len(reslist) > 0]
-    if req_type == 'publish': # Only consider the first response from each evaluator
-        responses = [reslist[0:1] for reslist in responses]
+def create_call_ids(responses: List[dict], mask: bytes, req_type: str, call_details: str) -> bytes:
+    cidsets, xor, edge_case, X = [], bytes(0), False, None
+    
+    for res in responses:
+        cid_1 = Voprf.unblind(Utils.from_base64(res[0]['fx']), mask)
+        
+        if Voprf.verify(Utils.from_base64(res[0]['vk']), call_details, cid_1):
+            xor = Utils.xor(xor, cid_1)
+            X = [cid_1]
+            
+        if req_type == 'retrieve' and len(res) == 2:
+            cid_2 = Voprf.unblind(Utils.from_base64(res[1]['fx']), mask)
+            
+            if Voprf.verify(Utils.from_base64(res[1]['vk']), call_details, cid_2):
+                X = [cid_1, cid_2]
+                edge_case = True
+                
+        if X:
+            cidsets.append(X)
 
-    responses = list(product(*responses))
-
-    for reslist in responses:
-        if len(reslist) == 0:
-            continue
-
-        digest = None
-        for res in reslist:
-            cid = Oprf.unblind(Utils.from_base64(res['fx']), Utils.from_base64(res['vk']), mask)
-            digest = Utils.xor(digest, cid) if digest else cid
-        cids.append(Utils.hash256(digest))
-
-    return cids
+    answers = []
+    
+    if req_type == 'publish' or edge_case == False:
+        answers = [xor]
+    else:
+        cidsets = list(product(*cidsets))
+        for cidlist in cidsets:
+            xor = bytes(0)
+            for cid in cidlist:
+                xor = Utils.xor(xor, cid)
+            answers.append(xor)
+            
+    # print({
+    #     'edge_case': edge_case,
+    #     'req_type': req_type,
+    #     'call_details': call_details,
+    #     'xor': xor.hex(),
+    #     'answers': [ans.hex() for ans in answers]
+    # })
+        
+    return [Utils.hash256(answer) for answer in answers]
 
 def create_storage_requests(call_id: bytes, msg: str, n_ms: int, gsk, gpk, bt, stores = None) -> List[dict]:
     stores = dht.get_stores(keys=call_id, count=n_ms, nodes=stores)
@@ -130,16 +151,28 @@ def encrypt_and_mac(call_id: bytes, plaintext: str) -> str:
     c_1 = Ciphering.enc(kenc, plaintext.encode('utf-8'))
     return Utils.to_base64(c_0) + ':' + Utils.to_base64(c_1)
 
-def decrypt(call_ids: List[bytes], responses: List[dict], gpk):
+def decrypt(call_ids: List[bytes], responses: List[dict], gpk, ipk):
     if not (call_ids and responses):
         return None
     
     call_ids = { Utils.to_base64(Utils.hash256(cid)): cid for cid in call_ids }
     
-    for res in responses:
+    for res_entry in responses:
+        if '_error' in res_entry or 'sig_r' not in res_entry:
+            continue
+        
+        res = res_entry['res']
+        
+        hreq = billing.Utils.to_base64(billing.Utils.hash256(bytes(res['idx'], 'utf-8')))
+        hres = billing.Utils.to_base64(billing.Utils.hash256(bytes(misc.stringify(res), 'utf-8')))
+        
+        if not audit_logging.ecdsa_verify(public_key=ipk, data=hreq+hres, sigma=res_entry['sig_r']):
+            continue
+        
         pp = Utils.to_base64(Utils.hash256(bytes(res['idx'] + res['ctx'], 'utf-8')))
         if '_error' in res or not groupsig.verify(sig=res['sig'], msg=pp + res['bb'], gpk=gpk):
             continue
+        
         try:
             c_0, c_1 = res['ctx'].split(':')
             kenc = Utils.hash256(Utils.xor(Utils.from_base64(c_0), call_ids[res['idx']]))
@@ -148,6 +181,7 @@ def decrypt(call_ids: List[bytes], responses: List[dict], gpk):
             if msg:
                 return msg.decode('utf-8')
         except:
-            continue
+            traceback.print_exc()
+            pass
         
     return None
