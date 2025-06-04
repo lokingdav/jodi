@@ -11,7 +11,7 @@ def main():
     """
     print(f"Connecting to Redis at {CACHE_HOST}:{CACHE_PORT}...")
     try:
-        redis_conn = cache.connect()
+        redis_conn = cache.connect(decode_responses=False)
         redis_conn.ping() # Verify connection
         print("Successfully connected to Redis.")
     except cache.redis.exceptions.ConnectionError as e:

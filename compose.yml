@@ -108,11 +108,10 @@ services:
     <<: *jodi-service
     container_name: als_client_worker
     command: >
-      rq worker 
-      --host cache 
-      --port 6379 
+      rq worker
+      --url redis://cache:6379/0
       --name als_client_worker 
-      --queue als_client
+      als_client
     profiles: [jodi_cps, als_cw]
     environment:
       - LOG_BATCH_KEY=client
@@ -122,8 +121,10 @@ services:
     <<: *jodi-service
     container_name: als_server_scheduler
     command: >
-      python /app/jodi/servers/scheduler.py &&
-      rq-scheduler --host cache --port 6379 --interval 2"
+      sh -c "echo 'Scheduler Service: Running scheduler.py...' &&
+            python /app/jodi/servers/scheduler.py &&
+            echo 'Scheduler Service: scheduler.py finished. Starting rqscheduler daemon...' &&
+            exec rqscheduler --host cache --port 6379 --interval 2 --verbose"
     profiles: [jodi_als, als_cs]
     environment:
       - LOG_BATCH_KEY=server
@@ -133,11 +134,10 @@ services:
     <<: *jodi-service
     container_name: als_server_worker
     command: >
-      rq worker 
-      --host cache 
-      --port 6379 
+      rq worker
+      --url redis://cache:6379/0
       --name als_server_worker 
-      --queue als_server
+      als_server
     profiles: [jodi_als, als_sw]
     environment:
       - LOG_BATCH_KEY=server
@@ -228,7 +228,7 @@ services:
     volumes:
       - ./docker/data/mongo:/data/db
     networks: [controlnet]
-    profiles: [control]
+    profiles: [control, jodi_als]
 
 networks:
   jodi_testnet:
