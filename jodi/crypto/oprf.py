@@ -1,17 +1,19 @@
-from pylibjodi import Oprf, Utils
+from pylibjodi import Voprf, Utils
 from jodi import config
 from jodi.models import cache
 import time
 from typing import Tuple
+from jodi.crypto import audit_logging
 
 EXP_PREFIX = 'rexp'
 
-def evaluate(keypairs: list, x: str) -> dict:
+def evaluate(keypairs: list, x: str, isk) -> dict:
     evaluations = []
-    for (sk, pk) in keypairs:
-        fx, vk = Oprf.evaluate(sk, pk, Utils.from_base64(x))
+    for (sk, vk) in keypairs:
+        fx = Voprf.evaluate(sk, Utils.from_base64(x))
         evaluations.append({ "fx": Utils.to_base64(fx), "vk": Utils.to_base64(vk) })
-    return evaluations
+    sigma: str = audit_logging.ecdsa_sign(private_key=isk, data=evaluations)
+    return {"evals": evaluations, "sig": sigma}
 
 class KeyRotation:
     @staticmethod
@@ -43,7 +45,7 @@ class KeyRotation:
 
     @staticmethod
     def renew_key(index: int):
-        sk, pk = Oprf.keygen()
+        sk, pk = Voprf.keygen()
         cache.save(
             key=KeyRotation.get_record_label(index), 
             value=f'{Utils.to_base64(sk)}.{Utils.to_base64(pk)}'

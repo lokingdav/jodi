@@ -3,12 +3,15 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 import jodi.config as config
-from jodi.crypto import groupsig, billing
+from jodi.crypto import groupsig, billing, audit_logging
 from jodi.models import cache
+from jodi.helpers import misc
+from jodi.prototype.stirshaken import certs
 
 cache.set_client(cache.connect())
 app = FastAPI()
 gpk = groupsig.get_gpk()
+isk = certs.get_private_key(config.TEST_ISK)
 
 class PublishRequest(BaseModel):
     idx: str
@@ -29,7 +32,7 @@ def unauthorized_response(content={"message": "Unauthorized"}):
         status_code=status.HTTP_401_UNAUTHORIZED
     )
     
-def success_response(content = {"message": "Created"}):
+def success_response(content):
     return JSONResponse(
         content=content, 
         status_code=status.HTTP_200_OK
@@ -56,7 +59,20 @@ async def publish(req: PublishRequest):
         seconds=config.T_MAX_SECONDS
     )
     
-    return success_response()
+    cache.enqueue_log({
+        "type": config.LOG_TYPE_PUBLISH,
+        "hreq": billing.Utils.to_base64(
+            billing.Utils.hash256(bytes(req.idx + req.ctx, 'utf-8'))
+        ),
+        "tk": req.bt,
+        "peers": req.peers,
+        "sig": req.sig,
+    })
+    
+    return success_response({
+        "message": "Created",
+        "sig_r": audit_logging.ecdsa_sign(private_key=isk, data=pp + bb + "ok")
+    })
     
 @app.post("/retrieve")
 async def retrieve(req: RetrieveRequest):
@@ -72,21 +88,33 @@ async def retrieve(req: RetrieveRequest):
     value = cache.find(key=get_record_key(req.idx))
     
     if value is None:
+        res = {"message": "Not Found"}
+    else:
+        (idx, ctx, sig, bill_h) = value.split('.')
+        res = {"idx": idx, "ctx": ctx, "sig": sig, 'bb': bill_h}
+    
+    log_entry = {
+        "type": config.LOG_TYPE_RETRIEVE,
+        "hreq": billing.Utils.to_base64(billing.Utils.hash256(bytes(req.idx, 'utf-8'))),
+        "hres": billing.Utils.to_base64(billing.Utils.hash256(bytes(misc.stringify(res), 'utf-8'))),
+        "tk": req.bt,
+        "peers": req.peers,
+        "sig": req.sig,
+    }
+    cache.enqueue_log(log_entry)
+    
+    res['sig_r'] = audit_logging.ecdsa_sign(private_key=isk, data=log_entry['hreq'] + log_entry['hres'])
+    
+    if "message" in res:
         return JSONResponse(
-            content={"message": "Not Found"}, 
+            content={"message": "Not Found"},
             status_code=status.HTTP_404_NOT_FOUND
         )
-    
-    (idx, ctx, sig, bill_h) = value.split('.')
-    
-    return success_response({"idx": idx, "ctx": ctx, "sig": sig, 'bh': bill_h})
+    else:
+        return success_response(res)
 
 @app.get("/health")
 async def health():
-    cache.enqueue_log({
-        "type": config.LOG_TYPE_HEALTH,
-        "msg": "Message Store is healthy"
-    })
     return { 
         "Status": 200,
         "Message": "OK", 

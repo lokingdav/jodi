@@ -5,12 +5,14 @@ from pydantic import BaseModel
 
 from jodi.crypto import groupsig, oprf, billing
 from jodi.models import cache
-from jodi.helpers import mylogging
+from jodi.helpers import mylogging, misc
 from jodi import config
+from jodi.prototype.stirshaken import certs
 
 mylogging.init_mylogger('evaluator', 'logs/evaluator.log')
 cache.set_client(cache.connect())
 gpk = groupsig.get_gpk()
+isk = certs.get_private_key(config.TEST_ISK)
 
 app = FastAPI()
 
@@ -43,7 +45,17 @@ async def evaluate(req: EvaluateRequest):
     mylogging.mylogger.debug(f"{config.KEY_ROTATION_LABEL}:{os.getpid()} --> Received request to evaluate with index {req.i_k}")
     keypairs = oprf.KeyRotation.get_keys(req.i_k)
     
-    content = oprf.evaluate(keypairs, req.x)
+    content = oprf.evaluate(keypairs, req.x, isk=isk)
+    
+    cache.enqueue_log({
+        "type": config.LOG_TYPE_CID_GEN,
+        "x": req.x,
+        "i_k": req.i_k,
+        "tk": req.bt,
+        "peers": req.peers,
+        "hres": oprf.Utils.to_base64(oprf.Utils.hash256(bytes(misc.stringify(content), 'utf-8'))),
+        "sig": req.sig,
+    })
 
     return JSONResponse(
         content=content, 

@@ -96,7 +96,7 @@ class MessageStore:
         
         (msidx, msctx, mssig, bill_h) = value.split('.')
         
-        return {'idx': msidx, 'ctx': msctx, 'sig': mssig, 'bh': bill_h, 'time_taken': time.perf_counter() - start_time}
+        return {'idx': msidx, 'ctx': msctx, 'sig': mssig, 'bb': bill_h, 'time_taken': time.perf_counter() - start_time}
 
 class Evaluator:
     @staticmethod

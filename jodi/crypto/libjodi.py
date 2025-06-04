@@ -138,7 +138,7 @@ def decrypt(call_ids: List[bytes], responses: List[dict], gpk):
     
     for res in responses:
         pp = Utils.to_base64(Utils.hash256(bytes(res['idx'] + res['ctx'], 'utf-8')))
-        if '_error' in res or not groupsig.verify(sig=res['sig'], msg=pp + res['bh'], gpk=gpk):
+        if '_error' in res or not groupsig.verify(sig=res['sig'], msg=pp + res['bb'], gpk=gpk):
             continue
         try:
             c_0, c_1 = res['ctx'].split(':')
