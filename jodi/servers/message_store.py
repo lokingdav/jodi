@@ -83,6 +83,10 @@ async def retrieve(req: RetrieveRequest):
 
 @app.get("/health")
 async def health():
+    cache.enqueue_log({
+        "type": config.LOG_TYPE_HEALTH,
+        "msg": "Message Store is healthy"
+    })
     return { 
         "Status": 200,
         "Message": "OK", 

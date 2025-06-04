@@ -1,5 +1,5 @@
-import json, redis
-from jodi.config import CACHE_HOST, CACHE_PORT, CACHE_PASS, CACHE_DB, NODE_FQDN, CPS_KEY
+import json, redis, datetime
+from jodi.config import CACHE_HOST, CACHE_PORT, CACHE_PASS, CACHE_DB, NODE_FQDN, LOG_BATCH_KEY
 
 client = None
 
@@ -62,3 +62,8 @@ def get_other_cpses(key):
 def save_certificates(certificates: dict):
     for key, cred in certificates.items():
         save(key=key, value=cred['cert'])
+        
+        
+def enqueue_log(entry:dict):
+    entry['timestamp'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    client.lpush(LOG_BATCH_KEY, json.dumps(entry))

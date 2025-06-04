@@ -30,6 +30,14 @@ def voprt_setup():
         'VOPRF_VK': Utils.to_base64(vk)
     })
 
+def write_identity_keys(cred):
+    if config.TEST_ISK and config.TEST_ICERT:
+        return
+    files.update_env_file('.env', {
+        'TEST_ISK': cred['isk'],
+        'TEST_ICERT': cred['ipk'],
+    })
+
 def is_valid_ipv4(ip):
     pattern = r"^(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|1?[0-9][0-9]?)$"
     return re.match(pattern, ip) is not None
@@ -72,7 +80,9 @@ def get_node_hosts():
     return nodes
 
 def setup_certificates():
-    return stirsetup.setup()
+    data = stirsetup.setup()
+    write_identity_keys(data[f"{constants.OTHER_CREDS_KEY}-0"])
+
 
 def setup_sample_loads(creds=None):
     from tqdm import tqdm

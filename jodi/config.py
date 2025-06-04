@@ -82,6 +82,10 @@ TGS_GSK = env('TGS_GSK')
 VOPRF_SK = env('VOPRF_SK')
 VOPRF_VK = env('VOPRF_VK')
 
+# TEST Identity Keys
+TEST_ISK = env('TEST_ISK')
+TEST_ICERT = env('TEST_ICERT')
+
 # OPRF Parameters
 KEYLIST_SIZE = env('KEYLIST_SIZE', 10, dtype=int)
 ROTATION_INTERVAL_SECONDS = env('ROTATION_INTERVAL_SECONDS', 10, dtype=int)
@@ -114,7 +118,13 @@ OOBSS_PROXY_CR_X5U = env('OOBSS_PROXY_CR_X5U')
 CPS_COUNT = env('CPS_COUNT', 10, dtype=int)
 HOSTS_FILE = env('HOSTS_FILE', 'deployments/hosts.yml')
 
-AUDIT_SERVER_URL = env("AUDIT_SERVER_URL", "http://auditls/log")
-LOG_BATCH_KEY = "jodi.als." + env("LOG_BATCH_KEY")
+AUDIT_SERVER_URL = env("AUDIT_SERVER_URL")
+LOG_BATCH_KEY = "jodi.als." + env("LOG_BATCH_KEY", "client")
 QUEUE_NAME = env("QUEUE_NAME")
-SCHEDULE_INTERVAL_SECONDS = env("SCHEDULE_INTERVAL_SECONDS", 1, dtype=int)
+SCHEDULE_INTERVAL_SECONDS = env("SCHEDULE_INTERVAL_SECONDS", 5, dtype=int)
+
+
+LOG_TYPE_HEALTH = "health"
+LOG_TYPE_CID_GEN = "cid_gen"
+LOG_TYPE_PUBLISH = "publish"
+LOG_TYPE_RETRIEVE = "retrieve"

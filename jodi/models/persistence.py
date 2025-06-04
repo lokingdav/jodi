@@ -111,3 +111,6 @@ def get_cert(key: str):
 
 def save_metrics(metrics: list):
     insert(collection='scalability_metrics', records=metrics)
+    
+def save_logs(logs: list):
+    insert(collection='audit_logs', records=logs)

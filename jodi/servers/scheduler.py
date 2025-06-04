@@ -1,13 +1,14 @@
-import datetime
+import datetime, argparse
 from rq_scheduler import Scheduler
 
 from jodi.config import QUEUE_NAME, SCHEDULE_INTERVAL_SECONDS, CACHE_HOST, CACHE_PORT
 from jodi.models import cache
-from jodi.servers.tasks import process_log_batch
+from jodi.servers.tasks import client_handler, server_handler
 
-def main():
+def main(is_client: bool = False):
+    handler_name = "client_handler" if is_client else "server_handler"
     """
-    Connects to Redis and schedules the process_log_batch task.
+    Connects to Redis and schedules the client_handler or server_handler task.
     """
     print(f"Connecting to Redis at {CACHE_HOST}:{CACHE_PORT}...")
     try:
@@ -25,36 +26,34 @@ def main():
     # --- Optional: Clear existing scheduled jobs for this function ---
     # This prevents duplicate scheduled jobs if you run this script multiple times.
     # Be cautious if you have other jobs scheduled programmatically that you don't want to remove.
-    print("Checking for existing scheduled jobs for 'process_log_batch'...")
+    print(f"Checking for existing scheduled jobs for '{handler_name}'...")
     jobs_to_cancel = []
     for job in scheduler.get_jobs():
-        # job.func_name might be fully qualified like 'module.submodule.tasks.process_log_batch'
-        # or just 'tasks.process_log_batch'. Be flexible or specific.
-        if 'tasks.process_log_batch' in job.func_name:
+        if f'tasks.{handler_name}' in job.func_name:
             jobs_to_cancel.append(job)
             
     if jobs_to_cancel:
-        print(f"Found {len(jobs_to_cancel)} existing scheduled job(s) for 'process_log_batch'. Canceling them...")
+        print(f"Found {len(jobs_to_cancel)} existing scheduled job(s) for '{handler_name}'. Canceling them...")
         for job in jobs_to_cancel:
             print(f"  Canceling job: {job.id} ({job.func_name}) scheduled for {job.scheduled_at}")
             scheduler.cancel(job)
         print("Existing jobs canceled.")
     else:
-        print("No existing scheduled jobs found for 'process_log_batch'.")
+        print(f"No existing scheduled jobs found for '{handler_name}'.")
 
     # --- Schedule the job ---
-    print(f"Scheduling 'process_log_batch' to run every {SCHEDULE_INTERVAL_SECONDS} seconds.")
+    print(f"Scheduling '{handler_name}' to run every {SCHEDULE_INTERVAL_SECONDS} seconds.")
     try:
         job = scheduler.schedule(
-            scheduled_time=datetime.datetime.now(datetime.timezone.utc),  # Start as soon as possible
-            func=process_log_batch,                  # The function to schedule
-            args=None,                               # No arguments for process_log_batch
-            kwargs=None,                             # No keyword arguments
-            interval=SCHEDULE_INTERVAL_SECONDS,      # Time interval in seconds
-            repeat=None,                             # Repeat indefinitely (None means infinite repeats)
-            meta={'description': 'Periodic log batch processing'} # Optional metadata
+            scheduled_time=datetime.datetime.now(datetime.timezone.utc),
+            func=client_handler if is_client else server_handler,
+            args=None,
+            kwargs=None,
+            interval=SCHEDULE_INTERVAL_SECONDS,
+            repeat=None,
+            meta={'description': 'Periodic log batch processing'}
         )
-        print(f"Job 'process_log_batch' successfully scheduled with ID: {job.id}")
+        print(f"Job '{handler_name}' successfully scheduled with ID: {job.id}")
         print(f"It will be enqueued to queue '{QUEUE_NAME}' every {SCHEDULE_INTERVAL_SECONDS} seconds.")
         print("Ensure an `rq-scheduler` daemon and `rq worker` are running to process these jobs.")
 
@@ -64,4 +63,12 @@ def main():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Schedule periodic tasks for Jodi.")
+    parser.add_argument(
+        "--client",
+        action="store_true",
+        default=False,
+        help="Schedule the client_handler task instead of the server_handler."
+    )
+    args = parser.parse_args()
+    main(is_client=args.client)

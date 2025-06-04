@@ -36,7 +36,7 @@ services:
     <<: *jodi-service
     container_name: auditlog
     command: > 
-      gunicorn jodi.servers.auditlog:app 
+      gunicorn jodi.servers.audit_log_server:app 
       --bind 0.0.0.0:80 
       --workers 4
       --worker-class uvicorn.workers.UvicornWorker 
@@ -49,7 +49,6 @@ services:
     depends_on:
       - cache
       - mongo
-      - als_server_scheduler
       - als_server_worker
     environment:
       - LOG_BATCH_KEY=server
@@ -71,6 +70,7 @@ services:
     depends_on:
       - keyrotation
       - cache
+      - als_client_worker
 
   message-store:
     <<: *jodi-service
@@ -86,61 +86,55 @@ services:
     ports:
       - 10431:80
     profiles: [jodi_cps, ms]
+    depends_on:
+      - cache
+      - als_client_worker
 
   keyrotation:
     <<: *jodi-service
     container_name: keyrotation
     command: python jodi/servers/keyrotation.py
     profiles: [jodi_cps, ev]
+    depends_on:
+      - cache
+      - als_client_worker
 
-  als_client_scheduler:
+  scheduler:
     <<: *jodi-service
-    container_name: als_client_scheduler
+    container_name: scheduler
     command: >
-      sh -c "echo 'Scheduler Service: Running scheduler.py...' &&
-            python /app/jodi/servers/scheduler.py --client &&
-            echo 'Scheduler Service: scheduler.py finished. Starting rqscheduler daemon...' &&
+      sh -c "echo 'Starting Scheduler...' &&
             exec rqscheduler --host cache --port 6379 --interval 2 --verbose"
-    profiles: [jodi_cps, als_cs]
-    environment:
-      - LOG_BATCH_KEY=client
-      - QUEUE_NAME=als_client
+    profiles: [jodi_cps, jodi_als]
     
   als_client_worker:
     <<: *jodi-service
     container_name: als_client_worker
     command: >
-      rq worker
-      --url redis://cache:6379/0
-      --name als_client_worker 
-      als_client
+      sh -c "echo 'Client Worker: Defining schedule...' &&
+             python /app/jodi/servers/scheduler.py --client &&
+             echo 'Client Worker: Schedule defined. Starting worker...' &&
+             exec rq worker --url redis://cache:6379/0 --name als_client_worker als_client"
     profiles: [jodi_cps, als_cw]
+    depends_on:
+      - cache
+      - scheduler
     environment:
       - LOG_BATCH_KEY=client
       - QUEUE_NAME=als_client
-
-  als_server_scheduler:
-    <<: *jodi-service
-    container_name: als_server_scheduler
-    command: >
-      sh -c "echo 'Scheduler Service: Running scheduler.py...' &&
-            python /app/jodi/servers/scheduler.py &&
-            echo 'Scheduler Service: scheduler.py finished. Starting rqscheduler daemon...' &&
-            exec rqscheduler --host cache --port 6379 --interval 2 --verbose"
-    profiles: [jodi_als, als_cs]
-    environment:
-      - LOG_BATCH_KEY=server
-      - QUEUE_NAME=als_server
 
   als_server_worker:
     <<: *jodi-service
     container_name: als_server_worker
     command: >
-      rq worker
-      --url redis://cache:6379/0
-      --name als_server_worker 
-      als_server
+      sh -c "echo 'Server Worker: Defining schedule...' &&
+             python /app/jodi/servers/scheduler.py &&
+             echo 'Server Worker: Schedule defined. Starting worker...' &&
+             exec rq worker --url redis://cache:6379/0 --name als_server_worker als_server"
     profiles: [jodi_als, als_sw]
+    depends_on:
+      - cache
+      - scheduler
     environment:
       - LOG_BATCH_KEY=server
       - QUEUE_NAME=als_server

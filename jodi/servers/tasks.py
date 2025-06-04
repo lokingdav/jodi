@@ -3,10 +3,13 @@ import os
 import asyncio
 
 from rq import get_current_job
+import numpy as np
 
-from jodi.config import LOG_BATCH_KEY, AUDIT_SERVER_URL
-from jodi.models import cache
+from jodi.config import LOG_BATCH_KEY, AUDIT_SERVER_URL, TEST_ISK, TEST_ICERT
+from jodi.models import cache, persistence
 from jodi.helpers import http
+from jodi.crypto import audit_logging
+from jodi.prototype.stirshaken import certs
 
 def _get_job_details():
     """
@@ -86,13 +89,49 @@ def _deserialize_log_entries(logs_bytes_list):
             print(f"Worker: Error deserializing log entry #{i}: {e}. Log data (bytes): {log_bytes[:100]}...") 
     return deserialized_logs
 
-def _handle_server_logs(logs_list):
-    print("Handling server logs...")
+def _chunk_logs(logs_list, chunk_size=1000):
+    return [logs_list[i:i + chunk_size] for i in range(0, len(logs_list), chunk_size)]
 
-def _handle_client_logs(logs_list):
-    print("Handling client logs...")
+async def _handle_server_logs(chunks):
+    public_key = certs.get_public_key_from_cert(TEST_ICERT)
+    logs = []
+    for chunk in chunks:
+        for log in chunk['logs']:
+            if audit_logging.ecdsa_verify(public_key=public_key, data=log['payload'], sigma=log['sigma']):
+                logs.append(log)
+    persistence.save_logs(logs)
+    print(f"\n\n{len(logs)} Saved to DB", flush=True)
 
-async def _process_logs(logs_list):
+async def _handle_client_logs(logs_list):
+    priv_key = certs.get_private_key(TEST_ISK)
+    signed_logs = []
+    
+    # Sign each log entry with the private key
+    for log in logs_list:
+        signed_logs.append({
+            'payload': log, 
+            'sigma': audit_logging.ecdsa_sign(private_key=priv_key, data=log)
+        })
+    
+    # Chunk the signed logs into manageable sizes for HTTP requests
+    chunks = _chunk_logs(signed_logs)
+    reqs = []
+    for chunk in chunks:
+        reqs.append({
+            'url': AUDIT_SERVER_URL,
+            'data': {
+                'auth_token': audit_logging.ecdsa_sign(private_key=priv_key, data=chunk),
+                'logs': signed_logs,
+            }
+        })
+        
+    # Send HTTP Requests to the audit server
+    http.set_session(http.create_session())
+    res = await http.posts(reqs)
+    await http.async_destroy_session()
+    print("\n\nResponse from audit server:", res, "\n\n", flush=True)
+
+async def _process_logs(logs_list, is_client=True):
     """
     Asynchronously sends the batch of deserialized logs to the audit server
     using your jodi.helpers.http (aiohttp-based) module.
@@ -103,12 +142,12 @@ async def _process_logs(logs_list):
 
     print(f"Worker (_process_logs): Preparing to send {len(logs_list)} logs to {AUDIT_SERVER_URL}.")
 
-    if 'server' in LOG_BATCH_KEY:
-        _handle_server_logs(logs_list)
+    if is_client:
+        await _handle_client_logs(logs_list)
     else:
-        _handle_client_logs(logs_list)
+        await _handle_server_logs(logs_list)
 
-def process_log_batch():
+def process_log_batch(is_client):
     """
     This is the main RQ job. It orchestrates:
     1. Claiming a batch of logs atomically from Redis.
@@ -156,7 +195,7 @@ def process_log_batch():
 
         # Stage 3: Send the logs using the async helper
         # asyncio.run() is used to call the async function from this sync RQ task.
-        asyncio.run(_process_logs(logs_to_process))
+        asyncio.run(_process_logs(logs_to_process, is_client))
 
         # Stage 4: Success - cleanup the processing key from Redis
         redis_conn.delete(processing_key)
@@ -177,3 +216,9 @@ def process_log_batch():
         import traceback
         traceback.print_exc()
         raise # Re-raise for RQ
+    
+def client_handler():
+    process_log_batch(is_client=True)
+    
+def server_handler():
+    process_log_batch(is_client=False)

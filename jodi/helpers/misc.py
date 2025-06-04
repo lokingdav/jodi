@@ -65,6 +65,13 @@ def base64encode(data: str):
     data = data.encode() if type(data) == str else data
     return base64.b64encode(data).decode()
 
+def base64decode(data: str):
+    if type(data) == dict:
+        data = stringify(data)
+        
+    data = data.encode() if type(data) == str else data
+    return base64.b64decode(data).decode('utf-8', errors='ignore')  # Decode bytes to string
+
 def stringify(data):
     if type(data) == str:
         return data
