@@ -43,5 +43,5 @@ async def health():
     return { 
         "Status": 200,
         "Message": "OK", 
-        "Type": "Evaluator",
+        "Type": "Audit Log Server",
     }

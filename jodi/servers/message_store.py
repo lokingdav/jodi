@@ -103,14 +103,16 @@ async def retrieve(req: RetrieveRequest):
     }
     cache.enqueue_log(log_entry)
     
-    res['sig_r'] = audit_logging.ecdsa_sign(private_key=isk, data=log_entry['hreq'] + log_entry['hres'])
+    sig_r = audit_logging.ecdsa_sign(private_key=isk, data=log_entry['hreq'] + log_entry['hres'])
     
     if "message" in res:
+        res['sig_r'] = sig_r
         return JSONResponse(
             content=res,
             status_code=status.HTTP_404_NOT_FOUND
         )
     else:
+        res = {'res': res, 'sig_r': sig_r}
         return success_response(res)
 
 @app.get("/health")
