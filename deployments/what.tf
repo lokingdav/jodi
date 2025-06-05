@@ -39,7 +39,7 @@ variable "us_east_2_count" {
 }
 
 variable "us_west_1_count" {
-  default = 2
+  default = 3
 }
 
 variable "us_west_2_count" {
@@ -286,6 +286,16 @@ output "hosts_file" {
   )
 }
 
+locals {
+  all_node_instances = concat(
+    aws_instance.livenet_nodes_use1,
+    aws_instance.livenet_nodes_use2,
+    aws_instance.livenet_nodes_usw1,
+    aws_instance.livenet_nodes_usw2
+  )
+  node_instance_count = length(local.all_node_instances)
+}
+
 resource "local_file" "ansible_hosts" {
   content = <<EOT
 all:
@@ -293,12 +303,7 @@ all:
 ${join(
   "\n",
   [
-    for instance in concat(
-      aws_instance.livenet_nodes_use1,
-      aws_instance.livenet_nodes_use2,
-      aws_instance.livenet_nodes_usw1,
-      aws_instance.livenet_nodes_usw2
-    ) : "    ${instance.tags.Name}:\n      ansible_host: ${instance.public_ip}\n      ansible_user: ubuntu"
+    for i, instance in local.all_node_instances : "    ${instance.tags.Name}:\n      ansible_host: ${instance.public_ip}\n      ansible_user: ubuntu\n      type: ${i == (local.node_instance_count - 1) ? "als" : "cps"}"
   ]
 )}
 EOT
