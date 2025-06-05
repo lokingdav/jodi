@@ -23,10 +23,10 @@ if (__ENV.TIMEOUT) {
 }
 
 const CidGenerationProtocol = (record) => {
-    const cidGenReqs = []
+    const cidGenReqs = {}
 
     for (const ev of record.jodi.evs) {
-        cidGenReqs.push({
+        cidGenReqs[ev] = {
             method: 'POST',
             url: `${ev}/evaluate`,
             body: JSON.stringify({
@@ -39,12 +39,15 @@ const CidGenerationProtocol = (record) => {
                 headers,
                 tags: { name: 'CidGenerationProtocol' },
             }
-        });
+        };
     }
     
     const responses = http.batch(cidGenReqs);
-
-    return responses.map(res => [200, 201].includes(res.status))
+    const result = {};
+    Object.keys(responses).map(key => {
+        result[key] = [200, 201].includes(responses[key].status);
+    })
+    return result
 }
 
 const PublishProtocol = (record) => {
@@ -121,12 +124,17 @@ export default function () {
     const pres = PublishProtocol(items[i]);
     const rres = RetrieveProtocol(items[i]);
 
-    if (pres.success && rres.success && pres.cidRess.length === rres.cidRess.length) {
-        if (pres.cidRess.every((val, index) => val === rres.cidRess[index])) {
-            // call ids are same during publish and retrieve 
-            if (rres.cidRess.some(v => v === true)) { // evaluation factor
-                successfulCallsCounter.add(1);
+    if (pres.success && rres.success) {
+        let matched = true;
+        for (const ev of Object.keys(pres.cidRess)) {
+            if (pres.cidRess[ev] !== rres.cidRess[ev]) {
+                matched = false;
+                break;
             }
+        }
+
+        if (matched) {
+            successfulCallsCounter.add(1);
         }
     }
     
