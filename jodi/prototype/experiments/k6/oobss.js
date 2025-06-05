@@ -38,7 +38,7 @@ const PublishProtocol = (record) => {
     }
   );
 
-  return res.status === 200;
+  return [200, 201].includes(res.status);
 };
 
 const RetrieveProtocol = (record) => {
@@ -56,7 +56,7 @@ const RetrieveProtocol = (record) => {
   }));
 
   const responses = http.batch(retReqs);
-  return responses.some((res) => res.status === 200);
+  return responses.some((res) => [200, 201].includes(res.status));
 };
 
 export function setup() {
