@@ -25,28 +25,7 @@ EXPERIMENT_PARAMS = {
     }
 }
 
-experimentState = None
-stateFile = f"{os.path.dirname(os.path.abspath(__file__))}/state.json"
-
 Simulator = None
-
-def load_checkpoint():
-    global experimentState
-    if not experimentState:
-        experimentState = files.read_json(fileloc=stateFile, default=defaultdict(dict))
-    if EXPERIMENT_NUM in experimentState:
-        return experimentState[EXPERIMENT_NUM]
-    return {}
-
-def save_checkpoint(params):
-    global experimentState
-    if EXPERIMENT_NUM in experimentState:
-        experimentState[EXPERIMENT_NUM].update(params)
-    else:
-        experimentState[EXPERIMENT_NUM] = params
-    
-    files.override_json(fileloc=stateFile, data=experimentState)
-    
 
 def get_provider_groups():
     return EXPERIMENT_PARAMS[EXPERIMENT_NUM]['provider_groups']
@@ -64,21 +43,17 @@ def run_datagen():
         )
 
 def simulate(resultsloc: str, mode: str, params: dict = {}):
-    prevState = load_checkpoint()
-    i_start = prevState.get('NN_idx', -1) + 1
-    j_start = prevState.get('NP_idx', -1) + 1
-
     node_groups = get_node_groups()
     provider_groups = get_provider_groups()
     
-    for i in range(i_start, len(node_groups)):
+    for i in range(len(node_groups)):
         Simulator.create_nodes(
             mode=mode,
             num_evs=node_groups[i][0],
             num_repos=node_groups[i][1]
         )
         
-        for j in range(j_start, len(provider_groups)):
+        for j in range(len(provider_groups)):
             num_provs = provider_groups[j]
             if config.is_oobss_mode(mode):
                 suffix = f"Num_CPSs: {sum(node_groups[i]) }"
@@ -103,23 +78,6 @@ def simulate(resultsloc: str, mode: str, params: dict = {}):
                 print(result)
                 
             print("Results written to", resultsloc)
-            save_checkpoint({
-                **params,
-                'N_ev': node_groups[i][0], 
-                'N_ms': node_groups[i][1], 
-                'mode': mode,
-                'NP_idx': j,
-                'NN_idx': i,
-            })
-        j_start = 0
-
-        # if EXPERIMENT_NUM == '1':
-        #     stop_churning.set()
-        #     network_churning.join()
-
-        save_checkpoint({'NP_idx': -1}) # Reset NP_idx
-    i_start = 0
-    save_checkpoint({'NN_idx': -1}) # Reset NN_idx
 
 def save_result(**kwargs):
     resultsloc = kwargs.get('loc')
@@ -163,25 +121,16 @@ def set_simulator(args):
         Simulator = networked.NetworkedSimulator()
 
 def run_experiment_1(resultsloc):
-    prevState = load_checkpoint()
-    i_start = prevState.get('n_ev', 2)
-    j_start = prevState.get('n_ms', 2)
-    iter_start = prevState.get('iter', 0) + 1
-
     start = time.perf_counter()
     
-    for i in range(i_start, maxRepTrustParams + 1):
-        for j in range(j_start, maxRepTrustParams + 1):
-            for iteration in range(iter_start, numIters + 1):
+    for i in range(2, maxRepTrustParams + 1):
+        for j in range(2, maxRepTrustParams + 1):
+            for iteration in range(1, numIters + 1):
                 params = {'n_ev': i, 'n_ms': j, 'iter': iteration}
                 print(f"\n============ Iteration {iteration}/{numIters}, {params} ============")
                 start_time = time.perf_counter()
                 simulate(resultsloc=resultsloc, mode=constants.MODE_JODI, params=params)
                 print(f"\tTime taken: {time.perf_counter() - start_time:.2f} seconds\n=============================================")
-            iter_start = 1 # Reset iter_start after first iteration
-        j_start = 2 # Reset j_start after first iteration
-    i_start = 2 # Reset i_start after first iteration
-    delete_state_for_exp()
     print(f"Time taken: {time.perf_counter() - start:.2f} seconds")
 
 def run_experiment_3(resultsloc):
@@ -197,8 +146,6 @@ def run_experiment_3(resultsloc):
         conf['params'].update({'n_ev': 3, 'n_ms': 3})
     
     simulate(**conf)
-    
-    delete_state_for_exp()
 
 def main(args):
     global cache_client
@@ -217,12 +164,6 @@ def main(args):
     elif args.experiment in ['3a', '3b']:
         run_experiment_3(resultsloc)
 
-def delete_state_for_exp():
-    global experimentState
-    if not experimentState: return
-    experimentState[EXPERIMENT_NUM] = {}
-    files.override_json(fileloc=stateFile, data=experimentState)
-        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment', type=str, choices=['1', '3a', '3b'], help='Experiment to run. Either 1, 3a or 3b. Default=1', default='1')

@@ -10,7 +10,7 @@ from jodi.prototype.simulations import entities, local
 from jodi.prototype.stirshaken import stirsetup, certs
 
 
-numIters = 1
+numIters = 1000
 cache_client = None
 gpk = groupsig.get_gpk()
 gsk = groupsig.get_gsk()
@@ -49,9 +49,9 @@ async def bench_async(options):
     
     signal, initial_token = await originating_provider.originate() # will originate with random src and dst
     final_token = await terminating_provider.terminate(signal)
-    print(f"Initial token: {initial_token}\n")
-    print(f"Final token: {final_token}\n")
-    mylogging.print_logs(logger)
+    # print(f"Initial token: {initial_token}\n")
+    # print(f"Final token: {final_token}\n")
+    # mylogging.print_logs(logger)
     assert final_token == initial_token, "Tokens do not match"
     pub_compute = originating_provider.get_publish_compute_times()
     ret_compute = terminating_provider.get_retrieve_compute_times()

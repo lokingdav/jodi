@@ -5,7 +5,7 @@ from jodi.crypto import groupsig, billing
 from jodi.prototype import network
 from jodi.models import cache, persistence
 from jodi.helpers import errors, mylogging, http
-from jodi.prototype.stirshaken import stirsetup
+from jodi.prototype.stirshaken import stirsetup, certs
 from jodi import config, constants
 from jodi.prototype import provider as providerModule
 from jodi.prototype.simulations import entities
@@ -29,6 +29,7 @@ def init_worker():
     certificate_repos = cache.find(key=config.CR_KEY, dtype=dict) or []
     _, credentials = stirsetup.load_certs()
     entities.set_evaluator_keys(cache.find(key=config.EVAL_KEYSETS_KEY, dtype=dict))
+    entities.set_isk(certs.get_private_key(config.TEST_ISK))
     
     if not http.keep_alive_session:
         loop = asyncio.new_event_loop()
