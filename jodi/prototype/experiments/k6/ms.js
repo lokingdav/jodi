@@ -12,7 +12,7 @@ let pubReqSize = new Trend('pub_req_size');
 let pubResSize = new Trend('pub_res_size');
 
 let retReqSize = new Trend('ret_req_size');
-let retResSize = new Trend('pub_res_size');
+let retResSize = new Trend('ret_res_size');
 
 export default function () {
     const record = items[Math.floor(Math.random() * items.length)];

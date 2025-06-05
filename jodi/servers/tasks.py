@@ -1,13 +1,13 @@
 import json
 import os
-import asyncio
+import asyncio, time
 
 from rq import get_current_job
 import numpy as np
 
-from jodi.config import LOG_BATCH_KEY, AUDIT_SERVER_URL, TEST_ISK, TEST_ICERT
+from jodi.config import LOG_BATCH_KEY, AUDIT_SERVER_URL, TEST_ISK, TEST_ICERT, BENCHMARK_LOG_FILE
 from jodi.models import cache, persistence
-from jodi.helpers import http
+from jodi.helpers import http,  mylogging, misc
 from jodi.crypto import audit_logging
 from jodi.prototype.stirshaken import certs
 
@@ -92,7 +92,12 @@ def _deserialize_log_entries(logs_bytes_list):
 def _chunk_logs(logs_list, chunk_size=1000):
     return [logs_list[i:i + chunk_size] for i in range(0, len(logs_list), chunk_size)]
 
-async def _handle_server_logs(chunks):
+async def _handle_server_logs(chunks, benchmark=None):
+    if len(chunks) == 0:
+        return
+    
+    start_time = time.perf_counter()
+    
     public_key = certs.get_public_key_from_cert(TEST_ICERT)
     logs = []
     for chunk in chunks:
@@ -101,11 +106,18 @@ async def _handle_server_logs(chunks):
                 logs.append(log)
     persistence.save_logs(logs)
     print(f"\n\n{len(logs)} Saved to DB", flush=True)
+    
+    if benchmark:
+        time_taken = (time.perf_counter() - start_time)/len(logs)
+        benchmark.info(f"als_s,process_logs,{misc.toMs(time_taken)}")
 
-async def _handle_client_logs(logs_list):
+async def _handle_client_logs(logs_list, benchmark=None):
+    if len(logs_list) == 0:
+        return
+    
     priv_key = certs.get_private_key(TEST_ISK)
     signed_logs = []
-    
+    start_time = time.perf_counter()
     # Sign each log entry with the private key
     for log in logs_list:
         signed_logs.append({
@@ -124,7 +136,12 @@ async def _handle_client_logs(logs_list):
                 'logs': signed_logs,
             }
         })
-        
+    
+    if benchmark:
+        time_taken = (time.perf_counter() - start_time)/(len(signed_logs))
+        benchmark.info(f"als_c,process_logs,{misc.toMs(time_taken)}")
+    
+    
     # Send HTTP Requests to the audit server
     http.set_session(http.create_session())
     res = await http.posts(reqs)
@@ -141,11 +158,17 @@ async def _process_logs(logs_list, is_client=True):
         return
 
     print(f"Worker (_process_logs): Preparing to send {len(logs_list)} logs to {AUDIT_SERVER_URL}.")
+    
+    benchmark = mylogging.init_logger(
+        name='als_benchmark',
+        filename=BENCHMARK_LOG_FILE,
+        formatter="%(message)s",
+    )
 
     if is_client:
-        await _handle_client_logs(logs_list)
+        await _handle_client_logs(logs_list, benchmark)
     else:
-        await _handle_server_logs(logs_list)
+        await _handle_server_logs(logs_list, benchmark)
 
 def process_log_batch(is_client):
     """

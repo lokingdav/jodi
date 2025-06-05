@@ -128,3 +128,5 @@ LOG_TYPE_HEALTH = "health"
 LOG_TYPE_CID_GEN = "cid_gen"
 LOG_TYPE_PUBLISH = "publish"
 LOG_TYPE_RETRIEVE = "retrieve"
+
+BENCHMARK_LOG_FILE = 'jodi/prototype/experiments/results/resource-exp/benchmark.csv'

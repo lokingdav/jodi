@@ -14,6 +14,12 @@ cache.set_client(cache.connect())
 gpk = groupsig.get_gpk()
 isk = certs.get_private_key(config.TEST_ISK)
 
+benchmark = mylogging.init_logger(
+    name='ev_benchmark',
+    filename=config.BENCHMARK_LOG_FILE,
+    formatter="%(message)s",
+)
+
 app = FastAPI()
 
 class EvaluateRequest(BaseModel):
@@ -25,7 +31,7 @@ class EvaluateRequest(BaseModel):
     
 @app.post("/evaluate")
 async def evaluate(req: EvaluateRequest):
-    # start_time = time.perf_counter()
+    start_time = time.perf_counter()
 
     if not billing.verify_token(config.VOPRF_VK, req.bt):
         return JSONResponse(
@@ -62,6 +68,9 @@ async def evaluate(req: EvaluateRequest):
         "hres": oprf.Utils.to_base64(oprf.Utils.hash256(bytes(misc.stringify(content), 'utf-8'))),
         "sig": req.sig,
     })
+    
+    time_taken = time.perf_counter() - start_time
+    benchmark.info(f"ev,evaluate,{misc.toMs(time_taken)}")
 
     return JSONResponse(
         content=content, 

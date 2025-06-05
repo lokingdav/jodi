@@ -16,7 +16,7 @@ run_control() {
 
 case "$1" in
   jodi_all)
-    docker compose --profile jodi_cps --profile jodi_als up -d --remove-orphans
+    docker compose --profile jodi_cps --profile jodi_als --profile control up -d --remove-orphans
     ;;
   jodi_cps)
     docker compose --profile jodi_cps up -d

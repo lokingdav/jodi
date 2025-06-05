@@ -225,13 +225,19 @@ class JodiIWF:
             'evaluator': misc.toMs(self.publish_ev_time),
             'message_store': misc.toMs(self.publish_ms_time),
         }
-
+    
     def get_retrieve_compute_times(self):
         return {
             'provider': misc.toMs(self.retrieve_provider_time),
             'evaluator': misc.toMs(self.retrieve_ev_time),
             'message_store': misc.toMs(self.retrieve_ms_time),
         }
+        
+    def get_total_compute(self):
+        return misc.toMs(
+            self.publish_provider_time + self.publish_ev_time + self.publish_ms_time +
+            self.retrieve_provider_time + self.retrieve_ev_time + self.retrieve_ms_time
+        )
     
     def log_msg(self, msg):
         if config.DEBUG and self.logger:

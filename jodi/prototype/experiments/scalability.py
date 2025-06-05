@@ -67,6 +67,7 @@ def simulate(resultsloc: str, mode: str, params: dict = {}):
                 'Num_EVs': node_groups[i][0],
                 'Num_MSs': node_groups[i][1],
                 'mode': mode,
+                'exp_num': EXPERIMENT_NUM,
                 **params
             })
             save_result(

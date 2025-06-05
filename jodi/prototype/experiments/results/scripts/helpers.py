@@ -132,9 +132,9 @@ def estimate_storage(call_rate, N = 20, M = 20):
 
 def estimate_bandwidth(call_rate, p_rate, N, M):
     # Bandwidth For 
-    # provider: (6 * 1000 per second) * 1.5 * (2000 Bytes) to megabits per second
-    # message store: (2 * 0.078 billion per day) * 1.5 * (2000 Bytes) to megabits per second
-    # Evaluator: (2 * 0.078 billion per day) * 1.5 * (900 Bytes) to megabits per second
+    # provider: 6 * 1000 per sec * (1.3+1.5+2.2) KB * 1.5 to Mbps
+    # message store: 2 * 912 per sec * (2.7+1.9) KB * 1.5 to Mbps
+    # Evaluator: 2 * 912 per sec * (1.3) KB * 1.5 to Mbps
     ev_req_per_sec = 2 * call_rate / N
     ms_req_per_sec = 2 * call_rate / M
     

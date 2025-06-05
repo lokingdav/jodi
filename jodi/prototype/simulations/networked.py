@@ -127,8 +127,15 @@ class NetworkedSimulator:
                 final_token = loop.run_until_complete(provider.terminate(signal))
             else: # Intermediate provider
                 signal = loop.run_until_complete(provider.receive(signal)) 
-
-            lat = provider.get_latency_ms()
+            
+            
+            exp_num = options.get('exp_num')
+            
+            if int(exp_num) == 1:
+                lat = provider.get_total_compute() 
+            else:
+                lat = provider.get_latency_ms()
+                
             latency += lat
             oob += 1 if lat > 0 else 0
             provider.reset()
@@ -209,7 +216,7 @@ class NetworkedSimulator:
             num_mss=params.get('Num_MSs'),
             mode=mode
         )
-        num_processes = os.cpu_count() * 2
+        num_processes = os.cpu_count()
         with Pool(processes=num_processes, initializer=init_worker) as pool:
             pages, total_items = self.get_pages(num_provs=num_provs, limit=limit)
             progress = 0

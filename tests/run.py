@@ -10,7 +10,7 @@ from itertools import product
 
 
 cache.set_client(cache.connect())
-jodi_conf = {'n_ev': 2, 'n_ms': 2, 'gsk': groupsig.get_gsk(), 'gpk': groupsig.get_gpk()}
+jodi_conf = {'n_ev': 3, 'n_ms': 3, 'gsk': groupsig.get_gsk(), 'gpk': groupsig.get_gpk()}
 credentials = files.read_json(fileloc="conf/certs.json")
 
 async def main(args):
