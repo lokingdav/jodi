@@ -3,7 +3,7 @@ from jodi.crypto import groupsig, libjodi, billing
 from jodi.helpers import files, misc, dht
 from jodi import config, constants
 import yaml, re, random
-from pylibjodi import Utils, Oprf, Voprf
+from pylibjodi import Utils, Voprf
 from collections import defaultdict
 from jodi.prototype.stirshaken import stirsetup, auth_service
 
@@ -34,8 +34,8 @@ def write_identity_keys(cred):
     if config.TEST_ISK and config.TEST_ICERT:
         return
     files.update_env_file('.env', {
-        'TEST_ISK': cred['isk'],
-        'TEST_ICERT': cred['ipk'],
+        'TEST_ISK': cred['sk'],
+        'TEST_ICERT': cred['cert'],
     })
 
 def is_valid_ipv4(ip):
@@ -58,15 +58,14 @@ def get_node_hosts():
         
         for i, name in enumerate(data['all']['hosts'].keys()):
             ip_addr = data['all']['hosts'][name]['ansible_host']
+            node_type = data['all']['hosts'][name].get('type', 'cps')
             
             if is_valid_ipv4(ip_addr):
-                nodes[config.EVALS_KEY].append(create_node(f'{ip_addr}:{config.EV_PORT}'))
-                nodes[config.STORES_KEY].append(create_node(f'{ip_addr}:{config.MS_PORT}'))
-                
-                nodes[config.CR_KEY].append(create_node(f'{ip_addr}:{config.CR_PORT}'))
-                
-                nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_0_PORT}'))
-                # nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_1_PORT}'))
+                if node_type == 'cps':
+                    nodes[config.EVALS_KEY].append(create_node(f'{ip_addr}:{config.EV_PORT}'))
+                    nodes[config.STORES_KEY].append(create_node(f'{ip_addr}:{config.MS_PORT}'))
+                    nodes[config.CR_KEY].append(create_node(f'{ip_addr}:{config.CR_PORT}'))
+                    nodes[config.CPS_KEY].append(create_node(f'{ip_addr}:{config.CPS_0_PORT}'))
             else:
                 node = create_node(ip_addr)
                 if '-ev-' in ip_addr or 'evaluator' in ip_addr:
@@ -82,6 +81,7 @@ def get_node_hosts():
 def setup_certificates():
     data = stirsetup.setup()
     write_identity_keys(data[f"{constants.OTHER_CREDS_KEY}-0"])
+    return data
 
 
 def setup_sample_loads(creds=None):
@@ -96,6 +96,8 @@ def setup_sample_loads(creds=None):
 
     if not nodes[config.CPS_KEY]:
         raise Exception("No CPS nodes found")
+    
+    print(f"Found {len(nodes[config.CPS_KEY])} CPS nodes")
     
     num_certs = config.NO_OF_INTERMEDIATE_CAS * config.NUM_CREDS_PER_ICA
     loads = []
@@ -154,7 +156,7 @@ def setup_sample_loads(creds=None):
             })
 
         calldetails = libjodi.normalize_call_details(src=orig, dst=dest)
-        x, mask = Oprf.blind(calldetails)
+        x, mask = Voprf.blind(calldetails)
         x = Utils.to_base64(x)
         i_k = libjodi.get_index_from_call_details(calldetails)
         
@@ -176,13 +178,13 @@ def setup_sample_loads(creds=None):
             evs = [ev['url'] for ev in evs]
         
         billable_tk = billing.create_endorsed_token(config.VOPRF_SK)
+        
+        eval_hreq = Utils.to_base64(Utils.hash256(bytes(x + str(i_k) + billable_tk + evs_peers, 'utf-8')))
 
-        pp_eval = Utils.to_base64(Utils.hash256(bytes(str(i_k) + x, 'utf-8')))
         pp_pub = Utils.to_base64(Utils.hash256(bytes(idx + ctx, 'utf-8')))
         pp_ret = Utils.to_base64(Utils.hash256(bytes(idx, 'utf-8')))
 
         bb_mss = billing.get_billing_hash(billable_tk, mss_peers)
-        bb_evs = billing.get_billing_hash(billable_tk, evs_peers)
 
         data['jodi'] = {
             'idx': idx, 
@@ -190,7 +192,7 @@ def setup_sample_loads(creds=None):
             'oprf': {
                 'x': x, 
                 'i_k': i_k,
-                'sig': groupsig.sign(msg=pp_eval + bb_evs, gsk=gsk, gpk=gpk)
+                'sig': groupsig.sign(msg=eval_hreq, gsk=gsk, gpk=gpk)
             },
             'pub_sig': groupsig.sign(msg=pp_pub + bb_mss, gsk=gsk, gpk=gpk),
             'ret_sig': groupsig.sign(msg=pp_ret + bb_mss, gsk=gsk, gpk=gpk),
@@ -221,6 +223,7 @@ def create_main_yml_for_testnet():
             'ansible_connection': 'community.docker.docker_api',
             'ansible_python_interpreter': '/usr/bin/python3',
             'ansible_docker_host': node,
+            'type': 'cps' if 'node' in node else 'als'
         }
     hosts = {'all': {'hosts': hosts}}
     

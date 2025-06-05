@@ -40,7 +40,7 @@ def update_env_file(env_file_path: str, updates: dict):
     
     with open(env_file_path, "w") as env_file:
         for key, value in updated_env.items():
-            env_file.write(f"{key}={value}\n")
+            env_file.write(f"{key}=\"{value}\"\n")
             
 def create_dir_if_not_exists(path):
     try:

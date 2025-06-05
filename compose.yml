@@ -14,12 +14,14 @@ services:
     container_name: jodi-control
     command: tail -f /dev/null
     environment:
-      - DOCKER_SOCKET_PATH=${DOCKER_SOCKET_PATH:-/var/run/docker.sock}
-      - HOST_APP_PATH=${HOST_APP_PATH}
+      - ANSIBLE_HOST_KEY_CHECKING=False
+      - ANSIBLE_CONFIG=/app/deployments/ansible.cfg
+      - DOCKER_SOCKET_PATH=/var/run/docker.sock
     volumes:
       - '.:/app'
       - './docker/data/.aws:/root/.aws'
       - './docker/data/.ssh:/root/.ssh'
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - cache
       - mongo
@@ -28,8 +30,8 @@ services:
     profiles: [control]
     networks:
       controlnet: {}
-      # jodi_testnet:
-      #   ipv4_address: 172.20.0.2
+      jodi_testnet:
+        ipv4_address: 172.20.0.2
 
 # jodi Services
   auditlog:

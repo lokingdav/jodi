@@ -79,4 +79,17 @@
         - update_env
         - update_node_ip
 
+    - name: Pull latest images from Docker Hub using shell
+      ansible.builtin.shell:
+        cmd: docker pull kofidahmed/jodi && docker pull redis
+      register: docker_pull_result
+      changed_when: "'Status: Downloaded newer image' in docker_pull_result.stdout or 'Status: Pulling from' in docker_pull_result.stdout"
+      failed_when: docker_pull_result.rc != 0 and 'image is up to date' not in docker_pull_result.stderr | lower
 
+    - name: Pull latest mongo image from Docker Hub using shell for audit log service
+      ansible.builtin.shell:
+        cmd: docker pull mongo
+      register: docker_pull_mongo_result
+      when: hostvars[inventory_hostname].type == "als"
+      changed_when: "'Status: Downloaded newer image' in docker_pull_mongo_result.stdout or 'Status: Pulling from' in docker_pull_mongo_result.stdout"
+      failed_when: docker_pull_mongo_result.rc != 0 and 'image is up to date' not in docker_pull_mongo_result.stderr | lower

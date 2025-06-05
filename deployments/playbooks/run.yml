@@ -16,16 +16,25 @@
     - name: Clear logs
       tags:
         - clear_logs
-      shell: "rm -rf ./logs/*.log"
+      shell: "rm -rf ./logs/*.log ./docker/data/mongo"
       args:
         chdir: "{{ repo_dest }}"
 
-    - name: Start Jodi Services
+    - name: Start Jodi CPSs
       tags:
         - start_jodi
-      command: "./scripts/apps.sh jodi"
+      command: "./scripts/apps.sh jodi_cps"
       args:
         chdir: "{{ repo_dest }}"
+      when: hostvars[inventory_hostname].type == "cps"
+
+    - name: Start Jodi ALS
+      tags:
+        - start_jodi
+      command: "./scripts/apps.sh jodi_als"
+      args:
+        chdir: "{{ repo_dest }}"
+      when: hostvars[inventory_hostname].type == "als"
 
     - name: Start OOB-S/S Services
       tags:
@@ -33,3 +42,4 @@
       command: "./scripts/apps.sh oobss"
       args:
         chdir: "{{ repo_dest }}"
+      when: hostvars[inventory_hostname].type == "cps"

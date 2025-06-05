@@ -119,6 +119,17 @@ services:
       - ./docker/data/testnet/node-9/var/lib/docker:/var/lib/docker
       - ./docker/data/testnet/node-9/opt/jodi:/opt/jodi
 
+  auditlog-1:
+    <<: *testnet
+    hostname: auditlog-1
+    container_name: auditlog-1
+    networks:
+      testnet:
+        ipv4_address: 172.20.0.20
+    volumes:
+      - ./docker/data/testnet/auditlog-1/var/lib/docker:/var/lib/docker
+      - ./docker/data/testnet/auditlog-1/opt/jodi:/opt/jodi
+
 networks:
   testnet:
     name: jodi_testnet

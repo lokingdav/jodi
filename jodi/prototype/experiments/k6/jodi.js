@@ -44,7 +44,7 @@ const CidGenerationProtocol = (record) => {
     
     const responses = http.batch(cidGenReqs);
 
-    return responses.map(res => res.status === 200)
+    return responses.map(res => [200, 201].includes(res.status))
 }
 
 const PublishProtocol = (record) => {
@@ -122,9 +122,11 @@ export default function () {
     const rres = RetrieveProtocol(items[i]);
 
     if (pres.success && rres.success && pres.cidRess.length === rres.cidRess.length) {
-        if (pres.cidRess.every((val, index) => val === rres.cidRess[index])) { 
-            // call ids are same during publish and retrieve so it is a successful call
-            successfulCallsCounter.add(1);
+        if (pres.cidRess.every((val, index) => val === rres.cidRess[index])) {
+            // call ids are same during publish and retrieve 
+            if (rres.cidRess.some(v => v === true)) { // evaluation factor
+                successfulCallsCounter.add(1);
+            }
         }
     }
     
