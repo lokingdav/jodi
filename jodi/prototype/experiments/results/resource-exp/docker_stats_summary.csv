@@ -1,0 +1,9 @@
+Name,max_mem_usage
+als_client_worker,81.69
+als_server_worker,56.04
+auditlog,270.9
+evaluator,667.0
+jodi-cache,25.11
+keyrotation,17.22
+message-store,713.3
+scheduler,17.81
