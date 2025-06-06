@@ -40,7 +40,7 @@ async def write_log(req: Request):
         )
     print("Signature verified", flush=True)
     
-    cache.enqueue_log({ 'logs': req.logs })
+    # cache.enqueue_log({ 'logs': req.logs })
     
     time_taken = time.perf_counter() - start_time
     benchmark.info(f"als_s,log,{misc.toMs(time_taken)}")
